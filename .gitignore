@@ -1,0 +1,86 @@
+### Maven ###
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+/out/
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+
+### Windows ###
+Thumbs.db
+
+### 日志文件 ###
+*.log
+
+### 数据库相关 ###
+*.sql
+
+### 环境配置文件 ###
+.env
+application-*.yml
+application-*.yaml
+application-*.properties
+
+### 编译后的文件 ###
+*.class
+*.jar
+*.war
+*.ear
+
+### 临时文件 ###
+*.tmp
+*.temp
+
+### IDE相关 ###
+/.metadata
+/.idea/
+*.swp
+*.swo
+
+### Maven ###
+.mvn/timing.properties
+mvnw
+mvnw.cmd
+
+### Gradle ###
+.gradle/
+build/
+
+### Node modules ###
+node_modules/
+
+### Docker ###
+.dockerignore
+
+### 系统文件 ###
+.DS_Store
+Desktop.ini

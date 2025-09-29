@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生会部门官方网站 - 登录注册</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .tab-buttons {
+            display: flex;
+            background: #f8f9fa;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .tab-button.active {
+            background: white;
+            border-bottom: 3px solid #667eea;
+        }
+        .form-container {
+            padding: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .test-btn {
+            width: 100%;
+            padding: 8px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="showTab('login')">登录</button>
+            <button class="tab-button" onclick="showTab('register')">注册</button>
+        </div>
+
+        <!-- 登录表单 -->
+        <div id="loginForm" class="form-container">
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginUsername">用户名:</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">密码:</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn">登录</button>
+            </form>
+            
+            <div class="test-section">
+                <h4>测试工具:</h4>
+                <button class="test-btn" onclick="checkHealth()">检查系统状态</button>
+                <button class="test-btn" onclick="generateActivationCode()">生成激活码</button>
+            </div>
+        </div>
+
+        <!-- 注册表单 -->
+        <div id="registerForm" class="form-container hidden">
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="registerUsername">用户名:</label>
+                    <input type="text" id="registerUsername" required minlength="3" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">密码:</label>
+                    <input type="password" id="registerPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">确认密码:</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="activationCode">激活码:</label>
+                    <input type="text" id="activationCode" required placeholder="请输入激活码">
+                </div>
+                <div class="form-group">
+                    <label for="roleHistory">身份信息(可选):</label>
+                    <input type="text" id="roleHistory" placeholder="例如: 2024级部长&2023级部员">
+                </div>
+                <button type="submit" class="btn">注册</button>
+            </form>
+        </div>
+
+        <!-- 消息显示区域 -->
+        <div id="messageArea"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        // 切换标签页
+        function showTab(tab) {
+            // 更新按钮状态
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 显示对应的表单
+            if (tab === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+            } else {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
+            }
+
+            // 清除消息
+            clearMessage();
+        }
+
+        // 显示消息
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.innerHTML = `<div class="message ${type}">${message}</div>`;
+        }
+
+        // 清除消息
+        function clearMessage() {
+            document.getElementById('messageArea').innerHTML = '';
+        }
+
+        // 处理登录
+        async function handleLogin(event) {
+            event.preventDefault();
+            clearMessage();
+
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`登录成功！欢迎 ${result.data.username}`, 'success');
+                    console.log('用户信息:', result.data);
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                showMessage('登录失败: ' + error.message, 'error');
+            }
+        }
+
+        // 处理注册
+        async function handleRegister(event) {
+            event.preventDefault();
+            clearMessage();
+
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const activationCode = document.getElementById('activationCode').value;
+            const roleHistory = document.getElementById('roleHistory').value;
+
+            // 前端验证
+            if (password !== confirmPassword) {
+                showMessage('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        confirmPassword,
+                        activationCode,
+                        roleHistory
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('注册成功！请切换到登录页面进行登录', 'success');
+                    // 清空表单
+                    event.target.reset();
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                showMessage('注册失败: ' + error.message, 'error');
+            }
+        }
+
+        // 检查系统健康状态
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/test/health`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`系统状态: ${result.data.status} (${result.data.time})`, 'success');
+                } else {
+                    showMessage('系统检查失败', 'error');
+                }
+            } catch (error) {
+                showMessage('无法连接到服务器: ' + error.message, 'error');
+            }
+        }
+
+        // 生成激活码
+        async function generateActivationCode() {
+            try {
+                const response = await fetch(`${API_BASE}/test/generate-activation-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`激活码生成成功: ${result.data.activationCode} (有效期至: ${result.data.expireTime})`, 'success');
+                    // 自动填充到注册表单中
+                    document.getElementById('activationCode').value = result.data.activationCode;
+                } else {
+                    showMessage('激活码生成失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showMessage('生成激活码失败: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
