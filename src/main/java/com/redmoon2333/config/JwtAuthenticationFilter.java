@@ -1,5 +1,7 @@
 package com.redmoon2333.config;
 
+import com.redmoon2333.exception.ErrorCode;
+import com.redmoon2333.exception.JwtException;
 import com.redmoon2333.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -114,6 +116,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
+        String method = request.getMethod();
         
         // 对于以下路径不进行JWT验证
         return path.equals("/api/auth/login") || 
@@ -122,6 +125,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.startsWith("/api/public/") ||
                path.equals("/") ||
                path.startsWith("/static/") ||
-               path.equals("/favicon.ico");
+               path.equals("/favicon.ico") ||
+               // 活动查询接口（GET方法）不需要JWT验证
+               ("GET".equals(method) && path.startsWith("/api/activities"));
     }
 }

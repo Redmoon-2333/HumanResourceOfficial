@@ -11,9 +11,20 @@ public enum ErrorCode {
     // Token相关错误 2000-2999
     INVALID_TOKEN(2001, "令牌无效或已过期"),
     TOKEN_REQUIRED(2002, "需要提供有效的令牌"),
+    TOKEN_MISSING(2003, "缺少认证令牌"),
+    TOKEN_EXPIRED(2004, "令牌已过期"),
+    TOKEN_MALFORMED(2005, "令牌格式错误"),
     
     // 权限相关错误 3000-3999
     INSUFFICIENT_PERMISSIONS(3001, "权限不足"),
+    UNAUTHORIZED_ACTIVITY_OPERATION(3002, "只有部长或副部长才能执行此操作"),
+    
+    // 活动相关错误 6000-6999
+    ACTIVITY_NOT_FOUND(6001, "活动不存在"),
+    ACTIVITY_ALREADY_EXISTS(6002, "活动已存在"),
+    ACTIVITY_CREATION_FAILED(6003, "活动创建失败"),
+    ACTIVITY_UPDATE_FAILED(6004, "活动更新失败"),
+    ACTIVITY_DELETE_FAILED(6005, "活动删除失败"),
     
     // 请求参数相关错误 4000-4999
     INVALID_REQUEST_PARAMETER(4001, "请求参数不正确"),
