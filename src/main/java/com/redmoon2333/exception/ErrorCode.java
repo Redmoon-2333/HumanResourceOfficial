@@ -26,6 +26,10 @@ public enum ErrorCode {
     ACTIVITY_UPDATE_FAILED(6004, "活动更新失败"),
     ACTIVITY_DELETE_FAILED(6005, "活动删除失败"),
     
+    // 往届活动相关错误 7000-7999
+    NOT_FOUND(7001, "资源不存在"),
+    OPERATION_ERROR(7002, "操作失败"),
+    
     // 请求参数相关错误 4000-4999
     INVALID_REQUEST_PARAMETER(4001, "请求参数不正确"),
     VALIDATION_FAILED(4002, "数据验证失败"),

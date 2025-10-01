@@ -127,6 +127,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                path.startsWith("/static/") ||
                path.equals("/favicon.ico") ||
                // 活动查询接口（GET方法）不需要JWT验证
-               ("GET".equals(method) && path.startsWith("/api/activities"));
+               ("GET".equals(method) && path.startsWith("/api/activities")) ||
+               // 往届活动查询接口（GET方法）不需要JWT验证
+               ("GET".equals(method) && path.startsWith("/api/past-activities")) ||
+               // 用户公开信息查询接口不需要JWT验证
+               path.equals("/api/users/alumni") ||
+               path.startsWith("/api/users/search/name");
     }
 }

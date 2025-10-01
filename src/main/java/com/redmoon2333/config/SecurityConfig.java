@@ -95,6 +95,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll()
                 // 允许活动查询接口（GET方法）公开访问
                 .requestMatchers(HttpMethod.GET, "/api/activities/**").permitAll()
+                // 允许往届活动查询接口（GET方法）公开访问
+                .requestMatchers(HttpMethod.GET, "/api/past-activities/**").permitAll()
                 // 允许用户相关公开接口访问
                 .requestMatchers(HttpMethod.GET, "/api/users/alumni").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users/search/name/**").permitAll()
