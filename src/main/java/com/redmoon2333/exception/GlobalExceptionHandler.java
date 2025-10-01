@@ -91,6 +91,26 @@ public class GlobalExceptionHandler {
     }
     
     /**
+     * 处理非法参数异常
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<Void> handleIllegalArgumentException(IllegalArgumentException e) {
+        logger.warn("非法参数异常: {}", e.getMessage());
+        return ApiResponse.error(e.getMessage(), ErrorCode.INVALID_REQUEST_PARAMETER.getCode());
+    }
+    
+    /**
+     * 处理数字格式异常
+     */
+    @ExceptionHandler(NumberFormatException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public ApiResponse<Void> handleNumberFormatException(NumberFormatException e) {
+        logger.warn("数字格式异常: {}", e.getMessage());
+        return ApiResponse.error("参数格式错误", ErrorCode.INVALID_REQUEST_PARAMETER.getCode());
+    }
+    
+    /**
      * 处理其他未捕获的异常
      */
     @ExceptionHandler(Exception.class)
