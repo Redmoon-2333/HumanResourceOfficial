@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.redmoon2333.mapper.ActivityImageMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.redmoon2333.entity.ActivityImage">
+        <id column="image_id" property="imageId" jdbcType="INTEGER"/>
+        <result column="activity_id" property="activityId" jdbcType="INTEGER"/>
+        <result column="image_url" property="imageUrl" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="LONGVARCHAR"/>
+        <result column="sort_order" property="sortOrder" jdbcType="INTEGER"/>
+        <result column="upload_time" property="uploadTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- SQL片段 -->
+    <sql id="Base_Column_List">
+        image_id, activity_id, image_url, description, sort_order, upload_time
+    </sql>
+
+    <!-- 根据ID查找图片 -->
+    <select id="findById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_image
+        WHERE image_id = #{imageId}
+    </select>
+
+    <!-- 根据活动ID查找图片列表 -->
+    <select id="findByActivityId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_image
+        WHERE activity_id = #{activityId}
+        ORDER BY sort_order ASC, upload_time ASC
+    </select>
+
+    <!-- 插入新图片 -->
+    <insert id="insert" parameterType="com.redmoon2333.entity.ActivityImage" useGeneratedKeys="true" keyProperty="imageId">
+        INSERT INTO activity_image (
+            activity_id,
+            image_url,
+            description,
+            sort_order,
+            upload_time
+        ) VALUES (
+            #{activityId},
+            #{imageUrl},
+            #{description},
+            #{sortOrder},
+            #{uploadTime}
+        )
+    </insert>
+
+    <!-- 更新图片信息 -->
+    <update id="update" parameterType="com.redmoon2333.entity.ActivityImage">
+        UPDATE activity_image
+        <set>
+            <if test="activityId != null">
+                activity_id = #{activityId},
+            </if>
+            <if test="imageUrl != null">
+                image_url = #{imageUrl},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="sortOrder != null">
+                sort_order = #{sortOrder},
+            </if>
+        </set>
+        WHERE image_id = #{imageId}
+    </update>
+
+    <!-- 根据ID删除图片 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM activity_image
+        WHERE image_id = #{imageId}
+    </delete>
+
+    <!-- 根据活动ID删除所有图片 -->
+    <delete id="deleteByActivityId" parameterType="java.lang.Integer">
+        DELETE FROM activity_image
+        WHERE activity_id = #{activityId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.redmoon2333.mapper.PastActivityMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.redmoon2333.entity.PastActivity">
+        <id column="past_activity_id" property="pastActivityId" jdbcType="INTEGER"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="cover_image" property="coverImage" jdbcType="VARCHAR"/>
+        <result column="push_url" property="pushUrl" jdbcType="VARCHAR"/>
+        <result column="year" property="year" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- SQL片段 -->
+    <sql id="Base_Column_List">
+        past_activity_id, title, cover_image, push_url, year, create_time
+    </sql>
+
+    <!-- 根据ID查找往届活动 -->
+    <select id="findById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM past_activity
+        WHERE past_activity_id = #{pastActivityId}
+    </select>
+
+    <!-- 查找所有往届活动 -->
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM past_activity
+        ORDER BY year DESC, create_time DESC
+    </select>
+
+    <!-- 根据年份查找往届活动 -->
+    <select id="findByYear" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM past_activity
+        WHERE year = #{year}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 插入新往届活动 -->
+    <insert id="insert" parameterType="com.redmoon2333.entity.PastActivity" useGeneratedKeys="true" keyProperty="pastActivityId">
+        INSERT INTO past_activity (
+            title,
+            cover_image,
+            push_url,
+            year,
+            create_time
+        ) VALUES (
+            #{title},
+            #{coverImage},
+            #{pushUrl},
+            #{year},
+            #{createTime}
+        )
+    </insert>
+
+    <!-- 更新往届活动信息 -->
+    <update id="update" parameterType="com.redmoon2333.entity.PastActivity">
+        UPDATE past_activity
+        <set>
+            <if test="title != null">
+                title = #{title},
+            </if>
+            <if test="coverImage != null">
+                cover_image = #{coverImage},
+            </if>
+            <if test="pushUrl != null">
+                push_url = #{pushUrl},
+            </if>
+            <if test="year != null">
+                year = #{year},
+            </if>
+        </set>
+        WHERE past_activity_id = #{pastActivityId}
+    </update>
+
+    <!-- 根据ID删除往届活动 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM past_activity
+        WHERE past_activity_id = #{pastActivityId}
+    </delete>
+
+</mapper>
