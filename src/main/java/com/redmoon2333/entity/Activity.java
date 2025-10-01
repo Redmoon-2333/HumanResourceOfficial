@@ -1,28 +1,35 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "activity")
 public class Activity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "activity_id")
     private Integer activityId;
     
+    @Column(name = "activity_name")
     private String activityName;
     
+    @Column(name = "background")
     private String background;
     
+    @Column(name = "significance")
     private String significance;
     
+    @Column(name = "purpose")
     private String purpose;
     
+    @Column(name = "process")
     private String process;
     
+    @Column(name = "create_time")
     private LocalDateTime createTime;
     
+    @Column(name = "update_time")
     private LocalDateTime updateTime;
     
     // Constructors
