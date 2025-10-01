@@ -39,6 +39,37 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- 根据活动名称模糊查询 -->
+    <select id="findByTitleLike" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM past_activity
+        WHERE title LIKE CONCAT('%', #{title}, '%')
+        ORDER BY year DESC, create_time DESC
+    </select>
+
+    <!-- 根据年份和活动名称查询 -->
+    <select id="findByYearAndTitleLike" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM past_activity
+        WHERE year = #{year}
+        AND title LIKE CONCAT('%', #{title}, '%')
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 获取所有年份列表 -->
+    <select id="findDistinctYears" resultType="java.lang.Integer">
+        SELECT DISTINCT year
+        FROM past_activity
+        ORDER BY year DESC
+    </select>
+
+    <!-- 根据年份统计活动数量 -->
+    <select id="countByYear" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM past_activity
+        WHERE year = #{year}
+    </select>
+
     <!-- 插入新往届活动 -->
     <insert id="insert" parameterType="com.redmoon2333.entity.PastActivity" useGeneratedKeys="true" keyProperty="pastActivityId">
         INSERT INTO past_activity (
