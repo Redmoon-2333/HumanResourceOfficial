@@ -8,7 +8,7 @@
         <result column="code" property="code" jdbcType="VARCHAR"/>
         <result column="creator_id" property="creatorId" jdbcType="INTEGER"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
-        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
         <result column="user_id" property="userId" jdbcType="INTEGER"/>
         <result column="use_time" property="useTime" jdbcType="TIMESTAMP"/>
         <result column="expire_time" property="expireTime" jdbcType="TIMESTAMP"/>

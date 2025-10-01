@@ -76,6 +76,8 @@ public class AuthController {
             Map<String, Object> data = new HashMap<>();
             data.put("userId", user.getUserId());
             data.put("username", user.getUsername());
+            data.put("roleHistory", user.getRoleHistory());
+            data.put("name", user.getName());
             data.put("message", "注册成功，请登录");
             
             return ApiResponse.success("注册成功", data);

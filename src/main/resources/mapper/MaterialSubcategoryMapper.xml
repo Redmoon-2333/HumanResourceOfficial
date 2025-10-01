@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.redmoon2333.mapper.MaterialSubcategoryMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.redmoon2333.entity.MaterialSubcategory">
+        <id column="subcategory_id" property="subcategoryId" jdbcType="INTEGER"/>
+        <result column="category_id" property="categoryId" jdbcType="INTEGER"/>
+        <result column="subcategory_name" property="subcategoryName" jdbcType="VARCHAR"/>
+        <result column="sort_order" property="sortOrder" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- SQL片段 -->
+    <sql id="Base_Column_List">
+        subcategory_id, category_id, subcategory_name, sort_order, create_time
+    </sql>
+
+    <!-- 根据ID查找子分类 -->
+    <select id="findById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM material_subcategory
+        WHERE subcategory_id = #{subcategoryId}
+    </select>
+
+    <!-- 根据分类ID查找所有子分类 -->
+    <select id="findByCategoryId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM material_subcategory
+        WHERE category_id = #{categoryId}
+        ORDER BY sort_order ASC, create_time ASC
+    </select>
+
+    <!-- 查找所有子分类 -->
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM material_subcategory
+        ORDER BY category_id ASC, sort_order ASC, create_time ASC
+    </select>
+
+    <!-- 根据子分类名称和分类ID查找 -->
+    <select id="findByNameAndCategoryId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM material_subcategory
+        WHERE subcategory_name = #{subcategoryName}
+        AND category_id = #{categoryId}
+    </select>
+
+    <!-- 插入新子分类 -->
+    <insert id="insert" parameterType="com.redmoon2333.entity.MaterialSubcategory" useGeneratedKeys="true" keyProperty="subcategoryId">
+        INSERT INTO material_subcategory (
+            category_id,
+            subcategory_name,
+            sort_order,
+            create_time
+        ) VALUES (
+            #{categoryId},
+            #{subcategoryName},
+            #{sortOrder},
+            #{createTime}
+        )
+    </insert>
+
+    <!-- 更新子分类信息 -->
+    <update id="update" parameterType="com.redmoon2333.entity.MaterialSubcategory">
+        UPDATE material_subcategory
+        <set>
+            <if test="categoryId != null">
+                category_id = #{categoryId},
+            </if>
+            <if test="subcategoryName != null">
+                subcategory_name = #{subcategoryName},
+            </if>
+            <if test="sortOrder != null">
+                sort_order = #{sortOrder},
+            </if>
+        </set>
+        WHERE subcategory_id = #{subcategoryId}
+    </update>
+
+    <!-- 根据ID删除子分类 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM material_subcategory
+        WHERE subcategory_id = #{subcategoryId}
+    </delete>
+
+    <!-- 根据分类ID删除所有子分类 -->
+    <delete id="deleteByCategoryId" parameterType="java.lang.Integer">
+        DELETE FROM material_subcategory
+        WHERE category_id = #{categoryId}
+    </delete>
+
+</mapper>

@@ -1,6 +1,7 @@
 package com.redmoon2333.mapper;
 
 import com.redmoon2333.entity.ActivationCode;
+import com.redmoon2333.enums.ActivationStatus;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -28,7 +29,7 @@ public interface ActivationCodeMapper {
      * @return 激活码实体
      */
     ActivationCode findValidCode(@Param("code") String code, 
-                                @Param("status") String status, 
+                                @Param("status") ActivationStatus status, 
                                 @Param("now") LocalDateTime now);
     
     /**

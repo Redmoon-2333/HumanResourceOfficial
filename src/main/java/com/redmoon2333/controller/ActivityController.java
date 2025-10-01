@@ -1,9 +1,11 @@
 package com.redmoon2333.controller;
 
 import com.redmoon2333.annotation.RequireMinisterRole;
+import com.redmoon2333.dto.ActivityImageDTO;
 import com.redmoon2333.dto.ActivityRequest;
 import com.redmoon2333.dto.ActivityResponse;
 import com.redmoon2333.entity.Activity;
+import com.redmoon2333.entity.ActivityImage;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.service.ActivityService;
@@ -176,6 +178,142 @@ public class ActivityController {
         } catch (Exception e) {
             logger.error("用户 {} 删除活动时发生异常: ID={}, 错误: {}", currentUser, activityId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ACTIVITY_DELETE_FAILED);
+        }
+    }
+    
+    /**
+     * 为活动添加图片
+     * 只有部长或副部长才能添加图片
+     */
+    @PostMapping("/{activityId}/images")
+    @RequireMinisterRole("为活动添加图片")
+    public ResponseEntity<ApiResponse<ActivityImageDTO>> addImageToActivity(
+            @PathVariable Integer activityId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "sortOrder", defaultValue = "0") Integer sortOrder) {
+        
+        String currentUser = permissionUtil.getCurrentUsername();
+        logger.info("用户 {} 尝试为活动添加图片: 活动ID={}", currentUser, activityId);
+        
+        try {
+            // 保存文件并获取URL
+            String imageUrl = activityService.saveImage(file);
+            
+            // 创建ActivityImage对象
+            ActivityImage activityImage = new ActivityImage();
+            activityImage.setActivityId(activityId);
+            activityImage.setImageUrl(imageUrl);
+            activityImage.setDescription(description);
+            activityImage.setSortOrder(sortOrder);
+            
+            // 添加图片到活动
+            ActivityImage savedImage = activityService.addImageToActivity(activityId, activityImage);
+            
+            // 转换为DTO
+            ActivityImageDTO response = new ActivityImageDTO();
+            BeanUtils.copyProperties(savedImage, response);
+            
+            logger.info("用户 {} 成功为活动添加图片: 活动ID={}, 图片ID={}", currentUser, activityId, savedImage.getImageId());
+            return ResponseEntity.ok(ApiResponse.success("图片添加成功", response));
+        } catch (IOException e) {
+            logger.error("用户 {} 为活动添加图片时文件保存失败: 活动ID={}, 错误: {}", currentUser, activityId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
+        } catch (BusinessException e) {
+            logger.error("用户 {} 为活动添加图片失败: 活动ID={}, 错误: {}", currentUser, activityId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("用户 {} 为活动添加图片时发生异常: 活动ID={}, 错误: {}", currentUser, activityId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "添加图片失败");
+        }
+    }
+    
+    /**
+     * 获取活动的所有图片
+     * 公开接口，无需鉴权
+     */
+    @GetMapping("/{activityId}/images")
+    public ResponseEntity<ApiResponse<List<ActivityImageDTO>>> getImagesByActivityId(@PathVariable Integer activityId) {
+        logger.debug("公开查询活动的图片列表: 活动ID={}", activityId);
+        
+        try {
+            List<ActivityImage> images = activityService.getImagesByActivityId(activityId);
+            
+            // 转换为DTO列表
+            List<ActivityImageDTO> responseList = images.stream().map(image -> {
+                ActivityImageDTO dto = new ActivityImageDTO();
+                BeanUtils.copyProperties(image, dto);
+                return dto;
+            }).collect(Collectors.toList());
+            
+            logger.debug("成功查询活动的图片列表: 活动ID={}, 图片数量={}", activityId, responseList.size());
+            return ResponseEntity.ok(ApiResponse.success("查询成功", responseList));
+        } catch (BusinessException e) {
+            logger.warn("查询活动图片列表失败: 活动ID={}, 错误: {}", activityId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("查询活动图片列表时发生异常: 活动ID={}, 错误: {}", activityId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "查询图片列表失败");
+        }
+    }
+    
+    /**
+     * 更新活动图片信息
+     * 只有部长或副部长才能更新图片
+     */
+    @PutMapping("/images/{imageId}")
+    @RequireMinisterRole("更新活动图片")
+    public ResponseEntity<ApiResponse<ActivityImageDTO>> updateActivityImage(
+            @PathVariable Integer imageId,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "sortOrder", required = false) Integer sortOrder) {
+        
+        String currentUser = permissionUtil.getCurrentUsername();
+        logger.info("用户 {} 尝试更新活动图片: 图片ID={}", currentUser, imageId);
+        
+        try {
+            ActivityImage activityImage = new ActivityImage();
+            activityImage.setDescription(description);
+            activityImage.setSortOrder(sortOrder);
+            
+            ActivityImage updatedImage = activityService.updateActivityImage(imageId, activityImage);
+            
+            // 转换为DTO
+            ActivityImageDTO response = new ActivityImageDTO();
+            BeanUtils.copyProperties(updatedImage, response);
+            
+            logger.info("用户 {} 成功更新活动图片: 图片ID={}", currentUser, imageId);
+            return ResponseEntity.ok(ApiResponse.success("图片更新成功", response));
+        } catch (BusinessException e) {
+            logger.error("用户 {} 更新活动图片失败: 图片ID={}, 错误: {}", currentUser, imageId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("用户 {} 更新活动图片时发生异常: 图片ID={}, 错误: {}", currentUser, imageId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "更新图片失败");
+        }
+    }
+    
+    /**
+     * 删除活动图片
+     * 只有部长或副部长才能删除图片
+     */
+    @DeleteMapping("/images/{imageId}")
+    @RequireMinisterRole("删除活动图片")
+    public ResponseEntity<ApiResponse<Void>> deleteActivityImage(@PathVariable Integer imageId) {
+        String currentUser = permissionUtil.getCurrentUsername();
+        logger.info("用户 {} 尝试删除活动图片: 图片ID={}", currentUser, imageId);
+        
+        try {
+            activityService.deleteActivityImage(imageId);
+            
+            logger.info("用户 {} 成功删除活动图片: 图片ID={}", currentUser, imageId);
+            return ResponseEntity.ok(ApiResponse.success("图片删除成功"));
+        } catch (BusinessException e) {
+            logger.error("用户 {} 删除活动图片失败: 图片ID={}, 错误: {}", currentUser, imageId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("用户 {} 删除活动图片时发生异常: 图片ID={}, 错误: {}", currentUser, imageId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除图片失败");
         }
     }
 }

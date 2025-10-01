@@ -1,28 +1,37 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
+import com.redmoon2333.enums.ActivationStatus;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "activation_code")
 public class ActivationCode {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "code_id")
     private Integer codeId;
     
+    @Column(name = "code")
     private String code;
     
+    @Column(name = "creator_id")
     private Integer creatorId;
     
+    @Column(name = "create_time")
     private LocalDateTime createTime;
     
-    private String status = "未使用";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ActivationStatus status = ActivationStatus.未使用;
     
+    @Column(name = "user_id")
     private Integer userId;
     
+    @Column(name = "use_time")
     private LocalDateTime useTime;
     
+    @Column(name = "expire_time")
     private LocalDateTime expireTime;
     
     // 无参构造函数
@@ -71,11 +80,11 @@ public class ActivationCode {
         this.createTime = createTime;
     }
     
-    public String getStatus() {
+    public ActivationStatus getStatus() {
         return status;
     }
     
-    public void setStatus(String status) {
+    public void setStatus(ActivationStatus status) {
         this.status = status;
     }
     

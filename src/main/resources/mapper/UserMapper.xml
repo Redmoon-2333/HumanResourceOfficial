@@ -7,12 +7,13 @@
         <id column="user_id" property="userId" jdbcType="INTEGER"/>
         <result column="username" property="username" jdbcType="VARCHAR"/>
         <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="role_history" property="roleHistory" jdbcType="LONGVARCHAR"/>
     </resultMap>
 
     <!-- SQL片段 -->
     <sql id="Base_Column_List">
-        user_id, username, password, role_history
+        user_id, username, password, name, role_history
     </sql>
 
     <!-- 根据用户ID查找用户 -->
@@ -31,6 +32,22 @@
         WHERE username = #{username}
     </select>
 
+    <!-- 根据姓名查找用户 -->
+    <select id="findByName" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user
+        WHERE name = #{name}
+    </select>
+
+    <!-- 根据姓名模糊查找用户 -->
+    <select id="findByNameLike" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user
+        WHERE name LIKE CONCAT('%', #{name}, '%')
+    </select>
+
     <!-- 检查用户名是否存在 -->
     <select id="countByUsername" parameterType="java.lang.String" resultType="java.lang.Integer">
         SELECT COUNT(*)
@@ -38,15 +55,24 @@
         WHERE username = #{username}
     </select>
 
+    <!-- 获取所有用户 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM user
+    </select>
+
     <!-- 插入新用户 -->
     <insert id="insert" parameterType="com.redmoon2333.entity.User" useGeneratedKeys="true" keyProperty="userId">
         INSERT INTO user (
             username,
             password,
+            name,
             role_history
         ) VALUES (
             #{username},
             #{password},
+            #{name},
             #{roleHistory}
         )
     </insert>
@@ -60,6 +86,9 @@
             </if>
             <if test="password != null">
                 password = #{password},
+            </if>
+            <if test="name != null">
+                name = #{name},
             </if>
             <if test="roleHistory != null">
                 role_history = #{roleHistory},

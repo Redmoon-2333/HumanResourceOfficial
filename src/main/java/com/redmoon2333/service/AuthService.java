@@ -4,6 +4,7 @@ import com.redmoon2333.dto.LoginRequest;
 import com.redmoon2333.dto.RegisterRequest;
 import com.redmoon2333.entity.ActivationCode;
 import com.redmoon2333.entity.User;
+import com.redmoon2333.enums.ActivationStatus;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivationCodeMapper;
@@ -88,7 +89,7 @@ public class AuthService {
         // 验证激活码
         ActivationCode activationCode = activationCodeMapper.findValidCode(
                 registerRequest.getActivationCode(),
-                "未使用",
+                ActivationStatus.未使用,
                 LocalDateTime.now()
         );
         
@@ -100,7 +101,11 @@ public class AuthService {
         User newUser = new User();
         newUser.setUsername(registerRequest.getUsername());
         newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        newUser.setName(registerRequest.getName()); // 确保设置了姓名
         newUser.setRoleHistory(registerRequest.getRoleHistory());
+        
+        // 打印调试信息
+        System.out.println("Registering user with name: " + registerRequest.getName());
         
         int insertResult = userMapper.insert(newUser);
         if (insertResult <= 0) {
@@ -108,7 +113,7 @@ public class AuthService {
         }
         
         // 更新激活码状态
-        activationCode.setStatus("已使用");
+        activationCode.setStatus(ActivationStatus.已使用);
         activationCode.setUserId(newUser.getUserId());
         activationCode.setUseTime(LocalDateTime.now());
         activationCodeMapper.update(activationCode);
@@ -166,7 +171,7 @@ public class AuthService {
         activationCode.setCreatorId(user.getUserId());
         activationCode.setExpireTime(LocalDateTime.now().plusDays(expireDays));
         activationCode.setCreateTime(LocalDateTime.now());
-        activationCode.setStatus("未使用");
+        activationCode.setStatus(ActivationStatus.未使用);
         
         // 保存到数据库
         int result = activationCodeMapper.insert(activationCode);

@@ -14,6 +14,9 @@ public class RegisterRequest {
     @Size(min = 6, message = "密码长度不能少于6位")
     private String password;
     
+    @Size(max = 50, message = "姓名长度不能超过50个字符")
+    private String name;
+    
     @NotBlank(message = "确认密码不能为空")
     private String confirmPassword;
     
@@ -35,6 +38,15 @@ public class RegisterRequest {
         this.activationCode = activationCode;
     }
     
+    // 带姓名的构造函数
+    public RegisterRequest(String username, String password, String name, String confirmPassword, String activationCode) {
+        this.username = username;
+        this.password = password;
+        this.name = name;
+        this.confirmPassword = confirmPassword;
+        this.activationCode = activationCode;
+    }
+    
     // Getters and Setters
     public String getUsername() {
         return username;
@@ -50,6 +62,14 @@ public class RegisterRequest {
     
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
     }
     
     public String getConfirmPassword() {

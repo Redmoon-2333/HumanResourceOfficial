@@ -1,8 +1,10 @@
 package com.redmoon2333.service;
 
 import com.redmoon2333.entity.Activity;
+import com.redmoon2333.entity.ActivityImage;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
+import com.redmoon2333.mapper.ActivityImageMapper;
 import com.redmoon2333.mapper.ActivityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ActivityService {
@@ -23,6 +26,9 @@ public class ActivityService {
     
     @Autowired
     private ActivityMapper activityMapper;
+    
+    @Autowired
+    private ActivityImageMapper activityImageMapper;
     
     public Activity createActivity(Activity activity) {
         logger.info("开始创建活动: {}", activity.getActivityName());
@@ -120,6 +126,9 @@ public class ActivityService {
                 throw new BusinessException(ErrorCode.ACTIVITY_NOT_FOUND);
             }
             
+            // 删除活动相关的图片
+            activityImageMapper.deleteByActivityId(activityId);
+            
             int result = activityMapper.deleteById(activityId);
             if (result <= 0) {
                 logger.error("活动删除失败，数据库删除返回结果: {}", result);
@@ -138,35 +147,126 @@ public class ActivityService {
     public String saveImage(MultipartFile file) throws IOException {
         // 生成唯一文件名
         String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename != null ? 
-            originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
+        String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
         String uniqueFilename = UUID.randomUUID().toString() + extension;
         
-        // 保存到本地（预留阿里云OSS接口位置）
-        String uploadDir = "uploads/activities/";
-        File uploadDirFile = new File(uploadDir);
-        if (!uploadDirFile.exists()) {
-            uploadDirFile.mkdirs();
+        // 获取项目根路径并创建 uploads 目录
+        String projectRoot = System.getProperty("user.dir");
+        File uploadDir = new File(projectRoot, "uploads");
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
         }
         
-        String filePath = uploadDir + uniqueFilename;
-        File dest = new File(filePath);
-        file.transferTo(dest);
+        File destFile = new File(uploadDir, uniqueFilename);
+        file.transferTo(destFile);
         
-        // TODO: 预留阿里云OSS接口位置
-        // 可以在这里添加上传到阿里云OSS的代码
-        
-        return filePath;
+        // 返回相对路径
+        return "/uploads/" + uniqueFilename;
     }
     
-    public void deleteImage(String imageUrl) {
-        // 删除本地文件（预留阿里云OSS接口位置）
-        File imageFile = new File(imageUrl);
-        if (imageFile.exists()) {
-            imageFile.delete();
-        }
+    public ActivityImage addImageToActivity(Integer activityId, ActivityImage activityImage) {
+        logger.info("为活动添加图片: 活动ID={}, 图片描述={}", activityId, activityImage.getDescription());
         
-        // TODO: 预留阿里云OSS接口位置
-        // 可以在这里添加从阿里云OSS删除文件的代码
+        try {
+            // 检查活动是否存在
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                logger.warn("尝试为不存在的活动添加图片: 活动ID={}", activityId);
+                throw new BusinessException(ErrorCode.ACTIVITY_NOT_FOUND);
+            }
+            
+            activityImage.setActivityId(activityId);
+            activityImage.setUploadTime(LocalDateTime.now());
+            
+            int result = activityImageMapper.insert(activityImage);
+            if (result <= 0) {
+                logger.error("添加活动图片失败，数据库插入返回结果: {}", result);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "添加活动图片失败");
+            }
+            
+            logger.info("成功为活动添加图片: 活动ID={}, 图片ID={}", activityId, activityImage.getImageId());
+            return activityImage;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("为活动添加图片时发生异常: 活动ID={}, 错误: {}", activityId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "添加活动图片失败", e);
+        }
+    }
+    
+    public List<ActivityImage> getImagesByActivityId(Integer activityId) {
+        logger.debug("获取活动的图片列表: 活动ID={}", activityId);
+        
+        try {
+            // 检查活动是否存在
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                logger.warn("尝试获取不存在的活动的图片: 活动ID={}", activityId);
+                throw new BusinessException(ErrorCode.ACTIVITY_NOT_FOUND);
+            }
+            
+            List<ActivityImage> images = activityImageMapper.findByActivityId(activityId);
+            logger.debug("成功获取活动的图片列表: 活动ID={}, 图片数量={}", activityId, images.size());
+            return images;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("获取活动图片列表时发生异常: 活动ID={}, 错误: {}", activityId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取活动图片列表失败", e);
+        }
+    }
+    
+    public ActivityImage updateActivityImage(Integer imageId, ActivityImage activityImage) {
+        logger.info("更新活动图片: 图片ID={}", imageId);
+        
+        try {
+            // 检查图片是否存在
+            ActivityImage existingImage = activityImageMapper.findById(imageId);
+            if (existingImage == null) {
+                logger.warn("尝试更新不存在的活动图片: 图片ID={}", imageId);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "活动图片不存在");
+            }
+            
+            activityImage.setImageId(imageId);
+            int result = activityImageMapper.update(activityImage);
+            if (result <= 0) {
+                logger.error("更新活动图片失败，数据库更新返回结果: {}", result);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "更新活动图片失败");
+            }
+            
+            logger.info("成功更新活动图片: 图片ID={}", imageId);
+            return activityImage;
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("更新活动图片时发生异常: 图片ID={}, 错误: {}", imageId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "更新活动图片失败", e);
+        }
+    }
+    
+    public void deleteActivityImage(Integer imageId) {
+        logger.info("删除活动图片: 图片ID={}", imageId);
+        
+        try {
+            // 检查图片是否存在
+            ActivityImage existingImage = activityImageMapper.findById(imageId);
+            if (existingImage == null) {
+                logger.warn("尝试删除不存在的活动图片: 图片ID={}", imageId);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "活动图片不存在");
+            }
+            
+            int result = activityImageMapper.deleteById(imageId);
+            if (result <= 0) {
+                logger.error("删除活动图片失败，数据库删除返回结果: {}", result);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除活动图片失败");
+            }
+            
+            logger.info("成功删除活动图片: 图片ID={}", imageId);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("删除活动图片时发生异常: 图片ID={}, 错误: {}", imageId, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除活动图片失败", e);
+        }
     }
 }
