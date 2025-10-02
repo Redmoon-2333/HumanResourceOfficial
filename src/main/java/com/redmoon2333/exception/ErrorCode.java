@@ -30,6 +30,18 @@ public enum ErrorCode {
     NOT_FOUND(7001, "资源不存在"),
     OPERATION_ERROR(7002, "操作失败"),
     
+    // 内部资料相关错误 8000-8999
+    FILE_UPLOAD_ERROR(8001, "文件上传失败"),
+    MATERIAL_NOT_FOUND(8002, "资料不存在"),
+    MATERIAL_UPLOAD_FAILED(8003, "资料上传失败"),
+    MATERIAL_QUERY_FAILED(8004, "资料查询失败"),
+    MATERIAL_UPDATE_FAILED(8005, "资料更新失败"),
+    MATERIAL_DELETE_FAILED(8006, "资料删除失败"),
+    CATEGORY_CREATE_FAILED(8007, "分类创建失败"),
+    CATEGORY_QUERY_FAILED(8008, "分类查询失败"),
+    SUBCATEGORY_CREATE_FAILED(8009, "子分类创建失败"),
+    SUBCATEGORY_QUERY_FAILED(8010, "子分类查询失败"),
+    
     // 请求参数相关错误 4000-4999
     INVALID_REQUEST_PARAMETER(4001, "请求参数不正确"),
     VALIDATION_FAILED(4002, "数据验证失败"),

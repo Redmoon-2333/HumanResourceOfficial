@@ -2,7 +2,6 @@ package com.redmoon2333.util;
 
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
-import com.redmoon2333.exception.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +45,38 @@ public class PermissionUtil {
     }
     
     /**
+     * 检查用户是否为部员及以上权限（部员、副部长、部长）
+     * @throws BusinessException 如果权限不足
+     */
+    public void checkMemberPermission() {
+        HttpServletRequest request = getCurrentRequest();
+        String roleHistory = (String) request.getAttribute("roleHistory");
+        String username = (String) request.getAttribute("username");
+        
+        logger.debug("检查用户 {} 的部员权限，身份历史: {}", username, roleHistory);
+        
+        if (roleHistory == null || roleHistory.trim().isEmpty()) {
+            logger.warn("用户 {} 没有身份信息，拒绝访问", username);
+            throw new BusinessException(ErrorCode.INSUFFICIENT_PERMISSIONS);
+        }
+        
+        // 检查是否包含部员及以上身份
+        boolean hasMemberRole = hasMemberRole(roleHistory);
+        
+        if (!hasMemberRole) {
+            logger.warn("用户 {} 权限不足，当前身份: {}，尝试执行需要部员权限的操作", username, roleHistory);
+            throw new BusinessException(ErrorCode.INSUFFICIENT_PERMISSIONS);
+        }
+        
+        logger.info("用户 {} 权限验证通过，身份: {}", username, roleHistory);
+    }
+    
+    /**
      * 检查身份历史中是否包含部长或副部长身份
      * @param roleHistory 身份历史
      * @return 是否具有部长权限
      */
-    private boolean hasMinisterRole(String roleHistory) {
+    public boolean hasMinisterRole(String roleHistory) {
         if (roleHistory == null || roleHistory.trim().isEmpty()) {
             return false;
         }
@@ -59,6 +85,26 @@ public class PermissionUtil {
         for (String role : roles) {
             role = role.trim();
             if (role.contains("部长") || role.contains("副部长")) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * 检查身份历史中是否包含部员及以上身份
+     * @param roleHistory 身份历史
+     * @return 是否具有部员权限
+     */
+    private boolean hasMemberRole(String roleHistory) {
+        if (roleHistory == null || roleHistory.trim().isEmpty()) {
+            return false;
+        }
+        
+        String[] roles = roleHistory.split("&");
+        for (String role : roles) {
+            role = role.trim();
+            if (role.contains("部员") || role.contains("副部长") || role.contains("部长")) {
                 return true;
             }
         }
@@ -87,7 +133,7 @@ public class PermissionUtil {
         Integer userId = (Integer) request.getAttribute("userId");
         if (userId == null) {
             logger.error("无法获取当前用户ID，可能未携带有效的JWT令牌");
-            throw new JwtException(ErrorCode.TOKEN_MISSING);
+            throw new BusinessException(ErrorCode.TOKEN_MISSING);
         }
         return userId;
     }
@@ -101,7 +147,7 @@ public class PermissionUtil {
         String username = (String) request.getAttribute("username");
         if (username == null) {
             logger.error("无法获取当前用户名，可能未携带有效的JWT令牌");
-            throw new JwtException(ErrorCode.TOKEN_MISSING);
+            throw new BusinessException(ErrorCode.TOKEN_MISSING);
         }
         return username;
     }
