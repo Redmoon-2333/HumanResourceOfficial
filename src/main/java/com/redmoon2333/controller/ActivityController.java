@@ -138,7 +138,7 @@ public class ActivityController {
             existingActivity.setActivityId(activityId);
             existingActivity.setUpdateTime(LocalDateTime.now());
             
-            Activity updatedActivity = activityService.updateActivity(existingActivity);
+            Activity updatedActivity = activityService.updateActivity(activityId, existingActivity);
             
             ActivityResponse response = new ActivityResponse();
             BeanUtils.copyProperties(updatedActivity, response);

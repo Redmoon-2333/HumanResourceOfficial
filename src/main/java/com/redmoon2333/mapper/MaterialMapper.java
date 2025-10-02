@@ -40,6 +40,11 @@ public interface MaterialMapper {
     List<Material> findByNameLike(@Param("materialName") String materialName);
     
     /**
+     * 根据资料名称模糊查询（包含）
+     */
+    List<Material> findByNameContaining(@Param("materialName") String materialName);
+    
+    /**
      * 插入新资料
      */
     int insert(Material material);

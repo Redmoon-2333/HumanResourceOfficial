@@ -23,8 +23,18 @@ public enum ErrorCode {
     ACTIVITY_NOT_FOUND(6001, "活动不存在"),
     ACTIVITY_ALREADY_EXISTS(6002, "活动已存在"),
     ACTIVITY_CREATION_FAILED(6003, "活动创建失败"),
+    ACTIVITY_CREATE_FAILED(6003, "活动创建失败"), // 别名
     ACTIVITY_UPDATE_FAILED(6004, "活动更新失败"),
     ACTIVITY_DELETE_FAILED(6005, "活动删除失败"),
+    ACTIVITY_LIST_FAILED(6006, "活动列表获取失败"),
+    ACTIVITY_DETAIL_FAILED(6007, "活动详情获取失败"),
+    
+    // 活动图片相关错误 6100-6199
+    ACTIVITY_IMAGE_SAVE_FAILED(6101, "活动图片保存失败"),
+    ACTIVITY_IMAGE_DELETE_FAILED(6102, "活动图片删除失败"),
+    ACTIVITY_IMAGE_LIST_FAILED(6103, "活动图片列表获取失败"),
+    ACTIVITY_IMAGE_NOT_FOUND(6104, "活动图片不存在"),
+    ACTIVITY_IMAGE_UPDATE_FAILED(6105, "活动图片更新失败"),
     
     // 往届活动相关错误 7000-7999
     NOT_FOUND(7001, "资源不存在"),
