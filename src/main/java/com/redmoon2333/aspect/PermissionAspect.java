@@ -1,5 +1,6 @@
 package com.redmoon2333.aspect;
 
+import com.redmoon2333.annotation.RequireMemberRole;
 import com.redmoon2333.annotation.RequireMinisterRole;
 import com.redmoon2333.util.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
@@ -23,7 +24,7 @@ public class PermissionAspect {
     private PermissionUtil permissionUtil;
     
     /**
-     * 权限验证切点
+     * 部长权限验证切点
      */
     @Before("@annotation(requireMinisterRole)")
     public void checkMinisterPermission(JoinPoint joinPoint, RequireMinisterRole requireMinisterRole) {
@@ -34,6 +35,22 @@ public class PermissionAspect {
         
         // 执行权限检查
         permissionUtil.checkMinisterPermission();
+        
+        logger.info("权限验证通过 - {}#{}", className, methodName);
+    }
+    
+    /**
+     * 部员权限验证切点
+     */
+    @Before("@annotation(requireMemberRole)")
+    public void checkMemberPermission(JoinPoint joinPoint, RequireMemberRole requireMemberRole) {
+        String methodName = joinPoint.getSignature().getName();
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        
+        logger.info("权限验证开始 - {}#{}, 要求: {}", className, methodName, requireMemberRole.value());
+        
+        // 执行权限检查
+        permissionUtil.checkMemberPermission();
         
         logger.info("权限验证通过 - {}#{}", className, methodName);
     }
