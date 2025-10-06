@@ -7,6 +7,7 @@ import com.redmoon2333.entity.ActivationCode;
 import com.redmoon2333.entity.User;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.service.AuthService;
+import com.redmoon2333.util.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
@@ -26,6 +27,9 @@ public class AuthController {
     
     @Autowired
     private AuthService authService;
+    
+    @Autowired
+    private JwtUtil jwtUtil;
     
     /**
      * 用户登录接口
@@ -143,6 +147,85 @@ public class AuthController {
             data.put("message", "激活码生成成功");
             
             return ApiResponse.success("激活码生成成功", data);
+            
+        } catch (BusinessException e) {
+            return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
+        } catch (Exception e) {
+            return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+    
+    /**
+     * 用户退出登录接口
+     * 将JWT令牌加入黑名单，实现安全退出
+     * @param authHeader Authorization头，包含JWT令牌
+     * @return 退出结果
+     */
+    @PostMapping("/logout")
+    public ApiResponse<Map<String, Object>> logout(@RequestHeader("Authorization") String authHeader) {
+        try {
+            if (!authHeader.startsWith("Bearer ")) {
+                return ApiResponse.error("请提供有效的Authorization头", 401);
+            }
+            
+            String token = authHeader.substring(7);
+            
+            // 验证令牌有效性
+            if (!jwtUtil.validateToken(token)) {
+                return ApiResponse.error("无效的令牌", 401);
+            }
+            
+            // 将令牌加入黑名单
+            jwtUtil.logout(token);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("message", "退出登录成功");
+            
+            return ApiResponse.success("退出登录成功", data);
+            
+        } catch (BusinessException e) {
+            return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
+        } catch (Exception e) {
+            return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+    
+    /**
+     * 管理员强制用户下线接口
+     * 只有具有"部长"角色的用户才能强制其他用户下线
+     * @param authHeader Authorization头，包含JWT令牌
+     * @param targetUserId 目标用户ID
+     * @return 操作结果
+     */
+    @PostMapping("/revoke-user/{targetUserId}")
+    public ApiResponse<Map<String, Object>> revokeUserTokens(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Integer targetUserId) {
+        try {
+            if (!authHeader.startsWith("Bearer ")) {
+                return ApiResponse.error("请提供有效的Authorization头", 401);
+            }
+            
+            String token = authHeader.substring(7);
+            
+            // 验证令牌有效性
+            if (!jwtUtil.validateToken(token)) {
+                return ApiResponse.error("无效的令牌", 401);
+            }
+            
+            // 检查是否具有部长权限
+            if (!jwtUtil.hasRole(token, "部长")) {
+                return ApiResponse.error("权限不足，只有部长才能撤销用户令牌", 403);
+            }
+            
+            // 强制目标用户下线
+            jwtUtil.revokeUserTokens(targetUserId);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("targetUserId", targetUserId);
+            data.put("message", "用户令牌已被撤销，用户已强制下线");
+            
+            return ApiResponse.success("操作成功", data);
             
         } catch (BusinessException e) {
             return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());

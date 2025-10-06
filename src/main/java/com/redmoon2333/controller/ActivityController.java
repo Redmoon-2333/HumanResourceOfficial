@@ -51,6 +51,9 @@ public class ActivityController {
         try {
             Activity activity = new Activity();
             BeanUtils.copyProperties(activityRequest, activity);
+            // 确保设置创建时间和更新时间
+            activity.setCreateTime(LocalDateTime.now());
+            activity.setUpdateTime(LocalDateTime.now());
             
             Activity savedActivity = activityService.createActivity(activity);
             
