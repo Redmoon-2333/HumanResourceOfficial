@@ -1,49 +1,91 @@
-
 # API参考文档
 
 <cite>
-**本文档中引用的文件**  
+**本文档中引用的文件**   
 - [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java)
-- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java)
 - [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java)
+- [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java)
 - [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java)
+- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java)
 - [LoginRequest.java](file://src/main/java/com/redmoon2333/dto/LoginRequest.java)
 - [RegisterRequest.java](file://src/main/java/com/redmoon2333/dto/RegisterRequest.java)
 - [ActivityRequest.java](file://src/main/java/com/redmoon2333/dto/ActivityRequest.java)
+- [ActivityResponse.java](file://src/main/java/com/redmoon2333/dto/ActivityResponse.java)
+- [MaterialRequest.java](file://src/main/java/com/redmoon2333/dto/MaterialRequest.java)
+- [MaterialResponse.java](file://src/main/java/com/redmoon2333/dto/MaterialResponse.java)
+- [PastActivityRequest.java](file://src/main/java/com/redmoon2333/dto/PastActivityRequest.java)
+- [PastActivityResponse.java](file://src/main/java/com/redmoon2333/dto/PastActivityResponse.java)
 - [ApiResponse.java](file://src/main/java/com/redmoon2333/dto/ApiResponse.java)
-- [ErrorCode.java](file://src/main/java/com/redmoon2333/exception/ErrorCode.java)
+- [RequireMemberRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMemberRole.java)
 - [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-- [application.yml](file://src/main/resources/application.yml)
+- [PermissionAspect.java](file://src/main/java/com/redmoon2333/aspect/PermissionAspect.java)
+- [JwtAuthenticationFilter.java](file://src/main/java/com/redmoon2333/config/JwtAuthenticationFilter.java)
 </cite>
 
 ## 目录
 1. [简介](#简介)
-2. [认证API](#认证api)
-3. [用户管理API](#用户管理api)
-4. [活动管理API](#活动管理api)
-5. [往届活动管理API](#往届活动管理api)
-6. [API通用规范](#api通用规范)
-7. [错误码体系](#错误码体系)
+2. [认证机制](#认证机制)
+3. [API端点详情](#api端点详情)
+4. [权限控制](#权限控制)
+5. [使用示例](#使用示例)
+6. [错误处理](#错误处理)
+7. [典型使用场景](#典型使用场景)
 
 ## 简介
-本API参考文档详细说明了人力资源管理系统的所有公开RESTful接口。系统采用JWT进行身份认证，所有受保护的端点都需要在请求头中包含有效的JWT令牌。API主要分为认证、用户管理、活动管理和往届活动管理四大模块。
+本API参考文档详细描述了学生会人力资源管理系统的所有公共接口。系统提供用户认证、活动管理、内部资料管理和往届成员查询等核心功能，所有API均遵循RESTful设计原则，使用JSON格式进行数据交换，并通过JWT实现无状态认证。
 
-**Section sources**
-- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java)
-- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java)
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java)
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java)
+**本文档中引用的文件**   
+- [README.md](file://README.md#L1-L444)
 
-## 认证API
-认证API提供用户登录、注册、获取当前用户信息和生成激活码的功能。所有端点均位于`/api/auth`路径下。
+## 认证机制
+系统采用JWT（JSON Web Token）进行无状态认证。用户登录成功后，服务器返回包含用户信息的JWT令牌，后续请求需在Authorization头中携带该令牌。
 
-### 用户登录
-用户通过用户名和密码进行登录，成功后返回包含JWT令牌的响应。
+### JWT令牌结构
+```json
+{
+  "userId": 1,
+  "username": "admin",
+  "roleHistory": "2024级部长,2023级部员",
+  "exp": 1727890800
+}
+```
 
-**HTTP方法**: `POST`  
-**URL路径**: `/api/auth/login`  
-**请求头**: 无特殊要求  
-**请求体**:
+### 认证流程
+```mermaid
+sequenceDiagram
+participant 用户 as 用户
+participant AuthController as AuthController
+participant AuthService as AuthService
+participant JwtUtil as JwtUtil
+用户->>AuthController : POST /api/auth/login
+AuthController->>AuthService : 验证用户名密码
+AuthService->>AuthService : 查询用户信息
+AuthService->>JwtUtil : 生成JWT令牌
+JwtUtil-->>AuthService : 返回令牌
+AuthService-->>AuthController : 返回登录结果
+AuthController-->>用户 : 返回包含JWT的响应
+用户->>其他API : 在Authorization头中携带JWT
+```
+
+**Diagram sources**
+- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
+- [JwtAuthenticationFilter.java](file://src/main/java/com/redmoon2333/config/JwtAuthenticationFilter.java#L1-L20)
+
+**本文档中引用的文件**   
+- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
+- [JwtAuthenticationFilter.java](file://src/main/java/com/redmoon2333/config/JwtAuthenticationFilter.java#L1-L20)
+
+## API端点详情
+
+### 认证相关API
+
+#### 用户登录
+- **HTTP方法**: POST
+- **URL路径**: `/api/auth/login`
+- **请求头**: Content-Type: application/json
+- **请求体结构**: [LoginRequest](file://src/main/java/com/redmoon2333/dto/LoginRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含JWT令牌和用户信息
+
 ```json
 {
   "username": "string",
@@ -51,693 +93,398 @@
 }
 ```
 
-**响应格式**:
-```json
-{
-  "message": "登录成功",
-  "code": 200,
-  "data": {
-    "token": "string",
-    "userId": "string",
-    "username": "string",
-    "roleHistory": "string"
-  }
-}
-```
+#### 用户注册
+- **HTTP方法**: POST
+- **URL路径**: `/api/auth/register`
+- **请求头**: Content-Type: application/json
+- **请求体结构**: [RegisterRequest](file://src/main/java/com/redmoon2333/dto/RegisterRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含用户信息
 
-**示例请求**:
-```http
-POST /api/auth/login HTTP/1.1
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "password123"
-}
-```
-
-**示例响应**:
-```json
-{
-  "message": "登录成功",
-  "code": 200,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "userId": "1",
-    "username": "admin",
-    "roleHistory": "部长"
-  }
-}
-```
-
-**Section sources**
-- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L30-L58)
-- [LoginRequest.java](file://src/main/java/com/redmoon2333/dto/LoginRequest.java)
-
-### 用户注册
-新用户通过激活码进行注册，需要提供用户名、密码、确认密码、姓名和角色历史。
-
-**HTTP方法**: `POST`  
-**URL路径**: `/api/auth/register`  
-**请求头**: 无特殊要求  
-**请求体**:
 ```json
 {
   "username": "string",
   "password": "string",
   "confirmPassword": "string",
-  "name": "string",
   "activationCode": "string",
-  "roleHistory": "string"
+  "roleHistory": "string",
+  "name": "string"
 }
 ```
 
-**响应格式**:
-```json
-{
-  "message": "注册成功",
-  "code": 200,
-  "data": {
-    "userId": "string",
-    "username": "string",
-    "roleHistory": "string",
-    "name": "string",
-    "message": "注册成功，请登录"
-  }
-}
+#### 获取当前用户信息
+- **HTTP方法**: GET
+- **URL路径**: `/api/auth/current-user`
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含当前用户信息
+
+#### 生成激活码
+- **HTTP方法**: POST
+- **URL路径**: `/api/auth/generate-code`
+- **请求头**: Authorization: Bearer {JWT}
+- **请求参数**: expireDays (可选，默认30天)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含生成的激活码
+
+**本文档中引用的文件**   
+- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
+- [LoginRequest.java](file://src/main/java/com/redmoon2333/dto/LoginRequest.java#L1-L39)
+- [RegisterRequest.java](file://src/main/java/com/redmoon2333/dto/RegisterRequest.java#L1-L98)
+
+### 活动管理API
+
+#### 创建活动
+- **HTTP方法**: POST
+- **URL路径**: `/api/activities`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [ActivityRequest](file://src/main/java/com/redmoon2333/dto/ActivityRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含创建的活动信息
+
+#### 获取活动列表
+- **HTTP方法**: GET
+- **URL路径**: `/api/activities`
+- **权限要求**: 需认证
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含活动列表
+
+#### 获取活动详情
+- **HTTP方法**: GET
+- **URL路径**: `/api/activities/{id}`
+- **权限要求**: 公开
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含活动详情
+
+#### 更新活动
+- **HTTP方法**: PUT
+- **URL路径**: `/api/activities/{id}`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [ActivityRequest](file://src/main/java/com/redmoon2333/dto/ActivityRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含更新后的活动信息
+
+#### 删除活动
+- **HTTP方法**: DELETE
+- **URL路径**: `/api/activities/{id}`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java)
+
+#### 添加活动图片
+- **HTTP方法**: POST
+- **URL路径**: `/api/activities/{id}/images`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Authorization: Bearer {JWT}
+- **请求参数**: file (MultipartFile), description (可选), sortOrder (可选)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含图片信息
+
+**本文档中引用的文件**   
+- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L1-L322)
+- [ActivityRequest.java](file://src/main/java/com/redmoon2333/dto/ActivityRequest.java#L1-L63)
+- [ActivityResponse.java](file://src/main/java/com/redmoon2333/dto/ActivityResponse.java#L1-L20)
+
+### 内部资料管理API
+
+#### 上传资料
+- **HTTP方法**: POST
+- **URL路径**: `/api/materials/upload`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Authorization: Bearer {JWT}
+- **请求参数**: file (MultipartFile), categoryId, subcategoryId, materialName, description (可选)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含资料信息
+
+#### 下载资料
+- **HTTP方法**: GET
+- **URL路径**: `/api/materials/download/{id}`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: 文件流
+
+#### 获取资料详情
+- **HTTP方法**: GET
+- **URL路径**: `/api/materials/{id}`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含资料信息
+
+#### 按分类获取资料
+- **HTTP方法**: GET
+- **URL路径**: `/api/materials/category/{id}`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含资料列表
+
+#### 搜索资料
+- **HTTP方法**: GET
+- **URL路径**: `/api/materials/search`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Authorization: Bearer {JWT}
+- **请求参数**: name
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含匹配的资料列表
+
+#### 创建分类
+- **HTTP方法**: POST
+- **URL路径**: `/api/materials/category`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [CategoryRequest](file://src/main/java/com/redmoon2333/dto/CategoryRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含创建的分类信息
+
+**本文档中引用的文件**   
+- [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
+- [MaterialRequest.java](file://src/main/java/com/redmoon2333/dto/MaterialRequest.java#L1-L20)
+- [MaterialResponse.java](file://src/main/java/com/redmoon2333/dto/MaterialResponse.java#L1-L25)
+
+### 往届活动管理API
+
+#### 分页查询往届活动
+- **HTTP方法**: GET
+- **URL路径**: `/api/past-activities`
+- **权限要求**: 公开
+- **请求参数**: pageNum (默认1), pageSize (默认10), year (可选), title (可选)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含分页结果
+
+#### 创建往届活动
+- **HTTP方法**: POST
+- **URL路径**: `/api/past-activities`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [PastActivityRequest](file://src/main/java/com/redmoon2333/dto/PastActivityRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含创建的往届活动
+
+#### 更新往届活动
+- **HTTP方法**: PUT
+- **URL路径**: `/api/past-activities/{id}`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [PastActivityRequest](file://src/main/java/com/redmoon2333/dto/PastActivityRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含更新后的往届活动
+
+#### 删除往届活动
+- **HTTP方法**: DELETE
+- **URL路径**: `/api/past-activities/{id}`
+- **权限要求**: @RequireMinisterRole
+- **请求头**: Authorization: Bearer {JWT}
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java)
+
+**本文档中引用的文件**   
+- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L1-L134)
+- [PastActivityRequest.java](file://src/main/java/com/redmoon2333/dto/PastActivityRequest.java#L1-L25)
+- [PastActivityResponse.java](file://src/main/java/com/redmoon2333/dto/PastActivityResponse.java#L1-L30)
+
+### 用户管理API
+
+#### 获取往届部员信息
+- **HTTP方法**: GET
+- **URL路径**: `/api/users/alumni`
+- **权限要求**: 公开
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含按年份分组的部员信息
+
+#### 根据姓名查找用户
+- **HTTP方法**: GET
+- **URL路径**: `/api/users/search/name`
+- **权限要求**: 需认证
+- **请求头**: Authorization: Bearer {JWT}
+- **请求参数**: name
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含匹配的用户列表
+
+#### 根据姓名模糊查找用户
+- **HTTP方法**: GET
+- **URL路径**: `/api/users/search/name/like`
+- **权限要求**: 需认证
+- **请求头**: Authorization: Bearer {JWT}
+- **请求参数**: name
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含匹配的用户列表
+
+**本文档中引用的文件**   
+- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java#L1-L140)
+- [AlumniResponse.java](file://src/main/java/com/redmoon2333/dto/AlumniResponse.java#L1-L20)
+- [PublicUserInfo.java](file://src/main/java/com/redmoon2333/dto/PublicUserInfo.java#L1-L15)
+
+## 权限控制
+
+### 权限注解
+系统使用自定义注解实现细粒度的权限控制：
+
+```java
+@RequireMemberRole("操作描述")    // 需要部员及以上权限
+@RequireMinisterRole("操作描述")  // 需要部长权限
 ```
 
-**Section sources**
-- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L60-L94)
-- [RegisterRequest.java](file://src/main/java/com/redmoon2333/dto/RegisterRequest.java)
-
-### 获取当前用户信息
-获取当前已认证用户的基本信息。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/auth/current-user`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**响应格式**:
-```json
-{
-  "message": "操作成功",
-  "code": 200,
-  "data": {
-    "userId": "string",
-    "username": "string",
-    "roleHistory": "string"
-  }
-}
-```
-
-**Section sources**
-- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L96-L119)
-
-### 生成激活码
-只有具有"部长"角色的用户才能生成新的激活码，用于新用户注册。
-
-**HTTP方法**: `POST`  
-**URL路径**: `/api/auth/generate-code`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**请求参数**:
-- `expireDays`: 激活码有效天数，默认30天
-
-**响应格式**:
-```json
-{
-  "message": "激活码生成成功",
-  "code": 200,
-  "data": {
-    "code": "string",
-    "expireTime": "datetime",
-    "message": "激活码生成成功"
-  }
-}
-```
-
-**Section sources**
-- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L121-L139)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-## 用户管理API
-用户管理API提供获取往届部员信息和用户搜索功能。
-
-### 获取往届部员信息
-按年份分组获取所有往届部员、部长和副部长的信息。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/users/alumni`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "查询成功",
-  "code": 200,
-  "data": [
-    {
-      "year": 2023,
-      "members": [
-        {
-          "name": "张三",
-          "roleHistory": "部长"
-        },
-        {
-          "name": "李四",
-          "roleHistory": "副部长"
-        }
-      ]
-    }
-  ]
-}
-```
-
-**Section sources**
-- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java#L70-L85)
-
-### 根据姓名查找用户
-根据完整姓名精确查找用户。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/users/search/name`  
-**请求参数**:
-- `name`: 要查找的用户姓名
-
-**响应格式**:
-```json
-{
-  "message": "查找成功",
-  "code": 200,
-  "data": [
-    {
-      "name": "张三",
-      "roleHistory": "部长"
-    }
-  ]
-}
-```
-
-**Section sources**
-- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java#L87-L102)
-
-### 根据姓名模糊查找用户
-根据姓名关键词进行模糊查找。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/users/search/name/like`  
-**请求参数**:
-- `name`: 姓名关键词
-
-**响应格式**:
-```json
-{
-  "message": "查找成功",
-  "code": 200,
-  "data": [
-    {
-      "name": "张三",
-      "roleHistory": "部长"
-    },
-    {
-      "name": "张小三",
-      "roleHistory": "部员"
-    }
-  ]
-}
-```
-
-**Section sources**
-- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java#L104-L119)
-
-## 活动管理API
-活动管理API提供创建、查询、更新和删除活动及其图片的功能。
-
-### 创建活动
-创建新的活动记录，需要部长或副部长权限。
-
-**HTTP方法**: `POST`  
-**URL路径**: `/api/activities`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**请求体**:
-```json
-{
-  "activityName": "string",
-  "background": "string",
-  "significance": "string",
-  "purpose": "string",
-  "process": "string"
-}
-```
-
-**响应格式**:
-```json
-{
-  "message": "活动创建成功",
-  "code": 200,
-  "data": {
-    "activityId": 1,
-    "activityName": "string",
-    "background": "string",
-    "significance": "string",
-    "purpose": "string",
-    "process": "string",
-    "createTime": "datetime",
-    "updateTime": "datetime"
-  }
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L45-L74)
-- [ActivityRequest.java](file://src/main/java/com/redmoon2333/dto/ActivityRequest.java)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 获取活动详情
-根据ID获取单个活动的详细信息。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/activities/{activityId}`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "查询成功",
-  "code": 200,
-  "data": {
-    "activityId": 1,
-    "activityName": "string",
-    "background": "string",
-    "significance": "string",
-    "purpose": "string",
-    "process": "string",
-    "createTime": "datetime",
-    "updateTime": "datetime"
-  }
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L76-L98)
-
-### 获取所有活动列表
-获取所有活动的列表。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/activities`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "查询成功",
-  "code": 200,
-  "data": [
-    {
-      "activityId": 1,
-      "activityName": "string",
-      "background": "string",
-      "significance": "string",
-      "purpose": "string",
-      "process": "string",
-      "createTime": "datetime",
-      "updateTime": "datetime"
-    }
-  ]
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L100-L124)
-
-### 更新活动
-更新现有活动的信息，需要部长或副部长权限。
-
-**HTTP方法**: `PUT`  
-**URL路径**: `/api/activities/{activityId}`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**请求体**: 同创建活动的请求体
-
-**响应格式**: 同创建活动的响应格式
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L126-L158)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 删除活动
-删除指定的活动，需要部长或副部长权限。
-
-**HTTP方法**: `DELETE`  
-**URL路径**: `/api/activities/{activityId}`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**响应格式**:
-```json
-{
-  "message": "活动删除成功",
-  "code": 200,
-  "data": null
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L160-L182)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 为活动添加图片
-为指定活动添加图片，需要部长或副部长权限。
-
-**HTTP方法**: `POST`  
-**URL路径**: `/api/activities/{activityId}/images`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-- `Content-Type: multipart/form-data`  
-
-**请求参数**:
-- `file`: 要上传的图片文件
-- `description`: 图片描述（可选）
-- `sortOrder`: 排序序号，默认0
-
-**响应格式**:
-```json
-{
-  "message": "图片添加成功",
-  "code": 200,
-  "data": {
-    "imageId": 1,
-    "activityId": 1,
-    "imageUrl": "string",
-    "description": "string",
-    "sortOrder": 0
-  }
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L184-L238)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 获取活动图片列表
-获取指定活动的所有图片。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/activities/{activityId}/images`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "查询成功",
-  "code": 200,
-  "data": [
-    {
-      "imageId": 1,
-      "activityId": 1,
-      "imageUrl": "string",
-      "description": "string",
-      "sortOrder": 0
-    }
-  ]
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L240-L264)
-
-### 更新活动图片
-更新活动图片的描述和排序信息，需要部长或副部长权限。
-
-**HTTP方法**: `PUT`  
-**URL路径**: `/api/activities/images/{imageId}`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**请求参数**:
-- `description`: 图片描述（可选）
-- `sortOrder`: 排序序号（可选）
-
-**响应格式**:
-```json
-{
-  "message": "图片更新成功",
-  "code": 200,
-  "data": {
-    "imageId": 1,
-    "activityId": 1,
-    "imageUrl": "string",
-    "description": "string",
-    "sortOrder": 0
-  }
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L266-L294)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 删除活动图片
-删除指定的活动图片，需要部长或副部长权限。
-
-**HTTP方法**: `DELETE`  
-**URL路径**: `/api/activities/images/{imageId}`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**响应格式**:
-```json
-{
-  "message": "图片删除成功",
-  "code": 200,
-  "data": null
-}
-```
-
-**Section sources**
-- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L296-L318)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-## 往届活动管理API
-往届活动管理API提供对历史活动的CRUD操作和统计功能。
-
-### 分页查询往届活动
-分页获取往届活动列表，支持按年份和标题筛选。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/past-activities`  
-**请求参数**:
-- `pageNum`: 页码，默认1
-- `pageSize`: 每页大小，默认10
-- `year`: 年份筛选（可选）
-- `title`: 活动名称搜索（可选）
-
-**响应格式**:
-```json
-{
-  "message": "操作成功",
-  "code": 200,
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "title": "string",
-        "year": 2023,
-        "description": "string",
-        "imageUrls": ["string"]
-      }
-    ],
-    "pageNum": 1,
-    "pageSize": 10,
-    "total": 100,
-    "pages": 10
-  }
-}
-```
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L34-L48)
-
-### 获取往届活动详情
-根据ID获取往届活动的详细信息。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/past-activities/{id}`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "操作成功",
-  "code": 200,
-  "data": {
-    "id": 1,
-    "title": "string",
-    "year": 2023,
-    "description": "string",
-    "imageUrls": ["string"]
-  }
-}
-```
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L50-L58)
-
-### 创建往届活动
-创建新的往届活动记录，需要部长权限。
-
-**HTTP方法**: `POST`  
-**URL路径**: `/api/past-activities`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**请求体**:
-```json
-{
-  "title": "string",
-  "year": 2023,
-  "description": "string",
-  "imageUrls": ["string"]
-}
-```
-
-**响应格式**:
-```json
-{
-  "message": "往届活动创建成功",
-  "code": 200,
-  "data": {
-    "id": 1,
-    "title": "string",
-    "year": 2023,
-    "description": "string",
-    "imageUrls": ["string"]
-  }
-}
-```
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L60-L70)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 更新往届活动
-更新现有往届活动的信息，需要部长权限。
-
-**HTTP方法**: `PUT`  
-**URL路径**: `/api/past-activities/{id}`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**请求体**: 同创建往届活动的请求体
-
-**响应格式**: 同创建往届活动的响应格式
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L72-L82)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 删除往届活动
-删除指定的往届活动，需要部长权限。
-
-**HTTP方法**: `DELETE`  
-**URL路径**: `/api/past-activities/{id}`  
-**请求头**:  
-- `Authorization: Bearer <JWT令牌>`  
-
-**响应格式**:
-```json
-{
-  "message": "往届活动删除成功",
-  "code": 200,
-  "data": null
-}
-```
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L84-L92)
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-
-### 获取所有年份列表
-获取所有存在往届活动的年份列表。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/past-activities/years`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "操作成功",
-  "code": 200,
-  "data": [2023, 2022, 2021]
-}
-```
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L94-L102)
-
-### 根据年份统计活动数量
-获取指定年份的往届活动数量。
-
-**HTTP方法**: `GET`  
-**URL路径**: `/api/past-activities/years/{year}/count`  
-**请求头**: 无特殊要求  
-**响应格式**:
-```json
-{
-  "message": "操作成功",
-  "code": 200,
-  "data": 5
-}
-```
-
-**Section sources**
-- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L104-L113)
-
-## API通用规范
-本节说明API的通用设计原则和规范。
-
-### 响应格式
-所有API响应均采用统一的`ApiResponse`格式：
-```json
-{
-  "message": "响应消息",
-  "code": 200,
-  "data": {}
-}
-```
-其中`data`字段包含实际的响应数据，`code`为状态码，`message`为人类可读的消息。
-
-**Section sources**
-- [ApiResponse.java](file://src/main/java/com/redmoon2333/dto/ApiResponse.java)
-
-### 身份认证
-系统采用JWT（JSON Web Token）进行身份认证。受保护的端点需要在请求头中包含`Authorization: Bearer <JWT令牌>`。
-
-JWT令牌通过登录接口获取，有效期为2小时（7200秒），配置在`application.yml`文件中。
-
-**Section sources**
-- [application.yml](file://src/main/resources/application.yml#L25-L26)
-
-### 权限控制
-系统使用`@RequireMinisterRole`注解来标记需要部长或副部长权限的端点。该注解由`PermissionAspect`切面处理，确保只有具有相应权限的用户才能访问受保护的资源。
-
-**Section sources**
-- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
-- [application.yml](file://src/main/resources/application.yml)
-
-### API版本控制
-当前API未显式实现版本控制，所有端点均位于根路径下。未来可通过在URL路径中添加版本号（如`/api/v1/activities`）来实现版本控制。
-
-### 速率限制
-当前系统未实现速率限制。建议在生产环境中为敏感端点（如登录、注册）添加速率限制，防止暴力破解和滥用。
-
-## 错误码体系
-系统定义了详细的错误码体系，用于标准化错误响应。
-
+### 权限验证流程
 ```mermaid
-erDiagram
-  ERROR_CODE {
-    int code PK
-    string
+flowchart TD
+A[API请求] --> B{是否有Authorization头?}
+B --> |否| C[返回401未授权]
+B --> |是| D{JWT令牌是否有效?}
+D --> |否| E[返回401未授权]
+D --> |是| F{方法是否有权限注解?}
+F --> |否| G[执行业务逻辑]
+F --> |是| H{检查对应权限}
+H --> |有权限| G
+H --> |无权限| I[返回403禁止访问]
+G --> J[返回响应]
+```
+
+**Diagram sources**
+- [RequireMemberRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMemberRole.java#L1-L19)
+- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java#L1-L19)
+- [PermissionAspect.java](file://src/main/java/com/redmoon2333/aspect/PermissionAspect.java#L1-L57)
+
+**本文档中引用的文件**   
+- [RequireMemberRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMemberRole.java#L1-L19)
+- [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java#L1-L19)
+- [PermissionAspect.java](file://src/main/java/com/redmoon2333/aspect/PermissionAspect.java#L1-L57)
+
+## 使用示例
+
+### 用户注册登录流程
+```bash
+# 1. 用户注册
+curl -X POST http://localhost:8080/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "zhangsan",
+    "password": "password123",
+    "confirmPassword": "password123",
+    "activationCode": "ACT123456",
+    "roleHistory": "2023级部员",
+    "name": "张三"
+  }'
+
+# 2. 用户登录
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "zhangsan",
+    "password": "password123"
+  }'
+```
+
+### 部长创建活动
+```bash
+# 使用获取的JWT令牌创建活动
+curl -X POST http://localhost:8080/api/activities \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "activityName": "迎新晚会",
+    "background": "欢迎新生加入学生会",
+    "significance": "增强团队凝聚力",
+    "purpose": "让新生了解学生会",
+    "process": "开场-节目表演-互动游戏-结束"
+  }'
+```
+
+### 部员查询资料
+```bash
+# 搜索资料
+curl -X GET "http://localhost:8080/api/materials/search?name=会议" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 下载资料
+curl -X GET http://localhost:8080/api/materials/download/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -o "会议纪要.pdf"
+```
+
+**本文档中引用的文件**   
+- [README.md](file://README.md#L1-L444)
+- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
+- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L1-L322)
+- [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
+
+## 错误处理
+所有API使用统一的错误响应格式：
+
+```json
+{
+  "message": "错误信息",
+  "data": null,
+  "code": 400
+}
+```
+
+### 常见错误码
+| 错误码 | 说明 |
+|-------|------|
+| 400 | 请求参数错误 |
+| 401 | 未授权或JWT无效 |
+| 403 | 权限不足 |
+| 404 | 资源不存在 |
+| 500 | 系统内部错误 |
+
+**本文档中引用的文件**   
+- [ApiResponse.java](file://src/main/java/com/redmoon2333/dto/ApiResponse.java#L1-L62)
+- [GlobalExceptionHandler.java](file://src/main/java/com/redmoon2333/exception/GlobalExceptionHandler.java#L1-L20)
+
+## 典型使用场景
+
+### 用户注册登录流程
+```mermaid
+sequenceDiagram
+participant 用户 as 用户
+participant AuthController as AuthController
+participant AuthService as AuthService
+participant UserService as UserService
+用户->>AuthController : POST /api/auth/register
+AuthController->>AuthService : 验证注册信息
+AuthService->>UserService : 创建用户
+UserService-->>AuthService : 返回用户信息
+AuthService-->>AuthController : 返回注册结果
+AuthController-->>用户 : 返回成功响应
+用户->>AuthController : POST /api/auth/login
+AuthController->>AuthService : 验证用户名密码
+AuthService->>UserService : 查询用户信息
+UserService-->>AuthService : 返回用户信息
+AuthService-->>AuthController : 返回JWT令牌
+AuthController-->>用户 : 返回登录结果
+```
+
+**Diagram sources**
+- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
+- [AuthService.java](file://src/main/java/com/redmoon2333/service/AuthService.java#L1-L20)
+
+### 部长创建活动流程
+```mermaid
+sequenceDiagram
+participant 部长 as 部长
+participant ActivityController as ActivityController
+participant ActivityService as ActivityService
+participant ActivityMapper as ActivityMapper
+部长->>ActivityController : POST /api/activities
+ActivityController->>ActivityController : 权限验证(@RequireMinisterRole)
+ActivityController->>ActivityService : 创建活动
+ActivityService->>ActivityMapper : 插入活动记录
+ActivityMapper-->>ActivityService : 返回活动ID
+ActivityService-->>ActivityController : 返回活动信息
+ActivityController-->>部长 : 返回创建结果
+```
+
+**Diagram sources**
+- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L1-L322)
+- [ActivityService.java](file://src/main/java/com/redmoon2333/service/ActivityService.java#L1-L20)
+
+### 部员查询资料流程
+```mermaid
+sequenceDiagram
+participant 部员 as 部员
+participant MaterialController as MaterialController
+participant MaterialService as MaterialService
+participant MaterialMapper as MaterialMapper
+部员->>MaterialController : GET /api/materials/search?name=会议
+MaterialController->>MaterialController : 权限验证(@RequireMemberRole)
+MaterialController->>MaterialService : 搜索资料
+MaterialService->>MaterialMapper : 执行查询
+MaterialMapper-->>MaterialService : 返回资料列表
+MaterialService-->>MaterialController : 返回资料列表
+MaterialController-->>部员 : 返回搜索结果
+```
+
+**Diagram sources**
+- [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
+- [MaterialService.java](file://src/main/java/com/redmoon2333/service/MaterialService.java#L1-L20)
+
+**本文档中引用的文件**   
+- [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
+- [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L1-L322)
+- [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
+- [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L1-L134)
+- [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java#L1-L140)
