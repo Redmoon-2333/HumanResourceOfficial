@@ -52,11 +52,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 如果用户名存在且当前没有认证信息
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // 验证令牌
+                // 验证令牌（现在集成了Redis验证）
                 if (jwtUtil.validateToken(token)) {
                     // 获取用户身份信息
                     String roleHistory = jwtUtil.getRoleHistoryFromToken(token);
                     String currentRole = jwtUtil.getCurrentRoleFromToken(token);
+                    
+                    // 延长活跃用户的令牌有效期（可选功能）
+                    // jwtUtil.extendTokenExpiration(token);
                     
                     // 创建权限列表
                     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
