@@ -1,7 +1,9 @@
 package com.redmoon2333.util;
 
+import com.redmoon2333.service.JwtRedisService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,9 @@ import java.util.Map;
  */
 @Component
 public class JwtUtil {
+
+    @Autowired
+    private JwtRedisService jwtRedisService;
 
     @Value("${jwt.secret}")
     private String secret;
@@ -47,7 +52,12 @@ public class JwtUtil {
         String currentRole = getCurrentRole(roleHistory);
         claims.put("currentRole", currentRole);
         
-        return createToken(claims, username);
+        String token = createToken(claims, username);
+        
+        // 将令牌存储到Redis
+        jwtRedisService.storeToken(userId, token, username);
+        
+        return token;
     }
 
     /**
@@ -170,12 +180,23 @@ public class JwtUtil {
     }
 
     /**
-     * 验证令牌（不验证用户名）
+     * 验证令牌（集成Redis验证）
      * @param token JWT令牌
      * @return 是否有效
      */
     public Boolean validateToken(String token) {
         try {
+            // 首先检查令牌是否在黑名单中
+            if (jwtRedisService.isTokenBlacklisted(token)) {
+                return false;
+            }
+            
+            // 检查令牌是否在Redis中存在
+            if (!jwtRedisService.isTokenValid(token)) {
+                return false;
+            }
+            
+            // 验证JWT令牌的签名和过期时间
             getAllClaimsFromToken(token);
             return !isTokenExpired(token);
         } catch (JwtException | IllegalArgumentException e) {
@@ -195,7 +216,13 @@ public class JwtUtil {
             String username = claims.getSubject();
             String roleHistory = claims.get("roleHistory", String.class);
             
-            return generateToken(userId, username, roleHistory);
+            // 生成新令牌
+            String newToken = generateToken(userId, username, roleHistory);
+            
+            // 在Redis中更新令牌
+            jwtRedisService.refreshToken(token, newToken, userId, username);
+            
+            return newToken;
         } catch (JwtException | IllegalArgumentException e) {
             throw new RuntimeException("无法刷新令牌", e);
         }
@@ -223,6 +250,59 @@ public class JwtUtil {
             return false;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * 退出登录（将令牌加入黑名单）
+     * @param token JWT令牌
+     */
+    public void logout(String token) {
+        try {
+            // 获取令牌剩余有效时间
+            Date expiration = getExpirationDateFromToken(token);
+            long remainingTime = (expiration.getTime() - System.currentTimeMillis()) / 1000;
+            
+            if (remainingTime > 0) {
+                // 将令牌加入黑名单
+                jwtRedisService.addToBlacklist(token, remainingTime);
+            }
+        } catch (Exception e) {
+            // 即使解析失败，也要尝试加入黑名单
+            jwtRedisService.addToBlacklist(token, expiration / 1000);
+        }
+    }
+
+    /**
+     * 强制用户下线（撤销用户所有令牌）
+     * @param userId 用户ID
+     */
+    public void revokeUserTokens(Integer userId) {
+        jwtRedisService.revokeUserTokens(userId);
+    }
+
+    /**
+     * 棄用令牌是否在黑名单中
+     * @param token JWT令牌
+     * @return 是否在黑名单中
+     */
+    public Boolean isTokenBlacklisted(String token) {
+        return jwtRedisService.isTokenBlacklisted(token);
+    }
+
+    /**
+     * 延长令牌有效期（用于活跃用户）
+     * @param token JWT令牌
+     */
+    public void extendTokenExpiration(String token) {
+        try {
+            Integer userId = getUserIdFromToken(token);
+            String username = getUsernameFromToken(token);
+            if (userId != null && username != null) {
+                jwtRedisService.extendTokenExpiration(token, userId, username);
+            }
+        } catch (Exception e) {
+            // 忽略延长失败
         }
     }
 
