@@ -34,20 +34,37 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // 设置允许的域名 - 使用allowedOriginPatterns而不是allowedOrigins
+        // 支持开发环境、生产环境和Docker环境
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:3000",
             "http://localhost:8081",
             "http://127.0.0.1:3000",
-            "http://127.0.0.1:8081"
+            "http://127.0.0.1:8081",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+            // Docker环境支持
+            "http://hrofficial-backend:8080",
+            "http://backend:8080",
+            // 生产环境域名（根据实际情况修改）
+            "https://yourdomain.com",
+            "https://www.yourdomain.com",
+            // 允许任何https协议的域名（生产环境请谨慎使用）
+            "https://*"
         ));
         
         // 设置允许的HTTP方法
         configuration.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"
+            "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"
         ));
         
         // 设置允许的请求头
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        
+        // 设置暴露的响应头
+        configuration.setExposedHeaders(Arrays.asList(
+            "Authorization", "Content-Type", "X-Requested-With", "Accept", 
+            "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"
+        ));
         
         // 允许发送Cookie等凭据信息
         configuration.setAllowCredentials(true);
