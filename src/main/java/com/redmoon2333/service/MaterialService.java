@@ -454,6 +454,45 @@ public class MaterialService {
         logger.info("资料删除成功: materialId={}", materialId);
     }
 
+    /**
+     * 为资料文件生成预签名URL，用于安全下载
+     * @param materialId 资料ID
+     * @param expirationSeconds 过期时间（秒），默认1小时
+     * @return 预签名URL
+     */
+    public String generateDownloadUrl(Integer materialId, Long expirationSeconds) {
+        logger.info("为资料生成预签名URL: materialId={}, 过期时间={}s", materialId, expirationSeconds);
+        
+        // 检查权限（部员及以上）
+        permissionUtil.checkMemberPermission();
+        
+        // 获取资料信息
+        String fileUrl = getFileUrlById(materialId);
+        
+        // 从完整URL中提取文件路径
+        String filePath = extractOssFilePath(fileUrl);
+        if (filePath == null || filePath.isEmpty()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件路径解析失败");
+        }
+        
+        // 生成预签名URL
+        return ossUtil.generatePresignedUrl(filePath, expirationSeconds);
+    }
+    
+    /**
+     * 为资料文件生成预签名URL（使用默认过期时间）
+     * @param materialId 资料ID
+     * @return 预签名URL
+     */
+    public String generateDownloadUrl(Integer materialId) {
+        return generateDownloadUrl(materialId, 3600L); // 默认1小时
+    }
+    
+    /**
+     * 获取资料文件URL（保留原有接口兼容性）
+     * @param materialId 资料ID
+     * @return 文件URL
+     */
     public String getFileUrlById(Integer materialId) {
         if (materialId == null) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "资料ID不能为空");
@@ -467,6 +506,8 @@ public class MaterialService {
         return material.getFileUrl();
     }
 }
+
+
 
 
 

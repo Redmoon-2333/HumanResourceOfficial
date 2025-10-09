@@ -12,20 +12,11 @@ import com.redmoon2333.service.MaterialService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,53 +61,24 @@ public class MaterialController {
     }
     
     /**
-     * 下载资料文件
+     * 获取资料下载链接（预签名URL）
      */
-    @GetMapping("/download/{materialId}")
-    @RequireMemberRole("下载内部资料")
-    public ResponseEntity<Resource> downloadMaterial(@PathVariable Integer materialId) {
+    @GetMapping("/download-url/{materialId}")
+    @RequireMemberRole("获取内部资料下载链接")
+    public ApiResponse<String> getDownloadUrl(
+            @PathVariable Integer materialId,
+            @RequestParam(value = "expiration", defaultValue = "3600") Long expirationSeconds) {
         try {
-            // 获取文件信息
-            Material material = materialService.getMaterialById(materialId);
+            logger.info("获取资料下载链接: materialId={}, 过期时间={}s", materialId, expirationSeconds);
             
-            // 获取项目根路径
-            String projectRoot = System.getProperty("user.dir");
-            String absoluteFilePath = Paths.get(projectRoot, material.getFileUrl()).toString();
-            
-            File file = new File(absoluteFilePath);
-            if (!file.exists()) {
-                logger.warn("文件不存在: {}", absoluteFilePath);
-                return ResponseEntity.notFound().build();
-            }
-            
-            // 增加下载次数
-            materialService.incrementDownloadCount(materialId);
-            
-            // 创建资源
-            FileSystemResource resource = new FileSystemResource(file);
-            
-            // 设置响应头，对文件名进行URL编码以支持中文
-            String encodedFileName = URLEncoder.encode(material.getMaterialName(), StandardCharsets.UTF_8);
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName);
-            headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(file.length()));
-            
-            // 确定内容类型
-            String contentType = material.getFileType();
-            if (contentType == null || contentType.isEmpty()) {
-                contentType = "application/octet-stream";
-            }
-            
-            logger.info("文件下载成功: materialId={}, 文件名={}", materialId, material.getMaterialName());
-            
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .contentLength(file.length())
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .body(resource);
+            String downloadUrl = materialService.generateDownloadUrl(materialId, expirationSeconds);
+            return ApiResponse.success("下载链接获取成功", downloadUrl);
+        } catch (BusinessException e) {
+            logger.error("获取资料下载链接失败: materialId={}, 错误: {}", materialId, e.getMessage());
+            throw e;
         } catch (Exception e) {
-            logger.error("文件下载失败: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            logger.error("获取资料下载链接失败: materialId={}, 错误: {}", materialId, e.getMessage(), e);
+            return ApiResponse.error(e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
         }
     }
     
