@@ -370,6 +370,22 @@ public class ActivityService {
             throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_DELETE_FAILED);
         }
     }
+    
+    public String getImageUrlById(Integer imageId) {
+        if (imageId == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "图片ID不能为空");
+        }
+        
+        ActivityImage image = activityImageMapper.findById(imageId);
+        if (image == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "未找到指定的图片");
+        }
+        
+        return image.getImageUrl();
+    }
+
 }
+
+
 
 
