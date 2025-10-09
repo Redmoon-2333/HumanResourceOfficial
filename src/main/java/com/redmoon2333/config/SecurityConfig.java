@@ -106,6 +106,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/check-username").permitAll()
                 // 允许静态资源访问
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                // 允许文件访问
+                .requestMatchers("/files/**").permitAll()
                 // 允许首页访问
                 .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                 // 允许公开API访问

@@ -6,7 +6,7 @@ import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivityImageMapper;
 import com.redmoon2333.mapper.ActivityMapper;
-import com.redmoon2333.util.OssUtil;
+import com.redmoon2333.util.LocalFileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +30,8 @@ public class ActivityService {
     @Autowired
     private ActivityImageMapper activityImageMapper;
     
-    @Autowired(required = false) // 设置为非必需，避免启动时因缺少OSS配置而失败
-    private OssUtil ossUtil;
+    @Autowired
+    private LocalFileUtil localFileUtil;
     
     public Activity createActivity(Activity activity) {
         logger.info("开始创建活动: {}", activity.getActivityName());
@@ -125,22 +125,14 @@ public class ActivityService {
             logger.info("找到{}张关联图片需要删除", images.size());
             
             for (ActivityImage image : images) {
-                // 从OSS删除图片文件
+                // 从本地服务器删除图片文件
                 String imageUrl = image.getImageUrl();
                 logger.debug("准备删除图片文件: {}", imageUrl);
                 
-                // 从URL中提取OSS文件路径
-                String filePath = extractOssFilePath(imageUrl);
-                if (filePath != null) {
-                    if (ossUtil != null) {
-                        try {
-                            ossUtil.deleteFile(filePath);
-                        } catch (Exception e) {
-                            logger.warn("删除OSS文件失败: {}", filePath, e);
-                        }
-                    } else {
-                        logger.warn("OSS未配置，跳过文件删除: {}", filePath);
-                    }
+                try {
+                    localFileUtil.deleteFile(imageUrl);
+                } catch (Exception e) {
+                    logger.warn("删除本地文件失败: {}", imageUrl, e);
                 }
                 
                 // 删除数据库记录
@@ -164,49 +156,16 @@ public class ActivityService {
         }
     }
     
-    // 从OSS URL中提取文件路径
-    private String extractOssFilePath(String imageUrl) {
-        if (imageUrl == null || imageUrl.isEmpty()) {
-            return null;
-        }
-        
-        // 处理自定义域名的情况
-        String domain = System.getProperty("aliyun.oss.domain");
-        if (domain != null && !domain.isEmpty() && imageUrl.startsWith(domain)) {
-            return imageUrl.substring(domain.length() + 1); // +1 是为了去掉开头的 "/"
-        }
-        
-        // 处理默认OSS域名的情况
-        // 格式: https://bucket-name.endpoint/path
-        int thirdSlashIndex = imageUrl.indexOf("/", 8); // 跳过 https://
-        if (thirdSlashIndex != -1) {
-            return imageUrl.substring(thirdSlashIndex + 1);
-        }
-        
-        return null;
-    }
-    
+
     public String saveImage(MultipartFile file) throws IOException {
         logger.info("开始保存活动图片: 文件名={}, 大小={} bytes", file.getOriginalFilename(), file.getSize());
         
-        // 检查OSS工具是否可用
-        if (ossUtil == null) {
-            logger.error("文件上传功能不可用，请联系系统管理员检查OSS配置");
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传功能不可用，请联系系统管理员检查OSS配置");
-        }
-        
-        // 生成唯一文件名
-        String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
-        String uniqueFilename = UUID.randomUUID().toString() + extension;
-        logger.debug("生成唯一文件名: {}", uniqueFilename);
+        // 使用本地文件工具类保存图片
+        String imageUrl = localFileUtil.uploadActivityImage(file);
 
-        // 使用OSS工具类上传文件
-        String ossFilePath = ossUtil.uploadFile(file);
-
-        // 返回OSS文件路径
-        logger.info("图片保存成功: {}", ossFilePath);
-        return ossFilePath;
+        // 返回图片访问URL
+        logger.info("图片保存成功: {}", imageUrl);
+        return imageUrl;
     }
 
     public ActivityImage addImageToActivity(Integer activityId, ActivityImage activityImage) {
@@ -252,15 +211,11 @@ public class ActivityService {
             logger.info("找到{}张图片需要删除", images.size());
             
             for (ActivityImage image : images) {
-                // 删除OSS上的文件
-                if (ossUtil != null) {
-                    try {
-                        ossUtil.deleteFile(image.getImageUrl());
-                    } catch (Exception e) {
-                        logger.warn("删除OSS文件失败: {}", image.getImageUrl(), e);
-                    }
-                } else {
-                    logger.warn("OSS未配置，跳过文件删除: {}", image.getImageUrl());
+                // 删除本地服务器上的文件
+                try {
+                    localFileUtil.deleteFile(image.getImageUrl());
+                } catch (Exception e) {
+                    logger.warn("删除本地文件失败: {}", image.getImageUrl(), e);
                 }
             }
 
@@ -338,27 +293,20 @@ public class ActivityService {
                 throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_NOT_FOUND);
             }
             
-            // 从OSS删除图片文件
+            // 从本地服务器删除图片文件
             String imageUrl = existingImage.getImageUrl();
-            String filePath = extractOssFilePath(imageUrl);
             
-            if (filePath != null) {
-                if (ossUtil != null) {
-                    try {
-                        ossUtil.deleteFile(filePath);
-                    } catch (Exception e) {
-                        logger.warn("删除OSS文件失败: {}", filePath, e);
-                    }
-                } else {
-                    logger.warn("OSS未配置，跳过文件删除: {}", filePath);
-                }
+            try {
+                localFileUtil.deleteFile(imageUrl);
+            } catch (Exception e) {
+                logger.warn("删除本地文件失败: {}", imageUrl, e);
             }
             
             // 删除数据库记录
             int result = activityImageMapper.deleteById(imageId);
             
             if (result > 0) {
-                logger.info("活动图片删除成功: 图片ID={}, 文件路径={}", imageId, filePath);
+                logger.info("活动图片删除成功: 图片ID={}", imageId);
             } else {
                 logger.error("活动图片删除失败: 图片ID={}", imageId);
                 throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_DELETE_FAILED);

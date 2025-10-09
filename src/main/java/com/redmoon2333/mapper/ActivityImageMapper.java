@@ -36,6 +36,9 @@ public interface ActivityImageMapper {
     
     /**
      * 根据活动ID删除所有图片
+     * @param activityId 活动ID
+     * @return 删除的记录数
      */
     int deleteByActivityId(@Param("activityId") Integer activityId);
+    
 }
