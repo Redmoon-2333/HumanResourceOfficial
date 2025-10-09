@@ -453,6 +453,21 @@ public class MaterialService {
 
         logger.info("资料删除成功: materialId={}", materialId);
     }
+
+    public String getFileUrlById(Integer materialId) {
+        if (materialId == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "资料ID不能为空");
+        }
+        
+        Material material = materialMapper.findById(materialId);
+        if (material == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "未找到指定的资料");
+        }
+        
+        return material.getFileUrl();
+    }
 }
+
+
 
 

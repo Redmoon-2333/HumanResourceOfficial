@@ -2,11 +2,15 @@ package com.redmoon2333.util;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.model.GeneratePresignedUrlRequest;
 import com.aliyun.oss.model.PutObjectRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
+import java.net.URL;
+import java.util.Date;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,6 +132,52 @@ public class OssUtil {
         if (ossClient != null) {
             ossClient.deleteObject(bucketName, filePath);
             logger.info("OSS文件删除成功: {}", filePath);
+        } else {
+            String errorMessage = String.format(
+                "OSS客户端未配置或创建失败。配置检查: endpoint=%s, accessKeyId=%s, accessKeySecret=%s, bucketName=%s。" +
+                "请检查阿里云OSS配置是否正确，或确认OSS配置类是否被正确加载。",
+                endpoint != null ? endpoint : "未配置",
+                accessKeyId != null ? maskSensitiveInfo(accessKeyId) : "未配置",
+                accessKeySecret != null ? maskSensitiveInfo(accessKeySecret) : "未配置",
+                bucketName != null ? bucketName : "未配置"
+            );
+            logger.error(errorMessage);
+            throw new IllegalStateException(errorMessage);
+        }
+    }
+    
+    /**
+     * 生成预签名URL用于临时访问私有文件
+     * @param filePath 文件路径
+     * @param expirationSeconds 过期时间（秒）
+     * @return 预签名URL
+     */
+    public String generatePresignedUrl(String filePath, Long expirationSeconds) {
+        logger.info("开始生成预签名URL: 文件路径={}, 过期时间={}秒", filePath, expirationSeconds);
+        
+        // 如果OSS客户端未初始化，尝试手动创建
+        if (ossClient == null) {
+            tryCreateOssClient();
+        }
+        
+        if (ossClient != null) {
+            // 设置默认过期时间为1小时
+            if (expirationSeconds == null || expirationSeconds <= 0) {
+                expirationSeconds = 3600L; // 默认1小时
+            }
+            
+            // 设置URL过期时间
+            Date expiration = new Date(new Date().getTime() + expirationSeconds * 1000);
+            
+            // 生成预签名URL
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, filePath);
+            request.setExpiration(expiration);
+            
+            URL url = ossClient.generatePresignedUrl(request);
+            String presignedUrl = url.toString();
+            
+            logger.info("预签名URL生成成功: {}", presignedUrl);
+            return presignedUrl;
         } else {
             String errorMessage = String.format(
                 "OSS客户端未配置或创建失败。配置检查: endpoint=%s, accessKeyId=%s, accessKeySecret=%s, bucketName=%s。" +
