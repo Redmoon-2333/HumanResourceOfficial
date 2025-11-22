@@ -47,14 +47,42 @@ public class LocalFileUtil {
      */
     private void createUploadDirectory() {
         try {
-            Path uploadPath = getAbsoluteUploadPath().resolve(ACTIVITY_IMAGES_DIR);
+            Path basePath = getAbsoluteUploadPath();
+            Path uploadPath = basePath.resolve(ACTIVITY_IMAGES_DIR);
+            
+            // 检查基础目录是否存在且可写
+            if (!Files.exists(basePath)) {
+                Files.createDirectories(basePath);
+                logger.info("创建基础上传目录: {}", basePath.toAbsolutePath());
+            }
+            
+            // 检查基础目录权限
+            if (!Files.isWritable(basePath)) {
+                logger.warn("基础上传目录不可写: {}", basePath.toAbsolutePath());
+            }
+            
+            // 创建活动图片子目录
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
                 logger.info("创建上传目录: {}", uploadPath.toAbsolutePath());
+            } else {
+                logger.info("上传目录已存在: {}", uploadPath.toAbsolutePath());
             }
+            
+            // 验证目录可写性
+            if (!Files.isWritable(uploadPath)) {
+                logger.warn("上传目录不可写，可能影响文件上传功能: {}", uploadPath.toAbsolutePath());
+            }
+            
         } catch (IOException e) {
-            logger.error("创建上传目录失败", e);
-            throw new RuntimeException("无法创建文件上传目录", e);
+            logger.error("创建上传目录失败: {}", e.getMessage(), e);
+            // 在生产环境中，如果是权限问题，我们记录警告但不阻止应用启动
+            // 文件上传功能会在实际使用时进行权限检查和错误处理
+            if (e instanceof java.nio.file.AccessDeniedException) {
+                logger.warn("文件上传目录权限不足，文件上传功能可能受影响。请检查目录权限: {}", getAbsoluteUploadPath().resolve(ACTIVITY_IMAGES_DIR));
+                return; // 不抛出异常，允许应用启动
+            }
+            throw new RuntimeException("无法创建文件上传目录: " + e.getMessage(), e);
         }
     }
     
@@ -175,14 +203,31 @@ public class LocalFileUtil {
         // 确保父目录存在
         Path parentDir = fullPath.getParent();
         if (parentDir != null) {
-            Files.createDirectories(parentDir);
+            try {
+                if (!Files.exists(parentDir)) {
+                    Files.createDirectories(parentDir);
+                    logger.info("创建上传目录: {}", parentDir.toAbsolutePath());
+                }
+                
+                // 检查目录是否可写
+                if (!Files.isWritable(parentDir)) {
+                    throw new IOException("上传目录不可写: " + parentDir.toAbsolutePath());
+                }
+            } catch (IOException e) {
+                logger.error("创建或检查上传目录失败: {}", parentDir.toAbsolutePath(), e);
+                throw new IOException("无法准备上传目录: " + e.getMessage(), e);
+            }
         }
         
         // 保存文件
         File destFile = fullPath.toFile();
-        file.transferTo(destFile);
-        
-        logger.debug("文件保存成功: {}", fullPath.toAbsolutePath());
+        try {
+            file.transferTo(destFile);
+            logger.debug("文件保存成功: {}", fullPath.toAbsolutePath());
+        } catch (IOException e) {
+            logger.error("文件保存失败: {}", fullPath.toAbsolutePath(), e);
+            throw new IOException("文件保存失败: " + e.getMessage(), e);
+        }
     }
     
     /**
