@@ -287,4 +287,48 @@ public class MaterialController {
             return ApiResponse.error(e.getMessage(), ErrorCode.SUBCATEGORY_QUERY_FAILED.getCode());
         }
     }
+    
+    /**
+     * 更新分类信息
+     */
+    @PutMapping("/category/{categoryId}")
+    @RequireMinisterRole("修改资料分类")
+    public ApiResponse<CategoryResponse> updateCategory(
+            @PathVariable Integer categoryId,
+            @RequestBody CategoryRequest request) {
+        try {
+            MaterialCategory category = materialService.updateCategory(
+                    categoryId,
+                    request.getCategoryName(),
+                    request.getSortOrder()
+            );
+            CategoryResponse response = new CategoryResponse(category);
+            return ApiResponse.success(response);
+        } catch (Exception e) {
+            logger.error("更新分类信息失败: {}", e.getMessage(), e);
+            return ApiResponse.error(e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
+        }
+    }
+    
+    /**
+     * 更新子分类信息
+     */
+    @PutMapping("/subcategory/{subcategoryId}")
+    @RequireMinisterRole("修改资料子分类")
+    public ApiResponse<SubcategoryResponse> updateSubcategory(
+            @PathVariable Integer subcategoryId,
+            @RequestBody SubcategoryRequest request) {
+        try {
+            MaterialSubcategory subcategory = materialService.updateSubcategory(
+                    subcategoryId,
+                    request.getSubcategoryName(),
+                    request.getSortOrder()
+            );
+            SubcategoryResponse response = new SubcategoryResponse(subcategory);
+            return ApiResponse.success(response);
+        } catch (Exception e) {
+            logger.error("更新子分类信息失败: {}", e.getMessage(), e);
+            return ApiResponse.error(e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
+        }
+    }
 }

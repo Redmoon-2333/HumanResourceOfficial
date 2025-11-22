@@ -135,7 +135,35 @@ public class AIChatService {
             Prompt prompt = promptTemplate.create(params);
             
             // 使用stream()方法获取流式响应，直接返回content内容
-            return qwenChatClient.prompt(prompt).stream().content();
+            // 添加错误处理，捕获客户端断开连接的异常
+            return qwenChatClient.prompt(prompt).stream().content()
+                    .doOnNext(chunk -> logger.debug("发送数据块: {} 字符", chunk.length()))
+                    .doOnComplete(() -> logger.info("流式策划案生成完成，主题: {}", request.getTheme()))
+                    .doOnError(error -> {
+                        // 判断是否为客户端断开连接的异常
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset")
+                                || errorMsg.contains("你的主机中的软件中止了一个已建立的连接"))) {
+                            logger.warn("客户端提前断开连接，主题: {}", request.getTheme());
+                        } else {
+                            logger.error("流式策划案生成错误，主题: {}, 错误: {}", request.getTheme(), errorMsg);
+                        }
+                    })
+                    // 忽略客户端断开连接的异常，避免后端日志大量报错
+                    .onErrorResume(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset")
+                                || errorMsg.contains("你的主机中的软件中止了一个已建立的连接"))) {
+                            // 客户端断开是正常情况，返回空流
+                            return Flux.empty();
+                        }
+                        // 其他错误正常抛出
+                        return Flux.error(error);
+                    });
         } catch (Exception e) {
             logger.error("流式生成策划案失败: {}", e.getMessage(), e);
             return Flux.error(new RuntimeException("流式生成策划案失败: " + e.getMessage(), e));

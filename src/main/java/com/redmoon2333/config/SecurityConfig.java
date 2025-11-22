@@ -36,6 +36,10 @@ public class SecurityConfig {
         // 设置允许的域名 - 使用allowedOriginPatterns而不是allowedOrigins
         // 支持开发环境、生产环境和Docker环境
         configuration.setAllowedOriginPatterns(Arrays.asList(
+            // Vue前端开发服务器（Vite）
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            // 其他前端端口
             "http://localhost:3000",
             "http://localhost:8081",
             "http://127.0.0.1:3000",
@@ -105,6 +109,8 @@ public class SecurityConfig {
             
             // 配置请求授权
             .authorizeHttpRequests(auth -> auth
+                // 允许OPTIONS请求（CORS预检）
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 允许注册和登录接口访问
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/check-username").permitAll()
                 // 允许静态资源访问
