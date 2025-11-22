@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,27 @@ import java.util.Map;
 public class GlobalExceptionHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    
+    /**
+     * 处理静态资源找不到异常（如favicon.ico）
+     * 降低日志级别为WARN，减少日志噪音
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleNoResourceFoundException(NoResourceFoundException e) {
+        // 对于favicon.ico等常见静态资源，使用WARN级别
+        String resourcePath = e.getMessage();
+        if (resourcePath != null && (resourcePath.contains("favicon.ico") || 
+                                     resourcePath.contains(".css") || 
+                                     resourcePath.contains(".js") ||
+                                     resourcePath.contains(".png") ||
+                                     resourcePath.contains(".jpg"))) {
+            logger.warn("静态资源找不到: {}", resourcePath);
+        } else {
+            logger.error("资源找不到: {}", resourcePath);
+        }
+        // 不返回JSON响应，让浏览器自然处琄04
+    }
     
     /**
      * 处理文件上传大小超限异常

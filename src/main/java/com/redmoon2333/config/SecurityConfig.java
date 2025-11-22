@@ -49,7 +49,10 @@ public class SecurityConfig {
             "https://yourdomain.com",
             "https://www.yourdomain.com",
             // 允许任何https协议的域名（生产环境请谨慎使用）
-            "https://*"
+            "https://*",
+            // 支持file://协议访问（用于本地HTML文件测试）
+            "file://",
+            "null"  // Chrome等浏览器打开file://时会将origin设为null
         ));
         
         // 设置允许的HTTP方法
@@ -109,7 +112,7 @@ public class SecurityConfig {
                 // 允许文件访问
                 .requestMatchers("/files/**").permitAll()
                 // 允许首页访问
-                .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/index.html", "/ai-test.html", "/favicon.ico").permitAll()
                 // 允许公开API访问
                 .requestMatchers("/api/public/**").permitAll()
                 // 允许活动查询接口（GET方法）公开访问
