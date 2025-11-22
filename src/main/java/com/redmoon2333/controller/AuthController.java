@@ -22,7 +22,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
     
     @Autowired
@@ -49,11 +48,19 @@ public class AuthController {
             // 执行登录，获取包含JWT令牌的结果
             Map<String, Object> loginResult = authService.login(loginRequest);
             
-            return ApiResponse.success("登录成功", loginResult);
+            // 添加调试日志
+            System.out.println("Login result: " + loginResult);
+            ApiResponse<Map<String, Object>> response = ApiResponse.success("登录成功", loginResult);
+            System.out.println("Response: " + response);
+            
+            return response;
             
         } catch (BusinessException e) {
+            System.err.println("Business exception: " + e.getMessage());
             return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
         } catch (Exception e) {
+            System.err.println("System exception: " + e.getMessage());
+            e.printStackTrace();
             return ApiResponse.error("系统内部错误", 500);
         }
     }

@@ -106,7 +106,7 @@ init_environment() {
     log "[步骤3] 环境初始化..."
     
     # 创建必要目录
-    local dirs=("data" "logs" "mysql-init" "docker/redis" "$BACKUP_DIR")
+    local dirs=("data" "logs" "mysql-init" "docker/redis" "uploads" "$BACKUP_DIR")
     for dir in "${dirs[@]}"; do
         mkdir -p "$dir"
         info "创建目录: $dir"
@@ -115,6 +115,12 @@ init_environment() {
     # 设置目录权限 (Windows环境下可能失败，但不影响功能)
     chmod 755 data logs mysql-init "$BACKUP_DIR" 2>/dev/null || warn "权限设置跳过（Windows环境）"
     chmod 755 docker/redis 2>/dev/null || warn "Redis目录权限设置跳过"
+    
+    # 设置uploads目录权限，确保容器内用户可以写入
+    if [ -d "uploads" ]; then
+        chmod 777 uploads 2>/dev/null || warn "uploads目录权限设置跳过"
+        info "uploads目录权限已设置为777以支持容器写入"
+    fi
     
     # 处理数据库初始化脚本
     if [ -f "init.sql" ]; then

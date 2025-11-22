@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI功能测试页面</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 200px;
+            max-height: 600px;
+            overflow-y: auto;
+            background-color: #fff;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #e9ecef;
+            border: none;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: white;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .user-message {
+            background-color: #d1ecf1;
+            text-align: right;
+        }
+        .ai-message {
+            background-color: #e2e3e5;
+        }
+        .token-input {
+            display: flex;
+            gap: 10px;
+        }
+        .token-input input {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI功能测试页面</h1>
+    
+    <div class="container">
+        <h2>Token设置</h2>
+        <div class="form-group">
+            <label for="token">JWT Token:</label>
+            <div class="token-input">
+                <input type="text" id="token" placeholder="请输入您的JWT Token">
+                <button onclick="saveToken()">保存</button>
+                <button onclick="testLogin()" style="background-color: #28a745;">快速登录获取Token</button>
+            </div>
+        </div>
+        <div id="tokenStatus"></div>
+        
+        <!-- 快速登录表单 -->
+        <div id="quickLogin" style="display:none; margin-top: 15px; padding: 15px; background-color: #f0f0f0; border-radius: 4px;">
+            <h3>快速登录</h3>
+            <div class="form-group">
+                <label>用户名:</label>
+                <input type="text" id="loginUsername" value="admin">
+            </div>
+            <div class="form-group">
+                <label>密码:</label>
+                <input type="password" id="loginPassword" value="">
+            </div>
+            <button onclick="doLogin()">登录</button>
+            <button onclick="toggleQuickLogin()" style="background-color: #6c757d;">取消</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('chat')">AI对话</button>
+        <button class="tab" onclick="showTab('plan')">策划案生成</button>
+    </div>
+
+    <!-- AI对话 Tab -->
+    <div id="chat" class="tab-content active">
+        <div class="container">
+            <h2>AI对话</h2>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai-message">AI: 您好！我是AI助手，有什么可以帮助您的吗？</div>
+            </div>
+            <div class="form-group">
+                <label for="userMessage">您的消息:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="userMessage" placeholder="输入您的消息..." onkeypress="if(event.keyCode==13) sendMessage()">
+                    <button onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 策划案生成 Tab -->
+    <div id="plan" class="tab-content">
+        <div class="container">
+            <h2>活动策划案生成</h2>
+            <form id="planForm">
+                <div class="form-group">
+                    <label for="theme">活动主题 *</label>
+                    <input type="text" id="theme" required>
+                </div>
+                <div class="form-group">
+                    <label for="organizer">主办单位</label>
+                    <input type="text" id="organizer" value="学生会">
+                </div>
+                <div class="form-group">
+                    <label for="eventTime">活动时间</label>
+                    <input type="text" id="eventTime" placeholder="例如: 2024年9月15日 19:00-21:00">
+                </div>
+                <div class="form-group">
+                    <label for="eventLocation">活动地点</label>
+                    <input type="text" id="eventLocation" placeholder="例如: 学校大礼堂">
+                </div>
+                <div class="form-group">
+                    <label for="staff">工作人员</label>
+                    <input type="text" id="staff" placeholder="例如: 文艺部全体成员">
+                </div>
+                <div class="form-group">
+                    <label for="participants">参与人员</label>
+                    <input type="text" id="participants" placeholder="例如: 2024级新生">
+                </div>
+                <div class="form-group">
+                    <label for="purpose">活动目的</label>
+                    <textarea id="purpose" placeholder="请描述活动的目的和意义"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="leaderCount">部长/副部长数量</label>
+                    <input type="number" id="leaderCount" min="0" value="2">
+                </div>
+                <div class="form-group">
+                    <label for="memberCount">部员数量</label>
+                    <input type="number" id="memberCount" min="0" value="10">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="useStream" checked>
+                        使用流式输出（实时显示生成进度）
+                    </label>
+                </div>
+                <button type="button" onclick="generatePlan()">生成策划案</button>
+            </form>
+        </div>
+
+        <div class="container">
+            <h2>生成结果</h2>
+            <div class="result-container" id="planResult">
+                <p>生成的策划案将显示在这里...</p>
+            </div>
+            <button onclick="downloadPlan()">下载策划案</button>
+        </div>
+    </div>
+
+    <script>
+        // API基础路径
+        const API_BASE = 'http://localhost:8080';
+        
+        // 保存Token
+        function saveToken() {
+            const token = document.getElementById('token').value;
+            if (token) {
+                localStorage.setItem('ai_test_token', token);
+                document.getElementById('tokenStatus').innerHTML = '<p style="color: green;">Token已保存!</p>';
+            } else {
+                document.getElementById('tokenStatus').innerHTML = '<p style="color: red;">请输入有效的Token</p>';
+            }
+        }
+
+        // 获取保存的Token
+        function getToken() {
+            return localStorage.getItem('ai_test_token') || document.getElementById('token').value;
+        }
+        
+        // 切换快速登录表单
+        function toggleQuickLogin() {
+            const quickLogin = document.getElementById('quickLogin');
+            quickLogin.style.display = quickLogin.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // 显示快速登录
+        function testLogin() {
+            toggleQuickLogin();
+        }
+        
+        // 执行登录
+        async function doLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                alert('请输入用户名和密码');
+                return;
+            }
+            
+            try {
+                console.log('尝试登录:', username);
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                console.log('登录响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('登录响应:', data);
+                
+                if (data.code === 200 && data.data.token) {
+                    const token = data.data.token;
+                    document.getElementById('token').value = token;
+                    localStorage.setItem('ai_test_token', token);
+                    document.getElementById('tokenStatus').innerHTML = '<p style="color: green;">登录成功！Token已自动保存</p>';
+                    toggleQuickLogin();
+                } else {
+                    alert('登录失败: ' + (data.message || '未知错误'));
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                alert('登录请求失败: ' + error.message);
+            }
+        }
+
+        // Tab切换
+        function showTab(tabName) {
+            // 更新tab按钮状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 显示对应的内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // 发送AI对话消息
+        async function sendMessage() {
+            const messageInput = document.getElementById('userMessage');
+            const message = messageInput.value.trim();
+            
+            if (!message) return;
+            
+            const token = getToken();
+            if (!token) {
+                alert('请先设置Token');
+                return;
+            }
+            
+            // 显示用户消息
+            addMessageToChat('user', message);
+            messageInput.value = '';
+            
+            // 显示加载状态
+            const loadingElement = document.createElement('div');
+            loadingElement.className = 'message ai-message loading';
+            loadingElement.textContent = 'AI正在思考中...';
+            document.getElementById('chatMessages').appendChild(loadingElement);
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+            
+            try {
+                console.log('发送AI对话请求:', message);
+                const response = await fetch(`${API_BASE}/api/ai/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                console.log('响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('响应数据:', data);
+                
+                // 移除加载状态
+                loadingElement.remove();
+                
+                if (data.code === 200) {
+                    addMessageToChat('ai', data.data.response);
+                } else {
+                    addMessageToChat('ai', '错误: ' + data.message);
+                }
+            } catch (error) {
+                console.error('AI对话错误:', error);
+                // 移除加载状态
+                loadingElement.remove();
+                addMessageToChat('ai', `请求失败: ${error.message}<br>请检查:<br>1. Token是否有效<br>2. 后端服务是否运行<br>3. 浏览器控制台是否有错误信息`);
+            }
+        }
+
+        // 添加消息到聊天窗口
+        function addMessageToChat(sender, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}-message`;
+            
+            if (sender === 'user') {
+                messageElement.textContent = '您: ' + message;
+            } else {
+                messageElement.innerHTML = '<strong>AI:</strong> ' + message;
+            }
+            
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 生成活动策划案
+        async function generatePlan() {
+            const token = getToken();
+            if (!token) {
+                alert('请先设置Token');
+                return;
+            }
+            
+            // 收集表单数据
+            const planRequest = {
+                theme: document.getElementById('theme').value,
+                organizer: document.getElementById('organizer').value,
+                eventTime: document.getElementById('eventTime').value,
+                eventLocation: document.getElementById('eventLocation').value,
+                staff: document.getElementById('staff').value,
+                participants: document.getElementById('participants').value,
+                purpose: document.getElementById('purpose').value,
+                leaderCount: parseInt(document.getElementById('leaderCount').value),
+                memberCount: parseInt(document.getElementById('memberCount').value)
+            };
+            
+            // 验证必填字段
+            if (!planRequest.theme) {
+                alert('请填写活动主题');
+                return;
+            }
+            
+            const useStream = document.getElementById('useStream').checked;
+            
+            if (useStream) {
+                await generatePlanStream(planRequest, token);
+            } else {
+                await generatePlanNormal(planRequest, token);
+            }
+        }
+        
+        // 普通生成方式
+        async function generatePlanNormal(planRequest, token) {
+            // 显示加载状态
+            const resultContainer = document.getElementById('planResult');
+            resultContainer.innerHTML = '<p class="loading">正在生成策划案，请稍候...</p>';
+            
+            try {
+                console.log('发送策划案生成请求:', planRequest);
+                const response = await fetch(`${API_BASE}/api/ai/generate-plan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(planRequest)
+                });
+                
+                console.log('响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('响应数据:', data);
+                
+                if (data.code === 200 && data.data) {
+                    // 数据在data字段中
+                    let htmlContent = data.data;
+                    // 移除可能的markdown代码块标记
+                    const cleanedHtml = htmlContent.replace(/^```html\n/, '').replace(/\n```$/, '').trim();
+                    resultContainer.innerHTML = cleanedHtml;
+                    // 保存生成的策划案内容以便下载
+                    window.generatedPlan = cleanedHtml;
+                } else {
+                    resultContainer.innerHTML = `<p style="color: red;">生成失败: ${data.message || '未知错误'}</p>`;
+                }
+            } catch (error) {
+                console.error('策划案生成错误:', error);
+                resultContainer.innerHTML = `<p style="color: red;">请求失败: ${error.message}<br>请检查:<br>1. Token是否有效<br>2. 后端服务是否运行<br>3. 浏览器控制台是否有错误信息</p>`;
+            }
+        }
+        
+        // 流式生成方式
+        async function generatePlanStream(planRequest, token) {
+            const resultContainer = document.getElementById('planResult');
+            resultContainer.innerHTML = '<p class="loading">正在流式生成策划案，请稍候...</p>';
+            
+            try {
+                console.log('发送流式策划案生成请求:', planRequest);
+                const response = await fetch(`${API_BASE}/api/ai/generate-plan-stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(planRequest)
+                });
+                
+                console.log('流式响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // 读取流式数据
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullContent = '';
+                
+                // 显示流式进度提示
+                resultContainer.innerHTML = '<div style="padding: 20px; background: #f0f8ff; border-radius: 5px;">' +
+                    '<p style="margin: 0; color: #0066cc;">⚙️ 正在生成中...</p>' +
+                    '<div id="streamProgress" style="margin-top: 10px; font-size: 12px; color: #666;"></div>' +
+                    '</div>';
+                const progressDiv = document.getElementById('streamProgress');
+                
+                let chunkCount = 0;
+                
+                while (true) {
+                    const { value, done } = await reader.read();
+                    
+                    if (done) {
+                        console.log('流式传输完成，总共接收', chunkCount, '个数据块');
+                        break;
+                    }
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    fullContent += chunk;
+                    chunkCount++;
+                    
+                    // 更新进度提示
+                    progressDiv.textContent = `已接收 ${chunkCount} 个数据块，当前长度: ${fullContent.length} 字符`;
+                }
+                
+                console.log('完整内容长度:', fullContent.length);
+                console.log('内容预览:', fullContent.substring(0, 200));
+                
+                // 移除markdown代码块标记
+                let cleanedHtml = fullContent.replace(/^```html\n/, '').replace(/\n```$/, '').trim();
+                
+                // 如果仍然以```开头/结尾，再次清理
+                if (cleanedHtml.startsWith('```')) {
+                    cleanedHtml = cleanedHtml.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+                }
+                
+                console.log('清理后HTML长度:', cleanedHtml.length);
+                
+                // 检查是否是HTML内容
+                if (cleanedHtml.includes('<!DOCTYPE') || cleanedHtml.includes('<html')) {
+                    // 渲染HTML
+                    resultContainer.innerHTML = cleanedHtml;
+                    window.generatedPlan = cleanedHtml;
+                    console.log('策划案流式生成完成，HTML已渲染');
+                } else {
+                    // 如果不是HTML，显示原始内容
+                    resultContainer.innerHTML = `<pre style="white-space: pre-wrap; word-wrap: break-word;">${cleanedHtml}</pre>`;
+                    window.generatedPlan = cleanedHtml;
+                    console.warn('返回的内容不是HTML格式，以纯文本显示');
+                }
+                
+            } catch (error) {
+                console.error('流式策划案生成错误:', error);
+                resultContainer.innerHTML = `<p style="color: red;">流式请求失败: ${error.message}<br>请检查:<br>1. Token是否有效<br>2. 后端服务是否运行<br>3. 浏览器控制台是否有错误信息</p>`;
+            }
+        }
+
+        // 下载策划案
+        function downloadPlan() {
+            if (!window.generatedPlan) {
+                alert('没有可下载的策划案内容');
+                return;
+            }
+            
+            const blob = new Blob([window.generatedPlan], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '活动策划案.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 页面加载时恢复保存的Token
+        window.onload = function() {
+            const savedToken = localStorage.getItem('ai_test_token');
+            if (savedToken) {
+                document.getElementById('token').value = savedToken;
+                document.getElementById('tokenStatus').innerHTML = '<p style="color: green;">已恢复保存的Token</p>';
+            }
+        };
+    </script>
+</body>
+</html>
