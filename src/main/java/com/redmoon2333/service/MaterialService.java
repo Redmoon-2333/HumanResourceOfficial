@@ -505,6 +505,80 @@ public class MaterialService {
         
         return material.getFileUrl();
     }
+    
+    /**
+     * 更新分类信息
+     * @param categoryId 分类ID
+     * @param categoryName 分类名称
+     * @param sortOrder 排序
+     * @return 更新后的分类对象
+     */
+    @Transactional
+    public MaterialCategory updateCategory(Integer categoryId, String categoryName, Integer sortOrder) {
+        logger.info("更新分类信息: categoryId={}, categoryName={}", categoryId, categoryName);
+        
+        // 检查权限（部长/副部长）
+        permissionUtil.checkMinisterPermission();
+        
+        // 检查分类是否存在
+        MaterialCategory category = categoryMapper.findById(categoryId);
+        if (category == null) {
+            logger.warn("未找到指定分类: categoryId={}", categoryId);
+            throw new RuntimeException("指定的分类不存在");
+        }
+        
+        // 检查名称是否与其他分类重复
+        MaterialCategory existingCategory = categoryMapper.findByName(categoryName);
+        if (existingCategory != null && !existingCategory.getCategoryId().equals(categoryId)) {
+            logger.warn("分类名称已存在: categoryName={}", categoryName);
+            throw new RuntimeException("该分类名称已存在");
+        }
+        
+        category.setCategoryName(categoryName);
+        category.setSortOrder(sortOrder);
+        categoryMapper.update(category);
+        
+        logger.info("分类信息更新成功: categoryId={}", categoryId);
+        return category;
+    }
+    
+    /**
+     * 更新子分类信息
+     * @param subcategoryId 子分类ID
+     * @param subcategoryName 子分类名称
+     * @param sortOrder 排序
+     * @return 更新后的子分类对象
+     */
+    @Transactional
+    public MaterialSubcategory updateSubcategory(Integer subcategoryId, String subcategoryName, Integer sortOrder) {
+        logger.info("更新子分类信息: subcategoryId={}, subcategoryName={}", subcategoryId, subcategoryName);
+        
+        // 检查权限（部长/副部长）
+        permissionUtil.checkMinisterPermission();
+        
+        // 检查子分类是否存在
+        MaterialSubcategory subcategory = subcategoryMapper.findById(subcategoryId);
+        if (subcategory == null) {
+            logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
+            throw new RuntimeException("指定的子分类不存在");
+        }
+        
+        // 检查名称是否与同分类下的其他子分类重复
+        MaterialSubcategory existingSubcategory = subcategoryMapper.findByNameAndCategoryId(
+            subcategoryName, subcategory.getCategoryId());
+        if (existingSubcategory != null && !existingSubcategory.getSubcategoryId().equals(subcategoryId)) {
+            logger.warn("该分类下已存在同名子分类: categoryId={}, subcategoryName={}", 
+                subcategory.getCategoryId(), subcategoryName);
+            throw new RuntimeException("该分类下已存在同名子分类");
+        }
+        
+        subcategory.setSubcategoryName(subcategoryName);
+        subcategory.setSortOrder(sortOrder);
+        subcategoryMapper.update(subcategory);
+        
+        logger.info("子分类信息更新成功: subcategoryId={}", subcategoryId);
+        return subcategory;
+    }
 }
 
 

@@ -149,6 +149,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.OK)
     public ApiResponse<Void> handleException(Exception e) {
+        // 判断是否为客户端断开连接的异常
+        String errorMsg = e.getMessage();
+        String exceptionClass = e.getClass().getSimpleName();
+        
+        // 客户端断开连接的各种异常类型
+        if ("AsyncRequestNotUsableException".equals(exceptionClass)
+                || "ClientAbortException".equals(exceptionClass)
+                || (errorMsg != null && (
+                        errorMsg.contains("ClientAbortException")
+                        || errorMsg.contains("Broken pipe")
+                        || errorMsg.contains("你的主机中的软件中止了一个已建立的连接")
+                        || errorMsg.contains("Connection reset")
+                        || errorMsg.contains("ServletOutputStream failed to flush")
+                ))) {
+            logger.warn("客户端提前关闭连接: {}", exceptionClass);
+            // 客户端已断开，无法返回响应，直接返回null
+            return null;
+        }
+        
         logger.error("未捕获的异常: {}", e.getMessage(), e);
         return ApiResponse.error("系统内部错误", ErrorCode.SYSTEM_ERROR.getCode());
     }
