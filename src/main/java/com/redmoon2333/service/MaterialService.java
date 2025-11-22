@@ -454,6 +454,45 @@ public class MaterialService {
         logger.info("资料删除成功: materialId={}", materialId);
     }
 
+    /**
+     * 为资料文件生成预签名URL，用于安全下载
+     * @param materialId 资料ID
+     * @param expirationSeconds 过期时间（秒），默认1小时
+     * @return 预签名URL
+     */
+    public String generateDownloadUrl(Integer materialId, Long expirationSeconds) {
+        logger.info("为资料生成预签名URL: materialId={}, 过期时间={}s", materialId, expirationSeconds);
+        
+        // 检查权限（部员及以上）
+        permissionUtil.checkMemberPermission();
+        
+        // 获取资料信息
+        String fileUrl = getFileUrlById(materialId);
+        
+        // 从完整URL中提取文件路径
+        String filePath = extractOssFilePath(fileUrl);
+        if (filePath == null || filePath.isEmpty()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件路径解析失败");
+        }
+        
+        // 生成预签名URL
+        return ossUtil.generatePresignedUrl(filePath, expirationSeconds);
+    }
+    
+    /**
+     * 为资料文件生成预签名URL（使用默认过期时间）
+     * @param materialId 资料ID
+     * @return 预签名URL
+     */
+    public String generateDownloadUrl(Integer materialId) {
+        return generateDownloadUrl(materialId, 3600L); // 默认1小时
+    }
+    
+    /**
+     * 获取资料文件URL（保留原有接口兼容性）
+     * @param materialId 资料ID
+     * @return 文件URL
+     */
     public String getFileUrlById(Integer materialId) {
         if (materialId == null) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "资料ID不能为空");
@@ -466,7 +505,83 @@ public class MaterialService {
         
         return material.getFileUrl();
     }
+    
+    /**
+     * 更新分类信息
+     * @param categoryId 分类ID
+     * @param categoryName 分类名称
+     * @param sortOrder 排序
+     * @return 更新后的分类对象
+     */
+    @Transactional
+    public MaterialCategory updateCategory(Integer categoryId, String categoryName, Integer sortOrder) {
+        logger.info("更新分类信息: categoryId={}, categoryName={}", categoryId, categoryName);
+        
+        // 检查权限（部长/副部长）
+        permissionUtil.checkMinisterPermission();
+        
+        // 检查分类是否存在
+        MaterialCategory category = categoryMapper.findById(categoryId);
+        if (category == null) {
+            logger.warn("未找到指定分类: categoryId={}", categoryId);
+            throw new RuntimeException("指定的分类不存在");
+        }
+        
+        // 检查名称是否与其他分类重复
+        MaterialCategory existingCategory = categoryMapper.findByName(categoryName);
+        if (existingCategory != null && !existingCategory.getCategoryId().equals(categoryId)) {
+            logger.warn("分类名称已存在: categoryName={}", categoryName);
+            throw new RuntimeException("该分类名称已存在");
+        }
+        
+        category.setCategoryName(categoryName);
+        category.setSortOrder(sortOrder);
+        categoryMapper.update(category);
+        
+        logger.info("分类信息更新成功: categoryId={}", categoryId);
+        return category;
+    }
+    
+    /**
+     * 更新子分类信息
+     * @param subcategoryId 子分类ID
+     * @param subcategoryName 子分类名称
+     * @param sortOrder 排序
+     * @return 更新后的子分类对象
+     */
+    @Transactional
+    public MaterialSubcategory updateSubcategory(Integer subcategoryId, String subcategoryName, Integer sortOrder) {
+        logger.info("更新子分类信息: subcategoryId={}, subcategoryName={}", subcategoryId, subcategoryName);
+        
+        // 检查权限（部长/副部长）
+        permissionUtil.checkMinisterPermission();
+        
+        // 检查子分类是否存在
+        MaterialSubcategory subcategory = subcategoryMapper.findById(subcategoryId);
+        if (subcategory == null) {
+            logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
+            throw new RuntimeException("指定的子分类不存在");
+        }
+        
+        // 检查名称是否与同分类下的其他子分类重复
+        MaterialSubcategory existingSubcategory = subcategoryMapper.findByNameAndCategoryId(
+            subcategoryName, subcategory.getCategoryId());
+        if (existingSubcategory != null && !existingSubcategory.getSubcategoryId().equals(subcategoryId)) {
+            logger.warn("该分类下已存在同名子分类: categoryId={}, subcategoryName={}", 
+                subcategory.getCategoryId(), subcategoryName);
+            throw new RuntimeException("该分类下已存在同名子分类");
+        }
+        
+        subcategory.setSubcategoryName(subcategoryName);
+        subcategory.setSortOrder(sortOrder);
+        subcategoryMapper.update(subcategory);
+        
+        logger.info("子分类信息更新成功: subcategoryId={}", subcategoryId);
+        return subcategory;
+    }
 }
+
+
 
 
 

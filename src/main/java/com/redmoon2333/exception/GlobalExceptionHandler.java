@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +22,27 @@ import java.util.Map;
 public class GlobalExceptionHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    
+    /**
+     * 处理静态资源找不到异常（如favicon.ico）
+     * 降低日志级别为WARN，减少日志噪音
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public void handleNoResourceFoundException(NoResourceFoundException e) {
+        // 对于favicon.ico等常见静态资源，使用WARN级别
+        String resourcePath = e.getMessage();
+        if (resourcePath != null && (resourcePath.contains("favicon.ico") || 
+                                     resourcePath.contains(".css") || 
+                                     resourcePath.contains(".js") ||
+                                     resourcePath.contains(".png") ||
+                                     resourcePath.contains(".jpg"))) {
+            logger.warn("静态资源找不到: {}", resourcePath);
+        } else {
+            logger.error("资源找不到: {}", resourcePath);
+        }
+        // 不返回JSON响应，让浏览器自然处琄04
+    }
     
     /**
      * 处理文件上传大小超限异常
@@ -127,6 +149,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.OK)
     public ApiResponse<Void> handleException(Exception e) {
+        // 判断是否为客户端断开连接的异常
+        String errorMsg = e.getMessage();
+        String exceptionClass = e.getClass().getSimpleName();
+        
+        // 客户端断开连接的各种异常类型
+        if ("AsyncRequestNotUsableException".equals(exceptionClass)
+                || "ClientAbortException".equals(exceptionClass)
+                || (errorMsg != null && (
+                        errorMsg.contains("ClientAbortException")
+                        || errorMsg.contains("Broken pipe")
+                        || errorMsg.contains("你的主机中的软件中止了一个已建立的连接")
+                        || errorMsg.contains("Connection reset")
+                        || errorMsg.contains("ServletOutputStream failed to flush")
+                ))) {
+            logger.warn("客户端提前关闭连接: {}", exceptionClass);
+            // 客户端已断开，无法返回响应，直接返回null
+            return null;
+        }
+        
         logger.error("未捕获的异常: {}", e.getMessage(), e);
         return ApiResponse.error("系统内部错误", ErrorCode.SYSTEM_ERROR.getCode());
     }
