@@ -127,6 +127,8 @@ public class PastActivityService {
      */
     public PastActivityResponse createPastActivity(PastActivityRequest request) {
         logger.info("创建往届活动 - 标题: {}", request.getTitle());
+        logger.info("请求参数详情 - coverImage: {}, pushUrl: {}, year: {}", 
+            request.getCoverImage(), request.getPushUrl(), request.getYear());
         
         try {
             // 参数校验
@@ -146,6 +148,8 @@ public class PastActivityService {
             pastActivity.setPushUrl(request.getPushUrl());
             pastActivity.setYear(request.getYear());
             pastActivity.setCreateTime(LocalDateTime.now());
+            
+            logger.info("准备插入数据库 - Entity: {}", pastActivity);
             
             int result = pastActivityMapper.insert(pastActivity);
             if (result <= 0) {

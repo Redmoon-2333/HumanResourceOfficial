@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -93,6 +94,18 @@ public class SecurityConfig {
     }
     
     /**
+     * 自定义访问拒绝处理器
+     */
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, accessDeniedException) -> {
+            response.setStatus(200);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":403,\"message\":\"权限不足，无法访问资源\",\"data\":null}");
+        };
+    }
+    
+    /**
      * 安全过滤链配置
      */
     @Bean
@@ -112,7 +125,7 @@ public class SecurityConfig {
                 // 允许OPTIONS请求（CORS预检）
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // 允许注册和登录接口访问
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/check-username").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
                 // 允许静态资源访问
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
                 // 允许文件访问
@@ -130,9 +143,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/users/search/name/**").permitAll()
                 // 允许调试接口访问
                 .requestMatchers("/api/users/debug/**").permitAll()
+                // AI接口允许（会验证JWT，权限检查由AOP处理）
+                .requestMatchers("/api/ai/**").permitAll()
                 // 其他请求需要认证
                 .anyRequest().authenticated()
             )
+            
+            // 配置访问拒绝处理器
+            .exceptionHandling(ex -> ex.accessDeniedHandler(accessDeniedHandler()))
             
             // 添加JWT过滤器
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

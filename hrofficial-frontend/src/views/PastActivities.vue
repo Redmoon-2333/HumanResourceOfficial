@@ -23,6 +23,9 @@ const uploadForm = ref({
   activityDate: ''
 })
 
+const coverImageFile = ref<File | null>(null)
+const uploadingCover = ref(false)
+
 // 加载年份列表
 const loadYears = async () => {
   try {
@@ -45,12 +48,43 @@ const loadActivities = async () => {
     }
 
     const res = await getPastActivities(params)
+    console.log('获取往届活动响应:', res)
+    
     if (res.code === 200 && res.data) {
+      console.log('响应数据类型:', typeof res.data, 'isArray:', Array.isArray(res.data))
+      console.log('响应数据内容:', res.data)
+      console.log('content字段:', res.data.content)
+      console.log('content是否为数组:', Array.isArray(res.data.content))
+      
+      let activityList = []
       if (Array.isArray(res.data)) {
-        activities.value = res.data
-      } else {
-        activities.value = res.data.list || []
+        // 直接返回数组
+        activityList = res.data
+        console.log('数据是数组，直接使用')
+      } else if (res.data.content && Array.isArray(res.data.content)) {
+        // 分页对象，字段名是 content
+        activityList = res.data.content
+        console.log('从分页对象的content字段提取列表')
+      } else if (res.data.list && Array.isArray(res.data.list)) {
+        // 分页对象，字段名是 list（兼容旧格式）
+        activityList = res.data.list
+        console.log('从分页对象的list字段提取列表')
       }
+      
+      console.log('提取到的活动列表:', activityList)
+      console.log('活动列表长度:', activityList.length)
+      
+      // 转换字段名以兼容前端模板
+      activities.value = activityList.map((activity: any) => ({
+        ...activity,
+        id: activity.pastActivityId,  // 添加 id 别名
+        coverImageUrl: activity.coverImage,  // 添加 coverImageUrl 别名
+        articleUrl: activity.pushUrl  // 添加 articleUrl 别名
+      }))
+      
+      console.log('转换后的活动列表:', activities.value)
+    } else {
+      console.warn('响应格式异常:', res)
     }
   } catch (error: any) {
     console.error('加载往届活动失败:', error)
@@ -66,6 +100,75 @@ const handleYearFilter = (year: number | undefined) => {
   loadActivities()
 }
 
+// 处理封面图片上传
+const handleCoverUpload = (file: any) => {
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
+  if (!validTypes.includes(file.raw.type)) {
+    ElMessage.error('请上传 JPG/PNG/WEBP 格式的图片')
+    return false
+  }
+  
+  const maxSize = 5 * 1024 * 1024 // 5MB
+  if (file.raw.size > maxSize) {
+    ElMessage.error('图片大小不能超过 5MB')
+    return false
+  }
+  
+  coverImageFile.value = file.raw
+  return false // 阻止自动上传
+}
+
+// 删除封面图片
+const handleCoverRemove = () => {
+  coverImageFile.value = null
+  uploadForm.value.coverImageUrl = ''
+}
+
+// 上传封面图片到服务器
+const uploadCoverImage = async () => {
+  if (!coverImageFile.value) {
+    return uploadForm.value.coverImageUrl // 如果没有新图片，返回现有URL
+  }
+  
+  uploadingCover.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', coverImageFile.value)
+    
+    const token = localStorage.getItem('token')
+    const response = await fetch('/api/activities/upload-image', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    })
+    
+    // 检查响应状态
+    if (!response.ok) {
+      throw new Error(`上传失败: ${response.status} ${response.statusText}`)
+    }
+    
+    // 检查响应内容类型
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('服务器返回的不是JSON格式')
+    }
+    
+    const result = await response.json()
+    if (result.code === 200 && result.data) {
+      return result.data // 直接返回URL字符串
+    } else {
+      throw new Error(result.message || '上传失败')
+    }
+  } catch (error: any) {
+    console.error('上传封面图片失败:', error)
+    throw error
+  } finally {
+    uploadingCover.value = false
+  }
+}
+
 // 打开创建对话框
 const handleCreate = () => {
   uploadForm.value = {
@@ -76,6 +179,7 @@ const handleCreate = () => {
     year: new Date().getFullYear(),
     activityDate: ''
   }
+  coverImageFile.value = null
   dialogVisible.value = true
 }
 
@@ -89,13 +193,30 @@ const handleSave = async () => {
     ElMessage.warning('请输入推文链接')
     return
   }
-  if (!uploadForm.value.coverImageUrl) {
-    ElMessage.warning('请输入封面图片URL')
+  if (!coverImageFile.value && !uploadForm.value.coverImageUrl) {
+    ElMessage.warning('请上传封面图片')
     return
   }
 
   loading.value = true
   try {
+    // 先上传封面图片
+    const coverUrl = await uploadCoverImage()
+    console.log('图片上传结果:', coverUrl)
+    
+    if (!coverUrl) {
+      throw new Error('图片上传失败，未获取到图片URL')
+    }
+    
+    uploadForm.value.coverImageUrl = coverUrl
+    
+    console.log('准备创建往届活动:', {
+      title: uploadForm.value.title,
+      articleUrl: uploadForm.value.articleUrl,
+      coverImageUrl: uploadForm.value.coverImageUrl,
+      year: uploadForm.value.year
+    })
+    
     const res = await createPastActivity(uploadForm.value)
 
     if (res.code === 200) {
@@ -118,7 +239,7 @@ const handleSave = async () => {
 const handleDelete = async (activity: PastActivity) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除往届活动"${activity.title}"吗？`,
+      `确定要删除往届活动“${activity.title}”吗？`,
       '提示',
       {
         confirmButtonText: '确定',
@@ -128,7 +249,8 @@ const handleDelete = async (activity: PastActivity) => {
     )
 
     loading.value = true
-    const res = await deletePastActivity(activity.id)
+    const activityId = activity.id || activity.pastActivityId
+    const res = await deletePastActivity(activityId)
     if (res.code === 200) {
       ElMessage.success('删除成功')
       loadActivities()
@@ -215,9 +337,9 @@ onMounted(() => {
           :body-style="{ padding: '0' }"
         >
           <!-- 活动封面 -->
-          <div class="activity-cover" @click="openArticle(activity.articleUrl)">
+          <div class="activity-cover" @click="openArticle(activity.articleUrl || activity.pushUrl)">
             <el-image
-              :src="activity.coverImageUrl"
+              :src="activity.coverImageUrl || activity.coverImage"
               fit="cover"
               style="width: 100%; height: 240px; cursor: pointer"
             >
@@ -244,14 +366,14 @@ onMounted(() => {
           <!-- 活动信息 -->
           <div class="activity-content">
             <h3 class="activity-title">{{ activity.title }}</h3>
-            <p class="activity-description">{{ activity.description || '暂无描述' }}</p>
+            <p class="activity-description">点击封面查看推文详情</p>
             
             <div class="activity-footer">
               <div class="activity-meta">
                 <el-icon color="var(--color-primary)">
                   <Calendar />
                 </el-icon>
-                <span>{{ formatDate(activity.activityDate) }}</span>
+                <span>{{ formatDate(activity.createTime) }}</span>
               </div>
               
               <div class="actions" v-if="userStore.isMinister">
@@ -298,11 +420,19 @@ onMounted(() => {
               placeholder="请输入推文链接(如微信公众号文章链接)" 
             />
           </el-form-item>
-          <el-form-item label="封面图片URL" required>
-            <el-input 
-              v-model="uploadForm.coverImageUrl" 
-              placeholder="请输入封面图片URL" 
-            />
+          <el-form-item label="封面图片" required>
+            <el-upload
+              :auto-upload="false"
+              :on-change="handleCoverUpload"
+              :on-remove="handleCoverRemove"
+              :limit="1"
+              :file-list="coverImageFile ? [{ name: coverImageFile.name, url: '' }] : []"
+              accept="image/jpeg,image/png,image/jpg,image/webp"
+              list-type="picture-card"
+            >
+              <el-icon><Plus /></el-icon>
+            </el-upload>
+            <div class="upload-tip">支持 JPG/PNG/WEBP 格式，大小不超过 5MB</div>
           </el-form-item>
           <el-form-item label="活动年份" required>
             <el-input-number
@@ -491,5 +621,11 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: var(--spacing-xs);
+}
+
+.upload-tip {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
 }
 </style>

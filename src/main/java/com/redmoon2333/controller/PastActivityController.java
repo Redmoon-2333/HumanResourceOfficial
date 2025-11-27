@@ -41,8 +41,14 @@ public class PastActivityController {
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String title) {
         
+        logger.info("查询往届活动 - pageNum: {}, pageSize: {}, year: {}, title: {}", 
+            pageNum, pageSize, year, title);
+        
         PageResponse<PastActivityResponse> result = pastActivityService.getPagedPastActivities(
                 pageNum, pageSize, year, title);
+        
+        logger.info("返回往届活动数据 - 总数: {}, 当前页数据数: {}", 
+            result.getTotal(), result.getContent().size());
         
         return ApiResponse.success(result);
     }

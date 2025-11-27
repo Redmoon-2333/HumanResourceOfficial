@@ -484,6 +484,8 @@
             const resultContainer = document.getElementById('planResult');
             resultContainer.innerHTML = '<p class="loading">正在流式生成策划案，请稍候...</p>';
             
+            let fullContent = ''; // 在函数开始时初始化
+            
             try {
                 console.log('发送流式策划案生成请求:', planRequest);
                 const response = await fetch(`${API_BASE}/api/ai/generate-plan-stream`, {
@@ -504,7 +506,7 @@
                 // 读取流式数据
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                let fullContent = '';
+                // fullContent 已在函数开始时初始化
                 
                 // 显示流式进度提示
                 resultContainer.innerHTML = '<div style="padding: 20px; background: #f0f8ff; border-radius: 5px;">' +
@@ -523,12 +525,21 @@
                         break;
                     }
                     
-                    const chunk = decoder.decode(value, { stream: true });
-                    fullContent += chunk;
-                    chunkCount++;
-                    
-                    // 更新进度提示
-                    progressDiv.textContent = `已接收 ${chunkCount} 个数据块，当前长度: ${fullContent.length} 字符`;
+                    if (value) {
+                        const chunk = decoder.decode(value, { stream: true });
+                        fullContent += chunk;
+                        chunkCount++;
+                        
+                        // 更新进度提示
+                        progressDiv.textContent = `已接收 ${chunkCount} 个数据块，当前长度: ${fullContent.length} 字符`;
+                    }
+                }
+                
+                // 解码最后的数据（如果有）
+                const finalChunk = decoder.decode();
+                if (finalChunk) {
+                    fullContent += finalChunk;
+                    console.log('添加最后的数据块，长度:', finalChunk.length);
                 }
                 
                 console.log('完整内容长度:', fullContent.length);
@@ -559,7 +570,26 @@
                 
             } catch (error) {
                 console.error('流式策划案生成错误:', error);
-                resultContainer.innerHTML = `<p style="color: red;">流式请求失败: ${error.message}<br>请检查:<br>1. Token是否有效<br>2. 后端服务是否运行<br>3. 浏览器控制台是否有错误信息</p>`;
+                
+                // 区分不同类型的错误
+                let errorMessage = '流式请求失败: ' + error.message;
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = '请求被中止，可能是网络问题或超时。如果已经生成了部分内容，请查看上方的部分结果。';
+                    console.warn('请求被中止，已接收内容长度:', fullContent ? fullContent.length : 0);
+                    
+                    // 如果已经有部分内容，尝试渲染
+                    if (fullContent && fullContent.length > 100) {
+                        console.log('尝试渲染部分生成的内容...');
+                        let partialContent = fullContent.replace(/^```html\n/, '').replace(/\n```$/, '').trim();
+                        resultContainer.innerHTML = '<div style="border: 2px solid orange; padding: 15px; margin-bottom: 10px;">' +
+                            '<p style="color: orange; font-weight: bold;">⚠️ 警告：生成被中断，以下是部分结果</p>' +
+                            '</div>' + partialContent;
+                        return;
+                    }
+                }
+                
+                resultContainer.innerHTML = `<p style="color: red;">${errorMessage}<br>请检查:<br>1. Token是否有效<br>2. 后端服务是否运行<br>3. 浏览器控制台是否有错误信息</p>`;
             }
         }
 
