@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 激活码Mapper接口
@@ -45,4 +46,25 @@ public interface ActivationCodeMapper {
      * @return 影响行数
      */
     int update(ActivationCode activationCode);
+    
+    /**
+     * 根据创建于查找激活码
+     * @param creatorId 创建于ID
+     * @return 激活码列表
+     */
+    List<ActivationCode> findByCreatorId(@Param("creatorId") Integer creatorId);
+    
+    /**
+     * 根据ID查找激活码
+     * @param codeId 激活码ID
+     * @return 激活码实体
+     */
+    ActivationCode findById(@Param("codeId") Integer codeId);
+    
+    /**
+     * 根据ID删除激活码
+     * @param codeId 激活码ID
+     * @return 影响行数
+     */
+    int deleteById(@Param("codeId") Integer codeId);
 }

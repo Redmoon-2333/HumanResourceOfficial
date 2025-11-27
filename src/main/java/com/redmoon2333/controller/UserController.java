@@ -4,13 +4,16 @@ import com.redmoon2333.dto.AlumniResponse;
 import com.redmoon2333.dto.ApiResponse;
 import com.redmoon2333.dto.PublicUserInfo;
 import com.redmoon2333.entity.User;
+import com.redmoon2333.entity.ActivationCode;
 import com.redmoon2333.service.UserService;
 import com.redmoon2333.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,6 +135,56 @@ public class UserController {
             return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
         } catch (Exception e) {
             logger.error("根据姓名模糊查找用户时发生未预期的异常", e);
+            return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+    
+    /**
+     * 获取该用户生成的所有激活码
+     * 
+     * @param authHeader 授权令牌
+     * @return 该用户生成的激活码列表
+     */
+    @GetMapping("/activation-codes")
+    public ApiResponse<List<ActivationCode>> getActivationCodes(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            logger.info("收到获取用户激活码的请求");
+            String token = authHeader.replace("Bearer ", "");
+            List<ActivationCode> codes = userService.getActivationCodesByUser(token);
+            logger.info("成功获取该用户的 {} 个激活码", codes.size());
+            return ApiResponse.success("查询成功", codes);
+        } catch (BusinessException e) {
+            logger.warn("获取用户激活码失败: {}", e.getErrorCode().getMessage(), e);
+            return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
+        } catch (Exception e) {
+            logger.error("获取用户激活码时发生异常", e);
+            return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+    
+    /**
+     * 删除激活码
+     * 
+     * @param authHeader 授权令牌
+     * @param codeId 激活码ID
+     * @return 删除结果
+     */
+    @PutMapping("/activation-codes/{codeId}/delete")
+    public ApiResponse<String> deleteActivationCode(
+            @RequestHeader("Authorization") String authHeader,
+            @org.springframework.web.bind.annotation.PathVariable Integer codeId) {
+        try {
+            logger.info("收到删除激活码的请求，激活码ID: {}", codeId);
+            String token = authHeader.replace("Bearer ", "");
+            userService.deleteActivationCode(token, codeId);
+            logger.info("成功删除激活码，ID: {}", codeId);
+            return ApiResponse.success("激活码删除成功", null);
+        } catch (BusinessException e) {
+            logger.warn("删除激活码失败: {}", e.getErrorCode().getMessage(), e);
+            return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
+        } catch (Exception e) {
+            logger.error("删除激活码时发生异常", e);
             return ApiResponse.error("系统内部错误", 500);
         }
     }

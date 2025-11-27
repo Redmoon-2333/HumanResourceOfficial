@@ -25,6 +25,16 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 public class AIChatService {
     private static final Logger logger = LoggerFactory.getLogger(AIChatService.class);
     
+    // 系统提示词：定义AI的身份、职责和输出格式要求
+    private static final String SYSTEM_PROMPT = """
+            你是人力资源中心的小助理。你的主要职责是帮助部员解决颇痒（活动组织、团队协作、部门流程、新人培训）以及关心部员学习生活（学习方法、暴力情绪、职业规划）。
+            你的回答风格应该是友好、亲切、专业而带温度，并指需具体可行的建议。
+            
+            渲染规范：用标准文字（##标题、-列表、**加粗**、*斜体*），每个大上文一段万字内，保持简洁紧凑。
+            不需要每段前后空行，会自动优化不会打乱。
+            不要使用---、>、```等复杂元素。
+            """;
+    
     @Resource(name = "qwenChatClient")
     private ChatClient qwenChatClient;
     
@@ -48,7 +58,9 @@ public class AIChatService {
         
         try {
             String response = qwenChatClient
-                    .prompt(message)
+                    .prompt()
+                    .system(SYSTEM_PROMPT)  // 添加系统提示词
+                    .user(message)
                     .advisors(advisorSpec -> advisorSpec.param(CONVERSATION_ID, conversationId))
                     .call()
                     .content();
@@ -60,6 +72,58 @@ public class AIChatService {
         } catch (Exception e) {
             logger.error("AI对话处理失败，用户ID: {}, 消息: {}", userId, message, e);
             throw new RuntimeException("AI对话处理失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 流式发送聊天消息（带用户记忆）
+     * 
+     * @param userId 用户ID，用于隔离不同用户的对话记忆
+     * @param message 用户消息
+     * @return 流式响应
+     */
+    public Flux<String> chatStream(Integer userId, String message) {
+        logger.info("用户 {} 发送流式消息: {}", userId, message);
+        
+        // 使用用户ID作为会话ID，确保每个用户有独立的对话记忆
+        String conversationId = "user_" + userId;
+        
+        logger.debug("为用户 {} 创建会话ID: {}", userId, conversationId);
+        
+        try {
+            return qwenChatClient
+                    .prompt()
+                    .system(SYSTEM_PROMPT)  // 添加系统提示词
+                    .user(message)
+                    .advisors(advisorSpec -> advisorSpec.param(CONVERSATION_ID, conversationId))
+                    .stream()
+                    .content()
+                    .doOnNext(chunk -> logger.debug("发送数据块: {} 字符", chunk.length()))
+                    .doOnComplete(() -> logger.info("流式对话完成，用户ID: {}", userId))
+                    .doOnError(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset")
+                                || errorMsg.contains("你的主机中的软件中止了一个已建立的连接"))) {
+                            logger.warn("客户端提前断开连接，用户ID: {}", userId);
+                        } else {
+                            logger.error("流式对话错误，用户ID: {}, 错误: {}", userId, errorMsg);
+                        }
+                    })
+                    .onErrorResume(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset")
+                                || errorMsg.contains("你的主机中的软件中止了一个已建立的连接"))) {
+                            return Flux.empty();
+                        }
+                        return Flux.error(error);
+                    });
+        } catch (Exception e) {
+            logger.error("流式AI对话处理失败: {}", e.getMessage(), e);
+            return Flux.error(new RuntimeException("流式AI对话处理失败: " + e.getMessage(), e));
         }
     }
     

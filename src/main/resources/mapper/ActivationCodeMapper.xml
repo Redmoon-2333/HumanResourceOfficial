@@ -81,4 +81,27 @@
         WHERE code_id = #{codeId}
     </update>
 
+    <!-- 根据创建者ID查找激活码 -->
+    <select id="findByCreatorId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activation_code
+        WHERE creator_id = #{creatorId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据ID查找激活码 -->
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activation_code
+        WHERE code_id = #{codeId}
+    </select>
+
+    <!-- 根据ID删除激活码 -->
+    <delete id="deleteById">
+        DELETE FROM activation_code
+        WHERE code_id = #{codeId}
+    </delete>
+
 </mapper>
