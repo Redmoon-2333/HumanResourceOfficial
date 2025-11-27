@@ -17,6 +17,18 @@ const keyword = ref('')
 
 // 统计信息
 const totalMembers = computed(() => {
+  // 使用Set去重，统计独立的人数
+  const uniqueNames = new Set<string>()
+  alumniByYear.value.forEach(group => {
+    group.members.forEach(member => {
+      uniqueNames.add(member.name)
+    })
+  })
+  return uniqueNames.size
+})
+
+// 记录总数（包含同一人在不同年份的多个身份）
+const totalRecords = computed(() => {
   return alumniByYear.value.reduce((sum, group) => sum + group.members.length, 0)
 })
 
@@ -173,7 +185,7 @@ onMounted(() => {
 
       <!-- 统计信息 -->
       <el-row :gutter="20" class="stats-row">
-        <el-col :xs="24" :sm="8">
+        <el-col :xs="24" :sm="6">
           <el-card class="stat-card">
             <div class="stat-content">
               <el-icon :size="32" color="var(--color-primary)">
@@ -181,15 +193,28 @@ onMounted(() => {
               </el-icon>
               <div>
                 <p class="stat-value">{{ totalMembers }}</p>
-                <p class="stat-label">总人数</p>
+                <p class="stat-label">独立人数</p>
               </div>
             </div>
           </el-card>
         </el-col>
-        <el-col :xs="24" :sm="8">
+        <el-col :xs="24" :sm="6">
           <el-card class="stat-card">
             <div class="stat-content">
               <el-icon :size="32" color="var(--color-secondary)">
+                <Document />
+              </el-icon>
+              <div>
+                <p class="stat-value">{{ totalRecords }}</p>
+                <p class="stat-label">记录总数</p>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="6">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <el-icon :size="32" color="var(--color-accent)">
                 <Calendar />
               </el-icon>
               <div>
@@ -199,10 +224,10 @@ onMounted(() => {
             </div>
           </el-card>
         </el-col>
-        <el-col :xs="24" :sm="8">
+        <el-col :xs="24" :sm="6">
           <el-card class="stat-card">
             <div class="stat-content">
-              <el-icon :size="32" color="var(--color-accent)">
+              <el-icon :size="32" color="var(--color-warning)">
                 <Star />
               </el-icon>
               <div>

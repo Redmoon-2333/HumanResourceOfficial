@@ -10,9 +10,14 @@ const userStore = useUserStore()
 
 const activeMenu = computed(() => route.path)
 
+const isMinisterOrViceMinister = computed(() => {
+  const roleHistory = userStore.userInfo?.roleHistory || ''
+  return roleHistory.includes('部长')
+})
+
 const menuItems = [
   { path: '/home', title: '首页', icon: 'HomeFilled' },
-  { path: '/activities', title: '活动管理', icon: 'Calendar' },
+  { path: '/activities', title: '活动介绍', icon: 'Calendar' },
   { path: '/materials', title: '资料管理', icon: 'FolderOpened' },
   { path: '/past-activities', title: '往届活动', icon: 'PictureFilled' },
   { path: '/alumni', title: '往届成员', icon: 'UserFilled' },
@@ -20,19 +25,21 @@ const menuItems = [
   { path: '/plan-generator', title: '策划案生成', icon: 'DocumentAdd' }
 ]
 
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    userStore.logout()
-    ElMessage.success('已退出登录')
-    router.push('/login')
-  } catch {
-    // 用户取消
+const handleCommand = async (command: string) => {
+  if (command === 'logout') {
+    try {
+      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      
+      userStore.logout()
+      ElMessage.success('已退出登录')
+      router.push('/login')
+    } catch {
+      // 用户取消
+    }
   }
 }
 </script>
@@ -70,7 +77,7 @@ const handleLogout = async () => {
         </div>
         
         <div class="header-right">
-          <el-dropdown @command="handleLogout">
+          <el-dropdown @command="handleCommand">
             <div class="user-info">
               <el-avatar :size="32" class="user-avatar">
                 {{ userStore.userInfo?.name?.charAt(0) || 'U' }}
@@ -79,11 +86,22 @@ const handleLogout = async () => {
             </div>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/profile')">
+                <el-dropdown-item @click.stop="router.push('/profile')">
                   <el-icon><User /></el-icon>
                   个人中心
                 </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
+                <el-dropdown-item 
+                  v-if="isMinisterOrViceMinister"
+                  divided
+                  @click.stop="router.push('/activation-code-manager')"
+                >
+                  <el-icon><DocumentAdd /></el-icon>
+                  激活码管理
+                </el-dropdown-item>
+                <el-dropdown-item 
+                  divided
+                  command="logout"
+                >
                   <el-icon><SwitchButton /></el-icon>
                   退出登录
                 </el-dropdown-item>

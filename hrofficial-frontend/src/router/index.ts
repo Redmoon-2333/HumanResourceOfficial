@@ -73,6 +73,12 @@ const router = createRouter({
       name: 'Profile',
       component: () => import('@/views/Profile.vue'),
       meta: { title: '个人中心' }
+    },
+    {
+      path: '/activation-code-manager',
+      name: 'ActivationCodeManager',
+      component: () => import('@/views/ActivationCodeManager.vue'),
+      meta: { title: '激活码管理' }
     }
   ]
 })
