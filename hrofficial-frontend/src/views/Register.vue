@@ -2,25 +2,44 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '@/api/auth'
-import type { RegisterRequest } from '@/types'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
 
-const registerForm = ref<RegisterRequest>({
+const registerForm = ref({
   username: '',
   password: '',
   name: '',
-  phone: '',
-  email: '',
-  studentId: '',
-  grade: '',
-  major: '',
-  activationCode: ''
+  activationCode: '',
+  confirmPassword: ''
 })
 
-const confirmPassword = ref('')
+// 身份选择相关
+const selectedRoles = ref<string[]>([])
+const currentYear = new Date().getFullYear()
+const gradeOptions = [
+  { label: `${currentYear}级`, value: `${currentYear}级` },
+  { label: `${currentYear - 1}级`, value: `${currentYear - 1}级` },
+  { label: `${currentYear - 2}级`, value: `${currentYear - 2}级` },
+  { label: `${currentYear - 3}级`, value: `${currentYear - 3}级` }
+]
+const roleOptions = [
+  { label: '部员', value: '部员' },
+  { label: '副部长', value: '副部长' },
+  { label: '部长', value: '部长' }
+]
+
+// 第一个身份
+const role1Grade = ref('')
+const role1Position = ref('')
+
+// 第二个身份（可选）
+const role2Grade = ref('')
+const role2Position = ref('')
+const showSecondRole = ref(false)
+
+
 
 const rules = {
   username: [
@@ -33,23 +52,6 @@ const rules = {
   ],
   name: [
     { required: true, message: '请输入姓名', trigger: 'blur' }
-  ],
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ],
-  studentId: [
-    { required: true, message: '请输入学号', trigger: 'blur' }
-  ],
-  grade: [
-    { required: true, message: '请输入年级', trigger: 'blur' }
-  ],
-  major: [
-    { required: true, message: '请输入专业', trigger: 'blur' }
   ],
   activationCode: [
     { required: true, message: '请输入激活码', trigger: 'blur' }
@@ -67,14 +69,41 @@ const handleRegister = async () => {
   }
 
   // 验证密码一致
-  if (registerForm.value.password !== confirmPassword.value) {
+  if (registerForm.value.password !== registerForm.value.confirmPassword) {
     ElMessage.warning('两次输入的密码不一致')
     return
   }
 
+  // 验证身份选择
+  if (!role1Grade.value || !role1Position.value) {
+    ElMessage.warning('请至少选择一个身份（年级 + 职位）')
+    return
+  }
+
+  // 如果显示第二个身份，必须两个都选
+  if (showSecondRole.value && (!role2Grade.value || !role2Position.value)) {
+    ElMessage.warning('请完整选择第二个身份，或取消添加第二个身份')
+    return
+  }
+
+  // 构建 roleHistory
+  let roleHistory = `${role1Grade.value}${role1Position.value}`
+  if (showSecondRole.value && role2Grade.value && role2Position.value) {
+    roleHistory += `&${role2Grade.value}${role2Position.value}`
+  }
+
   loading.value = true
   try {
-    const res = await register(registerForm.value)
+    const requestData = {
+      username: registerForm.value.username,
+      password: registerForm.value.password,
+      confirmPassword: registerForm.value.confirmPassword,
+      name: registerForm.value.name,
+      activationCode: registerForm.value.activationCode,
+      roleHistory: roleHistory
+    }
+
+    const res = await register(requestData as any)
     if (res.code === 200) {
       ElMessage.success('注册成功，即将跳转到登录页...')
       setTimeout(() => {
@@ -144,7 +173,7 @@ const handleRegister = async () => {
           <el-col :span="12">
             <el-form-item label="确认密码" required>
               <el-input
-                v-model="confirmPassword"
+                v-model="registerForm.confirmPassword"
                 type="password"
                 placeholder="请再次输入密码"
                 prefix-icon="Lock"
@@ -154,55 +183,111 @@ const handleRegister = async () => {
           </el-col>
         </el-row>
 
+        <!-- 第一个身份（必选） -->
+        <el-divider content-position="left">
+          <el-icon><UserFilled /></el-icon>
+          身份信息（至少选择一个）
+        </el-divider>
+        
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="学号" prop="studentId">
-              <el-input
-                v-model="registerForm.studentId"
-                placeholder="请输入学号"
-                prefix-icon="Postcard"
-              />
+            <el-form-item label="年级" required>
+              <el-select 
+                v-model="role1Grade" 
+                placeholder="请选择年级"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in gradeOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="年级" prop="grade">
-              <el-input
-                v-model="registerForm.grade"
-                placeholder="例如：2024"
-                prefix-icon="Calendar"
-              />
+            <el-form-item label="职位" required>
+              <el-select 
+                v-model="role1Position" 
+                placeholder="请选择职位"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in roleOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="专业" prop="major">
-          <el-input
-            v-model="registerForm.major"
-            placeholder="请输入专业"
-            prefix-icon="School"
-          />
-        </el-form-item>
+        <!-- 第二个身份（可选） -->
+        <div v-if="!showSecondRole" style="margin-bottom: 18px">
+          <el-button 
+            type="primary" 
+            plain 
+            size="small"
+            @click="showSecondRole = true"
+          >
+            <el-icon><Plus /></el-icon>
+            添加第二个身份（可选）
+          </el-button>
+        </div>
 
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="手机号" prop="phone">
-              <el-input
-                v-model="registerForm.phone"
-                placeholder="请输入手机号"
-                prefix-icon="Phone"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="邮箱" prop="email">
-              <el-input
-                v-model="registerForm.email"
-                placeholder="请输入邮箱"
-                prefix-icon="Message"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        <div v-if="showSecondRole">
+          <el-divider content-position="left">
+            <el-icon><UserFilled /></el-icon>
+            第二个身份（可选）
+            <el-button 
+              type="danger" 
+              text 
+              size="small"
+              @click="showSecondRole = false; role2Grade = ''; role2Position = ''"
+              style="margin-left: 10px"
+            >
+              <el-icon><Close /></el-icon>
+              取消
+            </el-button>
+          </el-divider>
+          
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="年级">
+                <el-select 
+                  v-model="role2Grade" 
+                  placeholder="请选择年级"
+                  style="width: 100%"
+                >
+                  <el-option
+                    v-for="item in gradeOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="职位">
+                <el-select 
+                  v-model="role2Position" 
+                  placeholder="请选择职位"
+                  style="width: 100%"
+                >
+                  <el-option
+                    v-for="item in roleOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
 
         <el-form-item label="激活码" prop="activationCode">
           <el-input

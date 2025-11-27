@@ -1,6 +1,9 @@
 import type { ApiResponse } from '@/types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+// 开发环境使用代理，生产环境使用实际地址
+const API_BASE_URL = import.meta.env.PROD 
+  ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
+  : '' // 开发环境使用相对路径，通过Vite代理转发
 
 // 请求拦截器
 class HttpClient {
@@ -198,7 +201,7 @@ class HttpClient {
               
               // 解析 data: 格式
               if (line.startsWith('data:')) {
-                const content = line.substring(5).trim() // 去掉 "data:" 前缀
+                const content = line.substring(5) // 去掉 "data:" 前缀，保留空白符
                 if (content) {
                   fullContent += content
                   if (onChunk) {
@@ -214,7 +217,7 @@ class HttpClient {
         if (buffer.trim()) {
           const line = buffer.trim()
           if (line.startsWith('data:')) {
-            const content = line.substring(5).trim()
+            const content = line.substring(5) // 保留空白符
             if (content) {
               fullContent += content
               if (onChunk) {
@@ -229,7 +232,7 @@ class HttpClient {
         if (finalChunk) {
           const line = finalChunk.trim()
           if (line.startsWith('data:')) {
-            const content = line.substring(5).trim()
+            const content = line.substring(5) // 保留空白符
             if (content) {
               fullContent += content
               if (onChunk) {

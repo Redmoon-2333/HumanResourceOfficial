@@ -7,10 +7,14 @@ export interface ApiResponse<T = any> {
 
 // 分页响应
 export interface PageResponse<T> {
-  list: T[]
+  content: T[]  // 后端返回的字段名
+  list?: T[]    // 兼容旧字段名
   total: number
   pageNum: number
   pageSize: number
+  pages?: number
+  hasNext?: boolean
+  hasPrevious?: boolean
 }
 
 // 用户类型
@@ -46,6 +50,28 @@ export interface RegisterRequest {
   grade: string
   major: string
   activationCode: string
+}
+
+// 活动介绍类型（区别于标准Activity）
+export interface ActivityIntro {
+  id: number
+  activityName: string
+  background: string
+  significance: string
+  purpose: string
+  process: string
+  createTime: string
+  updateTime: string
+  images?: ActivityImage[]
+}
+
+// 活动介绍请求
+export interface ActivityIntroRequest {
+  activityName: string
+  background: string
+  significance: string
+  purpose: string
+  process: string
 }
 
 // 活动类型
@@ -127,14 +153,17 @@ export interface MaterialSubcategory {
 
 // 往届活动
 export interface PastActivity {
-  id: number
+  pastActivityId: number  // 后端返回的ID字段
   title: string
-  description: string
-  activityDate: string
+  coverImage: string      // 后端返回的封面图片字段
+  pushUrl: string         // 后端返回的推文链接字段
   year: number
-  imageUrl: string
-  participantCount: number
   createTime: string
+  
+  // 前端展示用的别名（为了兼容现有代码）
+  id?: number
+  coverImageUrl?: string
+  articleUrl?: string
 }
 
 // AI聊天请求

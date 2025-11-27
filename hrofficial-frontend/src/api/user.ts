@@ -1,19 +1,13 @@
 import http from '@/utils/http'
 import type {
   AlumniMember,
+  AlumniYearGroup,
   PageResponse
 } from '@/types'
 
-// 获取往届成员列表
-export const getAlumni = (params?: {
-  pageNum?: number
-  pageSize?: number
-  grade?: string
-  roleHistory?: string
-  keyword?: string
-}) => {
-  const query = new URLSearchParams(params as any).toString()
-  return http.get<PageResponse<AlumniMember>>(`/api/users/alumni${query ? '?' + query : ''}`)
+// 获取往届成员列表（按年份分组）
+export const getAlumni = () => {
+  return http.get<AlumniYearGroup[]>('/api/users/alumni')
 }
 
 // 根据ID获取往届成员

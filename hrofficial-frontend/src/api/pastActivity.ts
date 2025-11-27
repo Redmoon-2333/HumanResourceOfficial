@@ -23,7 +23,14 @@ export const createPastActivity = (data: {
   year: number
   activityDate?: string
 }) => {
-  return http.post<PastActivity>('/api/past-activities', data)
+  // 转换字段名以匹配后端
+  const requestData = {
+    title: data.title,
+    coverImage: data.coverImageUrl,
+    pushUrl: data.articleUrl,
+    year: data.year
+  }
+  return http.post<PastActivity>('/api/past-activities', requestData)
 }
 
 // 删除往届活动

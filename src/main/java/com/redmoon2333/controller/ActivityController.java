@@ -185,6 +185,33 @@ public class ActivityController {
     }
     
     /**
+     * 通用图片上传接口
+     * 仅返回图片URL，供往届活动等模块使用
+     */
+    @PostMapping("/upload-image")
+    @RequireMinisterRole("上传图片")
+    public ResponseEntity<ApiResponse<String>> uploadImage(
+            @RequestParam("file") MultipartFile file) {
+        
+        String currentUser = permissionUtil.getCurrentUsername();
+        logger.info("用户 {} 尝试上传图片: 文件名={}", currentUser, file.getOriginalFilename());
+        
+        try {
+            // 保存文件并获取URL
+            String imageUrl = activityService.saveImage(file);
+            
+            logger.info("用户 {} 成功上传图片: URL={}", currentUser, imageUrl);
+            return ResponseEntity.ok(ApiResponse.success("图片上传成功", imageUrl));
+        } catch (IOException e) {
+            logger.error("用户 {} 上传图片失败: 文件保存失败, 错误: {}", currentUser, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
+        } catch (Exception e) {
+            logger.error("用户 {} 上传图片失败: 错误: {}", currentUser, e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "图片上传失败");
+        }
+    }
+    
+    /**
      * 为活动添加图片
      * 只有部长或副部长才能添加图片
      */
