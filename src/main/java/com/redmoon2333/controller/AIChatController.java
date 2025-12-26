@@ -5,6 +5,7 @@ import com.redmoon2333.dto.ApiResponse;
 import com.redmoon2333.dto.ChatRequest;
 import com.redmoon2333.dto.ChatResponse;
 import com.redmoon2333.dto.PlanGeneratorRequest;
+import com.redmoon2333.dto.RagChatRequest;
 import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.service.AIChatService;
 import com.redmoon2333.util.PermissionUtil;
@@ -212,5 +213,66 @@ public class AIChatController {
                     // 其他错误返回错误信息
                     return Flux.just("{\"error\":\"" + errorMsg + "\"}");
                 });
+    }
+    
+    /**
+     * RAG增强的AI流式对话接口
+     * 支持从知识库中检索相关信息增强回复
+     * 
+     * @param request RAG聊天请求
+     * @param httpRequest HTTP请求（用于获取当前用户）
+     * @return 流式响应
+     */
+    @PostMapping(value = "/chat-with-rag", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequireMemberRole("使用RAG增强对话")
+    public Flux<String> chatWithRag(
+            @RequestBody RagChatRequest request,
+            HttpServletRequest httpRequest) {
+        logger.info("收到RAG增强对话请求");
+        logger.debug("请求内容: 消息={}, 启用RAG={}", 
+                    request.getMessage(), request.getUseRAG());
+        
+        try {
+            // 从 JWT token 中获取当前用户ID
+            Integer userId = (Integer) httpRequest.getAttribute("userId");
+            
+            if (userId == null) {
+                logger.warn("RAG对话请求失败：无法获取用户ID");
+                return Flux.just("{\"error\":\"用户未登录\"}");
+            }
+            
+            logger.debug("获取到用户ID: {}", userId);
+            
+            // 调用RAG增强的聊天服务
+            boolean useRAG = request.getUseRAG() != null ? request.getUseRAG() : true;
+            boolean enableTools = request.getEnableTools() != null ? request.getEnableTools() : false;
+            
+            return aiChatService.chatWithRag(userId, request.getMessage(), useRAG, enableTools)
+                    .doOnSubscribe(subscription -> logger.info("客户端开始订阅RAG流式响应，用户ID: {}", userId))
+                    .doOnComplete(() -> logger.info("RAG流式对话完成，用户ID: {}", userId))
+                    .doOnCancel(() -> logger.warn("客户端取消了RAG流式请求，用户ID: {}", userId))
+                    .doOnError(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset"))) {
+                            logger.warn("客户端断开连接: {}", errorMsg);
+                        } else {
+                            logger.error("RAG流式对话错误: {}", errorMsg, error);
+                        }
+                    })
+                    .onErrorResume(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset"))) {
+                            return Flux.empty();
+                        }
+                        return Flux.just("{\"error\":\"" + errorMsg + "\"}");
+                    });
+        } catch (Exception e) {
+            logger.error("RAG对话请求处理失败: {}", e.getMessage(), e);
+            return Flux.just("{\"error\":\"RAG对话失败: " + e.getMessage() + "\"}");
+        }
     }
 }

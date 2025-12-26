@@ -26,10 +26,19 @@ public class RedisMemoryConfig {
      */
     @Bean
     public RedisChatMemoryRepository redisChatMemoryRepository() {
-        return RedisChatMemoryRepository.builder()
+        RedisChatMemoryRepository repository = RedisChatMemoryRepository.builder()
                 .host(host)
                 .port(port)
-                // 移除了 ttl 方法调用，因为该方法不存在于 builder 中
                 .build();
+        // 通过setter方法设置TTL（转换为秒）
+        // 这样可以防止对话记忆无限累积导致内存泄漏
+        try {
+            java.lang.reflect.Method setTtlMethod = repository.getClass().getMethod("setTtl", Duration.class);
+            setTtlMethod.invoke(repository, Duration.ofHours(memoryTtlHours));
+        } catch (Exception e) {
+            // 如果设置TTL失败，记录警告但不中断启动
+            System.err.println("警告: 无法为Redis聊天记忆设置TTL，可能导致内存泄漏: " + e.getMessage());
+        }
+        return repository;
     }
 }
