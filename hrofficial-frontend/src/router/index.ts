@@ -79,6 +79,12 @@ const router = createRouter({
       name: 'ActivationCodeManager',
       component: () => import('@/views/ActivationCodeManager.vue'),
       meta: { title: '激活码管理' }
+    },
+    {
+      path: '/rag-management',
+      name: 'RagManagement',
+      component: () => import('@/views/RagManagement.vue'),
+      meta: { title: 'RAG知识库管理' }
     }
   ]
 })
