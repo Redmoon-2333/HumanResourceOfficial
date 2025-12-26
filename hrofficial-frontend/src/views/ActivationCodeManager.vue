@@ -43,14 +43,15 @@ const loadActivationCodes = async () => {
     const result = await response.json()
 
     if (result.code === 200 && result.data) {
-      // 格式化数据
+      // 格式化数据，确保codeId存在
       codeList.value = result.data.map((code: any) => ({
-        codeId: code.codeId,
+        codeId: code.codeId || code.id,  // 兼容两种字段名
         code: code.code,
         status: code.status === '未使用' ? '未使用' : '已使用',
         createTime: new Date(code.createTime).toLocaleString(),
         expireTime: new Date(code.expireTime).toLocaleString()
       }))
+      console.log('加载激活码列表:', codeList.value)  // 调试日志
     }
   } catch (error) {
     console.error('加载激活码失败:', error)
@@ -76,27 +77,20 @@ const generateCode = async () => {
       return
     }
 
-    const response = await fetch('/api/auth/generate-code', {
+    // 固定使用30天有效期
+    const response = await fetch('/api/auth/generate-code?expireDays=30', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        expireDays: form.expireDays
-      })
+      }
     })
 
     const result = await response.json()
 
     if (result.code === 200) {
-      const newCode = {
-        code: result.data.code,
-        expireTime: result.data.expireTime,
-        createTime: new Date().toLocaleString(),
-        status: '未使用'
-      }
-      codeList.value.unshift(newCode)
+      // 重新加载激活码列表，确保获取完整信息
+      await loadActivationCodes()
       ElMessage.success('激活码生成成功！')
     } else {
       ElMessage.error(result.message || '生成失败')
@@ -184,31 +178,24 @@ const generateBatch = async (count: number) => {
         break
       }
 
-      const response = await fetch('/api/auth/generate-code', {
+      // 固定使用30天有效期
+      const response = await fetch('/api/auth/generate-code?expireDays=30', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          expireDays: form.expireDays
-        })
+        }
       })
 
       const result = await response.json()
 
       if (result.code === 200) {
-        const newCode = {
-          code: result.data.code,
-          expireTime: result.data.expireTime,
-          createTime: new Date().toLocaleString(),
-          status: '未使用'
-        }
-        codeList.value.unshift(newCode)
         successCount++
       }
     }
 
+    // 重新加载列表
+    await loadActivationCodes()
     ElMessage.success(`成功生成 ${successCount} 个激活码`)
   } catch (error) {
     console.error('批量生成激活码失败:', error)
@@ -232,33 +219,22 @@ const generateBatch = async (count: number) => {
 
         <!-- 生成表单 -->
         <div class="generate-section">
-          <el-form :model="form" label-width="100px" class="generate-form">
-            <el-form-item label="有效期（天）">
-              <el-input-number
-                v-model="form.expireDays"
-                :min="1"
-                :max="365"
-                placeholder="激活码有效期天数"
-              />
-            </el-form-item>
-
-            <div class="button-group">
-              <el-button type="primary" @click="generateCode" :loading="loading">
-                生成单个激活码
-              </el-button>
-              <el-popconfirm
-                title="确认批量生成激活码吗？"
-                description="一次最多生成100个"
-                @confirm="generateBatch(10)"
-              >
-                <template #reference>
-                  <el-button type="success" :loading="loading">
-                    批量生成（10个）
-                  </el-button>
-                </template>
-              </el-popconfirm>
-            </div>
-          </el-form>
+          <div class="button-group">
+            <el-button type="primary" @click="generateCode" :loading="loading">
+              生成单个激活码（有效期30天）
+            </el-button>
+            <el-popconfirm
+              title="确认批量生成激活码吗？"
+              description="一次最多生成10个，有效期30天"
+              @confirm="generateBatch(10)"
+            >
+              <template #reference>
+                <el-button type="success" :loading="loading">
+                  批量生成10个（有效期30天）
+                </el-button>
+              </template>
+            </el-popconfirm>
+          </div>
         </div>
 
         <!-- 激活码列表 -->

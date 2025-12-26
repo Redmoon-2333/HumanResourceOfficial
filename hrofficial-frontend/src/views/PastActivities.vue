@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
-import { getPastActivities, createPastActivity, deletePastActivity, getYears } from '@/api/pastActivity'
+import { getPastActivities, createPastActivity, updatePastActivity, deletePastActivity, getYears } from '@/api/pastActivity'
 import type { PastActivity } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
@@ -14,6 +14,8 @@ const years = ref<number[]>([])
 const selectedYear = ref<number | undefined>()
 
 const dialogVisible = ref(false)
+const isEdit = ref(false)
+const currentActivity = ref<PastActivity | null>(null)
 const uploadForm = ref({
   title: '',
   description: '',
@@ -56,7 +58,7 @@ const loadActivities = async () => {
       console.log('content字段:', res.data.content)
       console.log('content是否为数组:', Array.isArray(res.data.content))
       
-      let activityList = []
+      let activityList: any[] = []
       if (Array.isArray(res.data)) {
         // 直接返回数组
         activityList = res.data
@@ -171,12 +173,30 @@ const uploadCoverImage = async () => {
 
 // 打开创建对话框
 const handleCreate = () => {
+  isEdit.value = false
+  currentActivity.value = null
   uploadForm.value = {
     title: '',
     description: '',
     articleUrl: '',
     coverImageUrl: '',
     year: new Date().getFullYear(),
+    activityDate: ''
+  }
+  coverImageFile.value = null
+  dialogVisible.value = true
+}
+
+// 打开编辑对话框
+const handleEdit = (activity: PastActivity) => {
+  isEdit.value = true
+  currentActivity.value = activity
+  uploadForm.value = {
+    title: activity.title,
+    description: '',
+    articleUrl: activity.articleUrl || activity.pushUrl,
+    coverImageUrl: activity.coverImageUrl || activity.coverImage,
+    year: activity.year,
     activityDate: ''
   }
   coverImageFile.value = null
@@ -210,26 +230,32 @@ const handleSave = async () => {
     
     uploadForm.value.coverImageUrl = coverUrl
     
-    console.log('准备创建往届活动:', {
+    console.log(isEdit.value ? '准备编辑往届活动:' : '准备创建往届活动:', {
       title: uploadForm.value.title,
       articleUrl: uploadForm.value.articleUrl,
       coverImageUrl: uploadForm.value.coverImageUrl,
       year: uploadForm.value.year
     })
     
-    const res = await createPastActivity(uploadForm.value)
+    let res
+    if (isEdit.value && currentActivity.value) {
+      const activityId = currentActivity.value.id || currentActivity.value.pastActivityId
+      res = await updatePastActivity(activityId, uploadForm.value)
+    } else {
+      res = await createPastActivity(uploadForm.value)
+    }
 
     if (res.code === 200) {
-      ElMessage.success('创建成功')
+      ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
       dialogVisible.value = false
       loadActivities()
       loadYears()
     } else {
-      ElMessage.error(res.message || '创建失败')
+      ElMessage.error(res.message || (isEdit.value ? '更新失败' : '创建失败'))
     }
   } catch (error: any) {
-    console.error('创建往届活动失败:', error)
-    ElMessage.error(error.message || '创建失败')
+    console.error(isEdit.value ? '编辑往届活动失败:' : '创建往届活动失败:', error)
+    ElMessage.error(error.message || (isEdit.value ? '更新失败' : '创建失败'))
   } finally {
     loading.value = false
   }
@@ -378,10 +404,19 @@ onMounted(() => {
               
               <div class="actions" v-if="userStore.isMinister">
                 <el-button 
+                  type="primary" 
+                  size="small" 
+                  @click.stop="handleEdit(activity)"
+                >
+                  <el-icon><Edit /></el-icon>
+                  编辑
+                </el-button>
+                <el-button 
                   type="danger" 
                   size="small" 
                   @click.stop="handleDelete(activity)"
                 >
+                  <el-icon><Delete /></el-icon>
                   删除
                 </el-button>
               </div>
@@ -396,10 +431,10 @@ onMounted(() => {
         description="暂无往届活动记录"
       />
 
-      <!-- 创建对话框 -->
+      <!-- 创建/编辑对话框 -->
       <el-dialog
         v-model="dialogVisible"
-        title="添加往届活动"
+        :title="isEdit ? '编辑往届活动' : '添加往届活动'"
         width="600px"
       >
         <el-form :model="uploadForm" label-width="100px">
@@ -454,7 +489,7 @@ onMounted(() => {
         <template #footer>
           <el-button @click="dialogVisible = false">取消</el-button>
           <el-button type="primary" @click="handleSave" :loading="loading">
-            保存
+            {{ isEdit ? '更新' : '保存' }}
           </el-button>
         </template>
       </el-dialog>

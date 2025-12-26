@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +38,9 @@ public class ActivityController {
     
     @Autowired
     private PermissionUtil permissionUtil;
+    
+    @Value("${file.base-url:http://localhost:8080}")
+    private String fileBaseUrl;
     
     /**
      * 创建新活动
@@ -269,10 +273,18 @@ public class ActivityController {
         try {
             List<ActivityImage> images = activityService.getImagesByActivityId(activityId);
             
-            // 转换为DTO列表
+            // 转换为DTO列表，并将相对路径转换为完整URL
             List<ActivityImageDTO> responseList = images.stream().map(image -> {
                 ActivityImageDTO dto = new ActivityImageDTO();
                 BeanUtils.copyProperties(image, dto);
+                
+                // 将相对路径转换为完整URL
+                if (dto.getImageUrl() != null && !dto.getImageUrl().startsWith("http")) {
+                    // 确保路径以 / 开头
+                    String path = dto.getImageUrl().startsWith("/") ? dto.getImageUrl() : "/" + dto.getImageUrl();
+                    dto.setImageUrl(fileBaseUrl + path);
+                }
+                
                 return dto;
             }).collect(Collectors.toList());
             

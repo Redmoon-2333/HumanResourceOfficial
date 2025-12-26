@@ -37,27 +37,43 @@ public class SecurityConfig {
         // 设置允许的域名 - 使用allowedOriginPatterns而不是allowedOrigins
         // 支持开发环境、生产环境和Docker环境
         configuration.setAllowedOriginPatterns(Arrays.asList(
-            // Vue前端开发服务器（Vite）
+            // 本地开发环境 - Vue前端开发服务器（Vite）
             "http://localhost:5173",
             "http://127.0.0.1:5173",
-            // 其他前端端口
+            
+            // 本地开发环境 - 其他前端端口
             "http://localhost:3000",
+            "http://localhost:8080",
             "http://localhost:8081",
             "http://127.0.0.1:3000",
-            "http://127.0.0.1:8081",
-            "http://localhost:8080",
             "http://127.0.0.1:8080",
+            "http://127.0.0.1:8081",
+            
+            // 生产服务器 - 所有端口
+            "http://81.70.218.85",
+            "http://81.70.218.85:80",
+            "http://81.70.218.85:3000",
+            "http://81.70.218.85:8080",
+            "http://81.70.218.85:8081",
+            "https://81.70.218.85",
+            "https://81.70.218.85:443",
+            "https://81.70.218.85:3000",
+            
             // Docker环境支持
             "http://hrofficial-backend:8080",
             "http://backend:8080",
-            // 生产环境域名（根据实际情况修改）
+            "http://hrofficial-frontend:3000",
+            "http://frontend:3000",
+            
+            // 生产环境域名（如果有域名，修改为实际域名）
             "https://yourdomain.com",
             "https://www.yourdomain.com",
-            // 允许任何https协议的域名（生产环境请谨慎使用）
-            "https://*",
-            // 支持file://协议访问（用于本地HTML文件测试）
-            "file://",
-            "null"  // Chrome等浏览器打开file://时会将origin设为null
+            
+            // 开发调试支持
+            "http://*",  // 允许所有HTTP（生产环境建议移除）
+            "https://*", // 允许所有HTTPS
+            "file://",   // 支持本地文件
+            "null"       // Chrome等浏览器打开file://时会将origin设为null
         ));
         
         // 设置允许的HTTP方法
@@ -129,7 +145,7 @@ public class SecurityConfig {
                 // 允许静态资源访问
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
                 // 允许文件访问
-                .requestMatchers("/files/**").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 // 允许首页访问
                 .requestMatchers("/", "/index.html", "/ai-test.html", "/favicon.ico").permitAll()
                 // 允许公开API访问

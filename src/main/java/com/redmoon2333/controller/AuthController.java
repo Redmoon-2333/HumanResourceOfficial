@@ -118,9 +118,56 @@ public class AuthController {
             Map<String, Object> data = new HashMap<>();
             data.put("userId", user.getUserId());
             data.put("username", user.getUsername());
+            data.put("name", user.getName());
             data.put("roleHistory", user.getRoleHistory());
             
             return ApiResponse.success(data);
+            
+        } catch (BusinessException e) {
+            return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
+        } catch (Exception e) {
+            return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+    
+    /**
+     * 更新用户信息接口
+     * @param authHeader Authorization头，包含JWT令牌
+     * @param updateRequest 更新请求参数
+     * @return 更新后的用户信息
+     */
+    @PutMapping("/update-profile")
+    public ApiResponse<Map<String, Object>> updateProfile(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody Map<String, String> updateRequest) {
+        try {
+            if (!authHeader.startsWith("Bearer ")) {
+                return ApiResponse.error("请提供有效的Authorization头", 401);
+            }
+            
+            String token = authHeader.substring(7);
+            User currentUser = authService.getUserFromToken(token);
+            
+            // 更新姓名
+            if (updateRequest.containsKey("name")) {
+                currentUser.setName(updateRequest.get("name"));
+            }
+            
+            // 更新往届身份
+            if (updateRequest.containsKey("roleHistory")) {
+                currentUser.setRoleHistory(updateRequest.get("roleHistory"));
+            }
+            
+            // 调用service更新数据库
+            User updatedUser = authService.updateUserInfo(currentUser);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("userId", updatedUser.getUserId());
+            data.put("username", updatedUser.getUsername());
+            data.put("name", updatedUser.getName());
+            data.put("roleHistory", updatedUser.getRoleHistory());
+            
+            return ApiResponse.success("修改成功", data);
             
         } catch (BusinessException e) {
             return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());

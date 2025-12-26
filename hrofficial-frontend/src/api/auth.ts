@@ -32,3 +32,8 @@ export const getCurrentUser = () => {
 export const logout = () => {
   return http.post('/api/auth/logout')
 }
+
+// 更新用户信息
+export const updateUserInfo = (data: { name?: string; roleHistory?: string }) => {
+  return http.put<User>('/api/auth/update-profile', data)
+}

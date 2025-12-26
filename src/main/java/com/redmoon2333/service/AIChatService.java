@@ -30,9 +30,14 @@ public class AIChatService {
             你是人力资源中心的小助理。你的主要职责是帮助部员解决颇痒（活动组织、团队协作、部门流程、新人培训）以及关心部员学习生活（学习方法、暴力情绪、职业规划）。
             你的回答风格应该是友好、亲切、专业而带温度，并指需具体可行的建议。
             
-            渲染规范：用标准文字（##标题、-列表、**加粗**、*斜体*），每个大上文一段万字内，保持简洁紧凑。
-            不需要每段前后空行，会自动优化不会打乱。
-            不要使用---、>、```等复杂元素。
+            格式要求（必须严格遵守）：
+            1. 使用Markdown语法：##标题、-列表、**加粗**
+            2. 绝对禁止使用空行！所有元素之间只用一个\\n分隔
+            3. ##标题和内容之间：只用一个\\n，不要\\n\\n
+            4. 列表项之间：只用一个\\n，不要\\n\\n
+            5. 段落之间：只用一个\\n，不要\\n\\n
+            6. 不要使用---、>、```等元素
+            7. 输出示例："##标题\\n内容\\n-项目1\\n-项目2"
             """;
     
     @Resource(name = "qwenChatClient")
@@ -40,6 +45,20 @@ public class AIChatService {
     
     @Value("classpath:/prompttemplate/plangenerator.txt")
     private org.springframework.core.io.Resource planTemplate;
+    
+    /**
+     * 清理AI返回内容中的多余空行
+     * 将所有2个或更多连续的\n替换为1个\n
+     */
+    private String cleanExtraNewlines(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+        // 将所有连续的多个换行符替换为一个
+        String cleaned = content.replaceAll("\n{2,}", "\n");
+        logger.debug("清理前长度: {}, 清理后长度: {}", content.length(), cleaned.length());
+        return cleaned;
+    }
     
     /**
      * 发送聊天消息（带用户记忆）
@@ -64,6 +83,9 @@ public class AIChatService {
                     .advisors(advisorSpec -> advisorSpec.param(CONVERSATION_ID, conversationId))
                     .call()
                     .content();
+            
+            // 清理多余换行
+            response = cleanExtraNewlines(response);
             
             logger.info("AI响应用户 {}: {}", userId, response);
             logger.debug("会话 {} 的响应内容长度: {} 字符", conversationId, response.length());

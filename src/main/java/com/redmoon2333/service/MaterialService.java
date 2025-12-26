@@ -13,6 +13,7 @@ import com.redmoon2333.util.PermissionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,11 +23,15 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class MaterialService {
     
     private static final Logger logger = LoggerFactory.getLogger(MaterialService.class);
+    
+    // Redis缓存key前缀
+    private static final String REDIS_PRESIGNED_URL_PREFIX = "material:presigned:";
     
     @Autowired
     private MaterialMapper materialMapper;
@@ -42,6 +47,9 @@ public class MaterialService {
     
     @Autowired
     private PermissionUtil permissionUtil;
+    
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     // 文件上传基础路径（OSS存储）
     private static final String UPLOAD_BASE_PATH = "uploads/materials/";
@@ -237,22 +245,17 @@ public class MaterialService {
      * 增加资料下载次数
      * @param materialId 资料ID
      */
-    @Transactional
-    public void incrementDownloadCount(Integer materialId) {
-        logger.info("增加资料下载次数: materialId={}", materialId);
-        
-        // 检查权限（部员及以上）
-        permissionUtil.checkMemberPermission();
+    private void incrementDownloadCount(Integer materialId) {
+        logger.info("统计资料下载次数: materialId={}", materialId);
 
         Material material = materialMapper.findById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料: materialId={}", materialId);
-            throw new RuntimeException("指定的资料不存在");
+            return; // 不抛异常，防止影响URL生成
         }
 
         materialMapper.updateDownloadCount(materialId);
-
-        logger.info("资料下载次数增加: materialId={}, 新下载次数={}", materialId, material.getDownloadCount() + 1);
+        logger.info("资料下载次数统计成功: materialId={}, 新下载次数={}", materialId, material.getDownloadCount() + 1);
     }
 
     /**
@@ -456,15 +459,32 @@ public class MaterialService {
 
     /**
      * 为资料文件生成预签名URL，用于安全下载
+     * 使用Redis缓存，如果缓存未过期则直接返回，否则重新生成
+     * 每次生成新URL时自动统计下载次数
+     * 
      * @param materialId 资料ID
      * @param expirationSeconds 过期时间（秒），默认1小时
      * @return 预签名URL
      */
+    @Transactional
     public String generateDownloadUrl(Integer materialId, Long expirationSeconds) {
         logger.info("为资料生成预签名URL: materialId={}, 过期时间={}s", materialId, expirationSeconds);
         
         // 检查权限（部员及以上）
         permissionUtil.checkMemberPermission();
+        
+        // 构建Redis缓存key
+        String cacheKey = REDIS_PRESIGNED_URL_PREFIX + materialId;
+        
+        // 尝试从Redis获取缓存的URL
+        String cachedUrl = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cachedUrl != null && !cachedUrl.isEmpty()) {
+            logger.info("从Redis缓存中获取预签名URL: materialId={}", materialId);
+            return cachedUrl;
+        }
+        
+        // 缓存未命中或已过期，生成新URL
+        logger.info("缓存未命中，生成新的预签名URL: materialId={}", materialId);
         
         // 获取资料信息
         String fileUrl = getFileUrlById(materialId);
@@ -476,7 +496,17 @@ public class MaterialService {
         }
         
         // 生成预签名URL
-        return ossUtil.generatePresignedUrl(filePath, expirationSeconds);
+        String presignedUrl = ossUtil.generatePresignedUrl(filePath, expirationSeconds);
+        
+        // 存入Redis缓存，TTL为预签名URL的过期时间减去60秒（保证提前失效）
+        long cacheTtl = Math.max(expirationSeconds - 60, 300); // 最小5分钟
+        stringRedisTemplate.opsForValue().set(cacheKey, presignedUrl, cacheTtl, TimeUnit.SECONDS);
+        logger.info("预签名URL已缓存到Redis: materialId={}, TTL={}s", materialId, cacheTtl);
+        
+        // 统计下载次数（每次生成新URL时累加）
+        incrementDownloadCount(materialId);
+        
+        return presignedUrl;
     }
     
     /**

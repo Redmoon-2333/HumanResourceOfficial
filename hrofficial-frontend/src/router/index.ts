@@ -85,23 +85,10 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  const userStore = useUserStore()
-  
   // 设置页面标题
   document.title = `${to.meta.title || ''} - 人力资源管理系统`
   
-  // 公开页面不需要登录
-  if (to.meta.public) {
-    next()
-    return
-  }
-  
-  // 检查是否登录
-  if (!userStore.isLoggedIn) {
-    next({ name: 'Login', query: { redirect: to.fullPath } })
-    return
-  }
-  
+  // 所有页面均允许游客访问，在接口层面检查权限
   next()
 })
 
