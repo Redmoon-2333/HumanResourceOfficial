@@ -12,8 +12,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -50,39 +54,38 @@ public class LocalFileUtil {
             Path basePath = getAbsoluteUploadPath();
             Path uploadPath = basePath.resolve(ACTIVITY_IMAGES_DIR);
             
-            // 检查基础目录是否存在且可写
+            // 检查基础目录是否存在
             if (!Files.exists(basePath)) {
-                Files.createDirectories(basePath);
-                logger.info("创建基础上传目录: {}", basePath.toAbsolutePath());
-            }
-            
-            // 检查基础目录权限
-            if (!Files.isWritable(basePath)) {
-                logger.warn("基础上传目录不可写: {}", basePath.toAbsolutePath());
+                try {
+                    Files.createDirectories(basePath);
+                    setDirectoryPermissions(basePath, "777");
+                    logger.info("创建基础上传目录: {}", basePath.toAbsolutePath());
+                } catch (IOException e) {
+                    logger.warn("无法创建基础上传目录，可能已存在或权限不足: {}", basePath.toAbsolutePath());
+                }
             }
             
             // 创建活动图片子目录
             if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-                logger.info("创建上传目录: {}", uploadPath.toAbsolutePath());
+                try {
+                    Files.createDirectories(uploadPath);
+                    setDirectoryPermissions(uploadPath, "777");
+                    logger.info("创建上传目录: {}", uploadPath.toAbsolutePath());
+                } catch (IOException e) {
+                    logger.warn("无法创建上传目录，可能已存在或权限不足: {}", uploadPath.toAbsolutePath());
+                }
             } else {
                 logger.info("上传目录已存在: {}", uploadPath.toAbsolutePath());
+                // 尝试确保目录权限正确
+                try {
+                    setDirectoryPermissions(uploadPath, "777");
+                } catch (Exception e) {
+                    logger.debug("无法设置上传目录权限: {}", e.getMessage());
+                }
             }
             
-            // 验证目录可写性
-            if (!Files.isWritable(uploadPath)) {
-                logger.warn("上传目录不可写，可能影响文件上传功能: {}", uploadPath.toAbsolutePath());
-            }
-            
-        } catch (IOException e) {
-            logger.error("创建上传目录失败: {}", e.getMessage(), e);
-            // 在生产环境中，如果是权限问题，我们记录警告但不阻止应用启动
-            // 文件上传功能会在实际使用时进行权限检查和错误处理
-            if (e instanceof java.nio.file.AccessDeniedException) {
-                logger.warn("文件上传目录权限不足，文件上传功能可能受影响。请检查目录权限: {}", getAbsoluteUploadPath().resolve(ACTIVITY_IMAGES_DIR));
-                return; // 不抛出异常，允许应用启动
-            }
-            throw new RuntimeException("无法创建文件上传目录: " + e.getMessage(), e);
+        } catch (Exception e) {
+            logger.warn("初始化上传目录时出现异常，但应用继续启动: {}", e.getMessage());
         }
     }
     
@@ -206,12 +209,20 @@ public class LocalFileUtil {
             try {
                 if (!Files.exists(parentDir)) {
                     Files.createDirectories(parentDir);
+                    setDirectoryPermissions(parentDir, "777");
                     logger.info("创建上传目录: {}", parentDir.toAbsolutePath());
                 }
                 
-                // 检查目录是否可写
+                // 检查目录是否可写，如果不可写尝试设置权限
                 if (!Files.isWritable(parentDir)) {
-                    throw new IOException("上传目录不可写: " + parentDir.toAbsolutePath());
+                    try {
+                        setDirectoryPermissions(parentDir, "777");
+                        if (!Files.isWritable(parentDir)) {
+                            throw new IOException("上传目录不可写: " + parentDir.toAbsolutePath());
+                        }
+                    } catch (UnsupportedOperationException e) {
+                        logger.warn("系统不支持POSIX权限设置，继续尝试保存文件");
+                    }
                 }
             } catch (IOException e) {
                 logger.error("创建或检查上传目录失败: {}", parentDir.toAbsolutePath(), e);
@@ -227,6 +238,40 @@ public class LocalFileUtil {
         } catch (IOException e) {
             logger.error("文件保存失败: {}", fullPath.toAbsolutePath(), e);
             throw new IOException("文件保存失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 设置目录权限为指定模式
+     * @param path 目录路径
+     * @param permissionString 权限字符串(如"777")
+     */
+    private void setDirectoryPermissions(Path path, String permissionString) {
+        try {
+            Set<PosixFilePermission> permissions = new HashSet<>();
+            int mode = Integer.parseInt(permissionString, 8);
+            
+            // 所有者权限
+            if ((mode & 0400) != 0) permissions.add(PosixFilePermission.OWNER_READ);
+            if ((mode & 0200) != 0) permissions.add(PosixFilePermission.OWNER_WRITE);
+            if ((mode & 0100) != 0) permissions.add(PosixFilePermission.OWNER_EXECUTE);
+            
+            // 组权限
+            if ((mode & 0040) != 0) permissions.add(PosixFilePermission.GROUP_READ);
+            if ((mode & 0020) != 0) permissions.add(PosixFilePermission.GROUP_WRITE);
+            if ((mode & 0010) != 0) permissions.add(PosixFilePermission.GROUP_EXECUTE);
+            
+            // 其他用户权限
+            if ((mode & 0004) != 0) permissions.add(PosixFilePermission.OTHERS_READ);
+            if ((mode & 0002) != 0) permissions.add(PosixFilePermission.OTHERS_WRITE);
+            if ((mode & 0001) != 0) permissions.add(PosixFilePermission.OTHERS_EXECUTE);
+            
+            Files.setPosixFilePermissions(path, permissions);
+            logger.debug("设置目录权限为 {}: {}", permissionString, path.toAbsolutePath());
+        } catch (IOException e) {
+            logger.debug("设置目录权限失败: {}", e.getMessage());
+        } catch (UnsupportedOperationException e) {
+            logger.debug("当前系统不支持POSIX权限设置");
         }
     }
     
@@ -252,7 +297,8 @@ public class LocalFileUtil {
     private String buildAccessUrl(String relativePath) {
         // 统一路径分隔符为 /
         String normalizedPath = relativePath.replace(File.separator, "/");
-        return accessBaseUrl + "/files/" + normalizedPath;
+        // 返回相对路径，让前端通过Nginx访问，避免跨域问题
+        return "/uploads/" + normalizedPath;
     }
     
     /**
@@ -297,7 +343,8 @@ public class LocalFileUtil {
             return null;
         }
         
-        String prefix = "/files/";
+        // 支持 /uploads/ 前缀
+        String prefix = "/uploads/";
         int prefixIndex = fileUrl.indexOf(prefix);
         if (prefixIndex != -1) {
             return fileUrl.substring(prefixIndex + prefix.length());

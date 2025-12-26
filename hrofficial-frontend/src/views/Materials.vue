@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import Layout from '@/components/Layout.vue'
-import { getMaterials, uploadMaterial, deleteMaterial, updateMaterial, getMaterialDownloadUrl, getCategories, getSubcategories, createCategory, createSubcategory, updateCategory, updateSubcategory } from '@/api/material'
+import { uploadMaterial, deleteMaterial, updateMaterial, getMaterialDownloadUrl, getCategories, getSubcategories, createCategory, createSubcategory, updateCategory, updateSubcategory } from '@/api/material'
 import type { Material, MaterialCategory, MaterialSubcategory } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import http from '@/utils/http'
 
 const userStore = useUserStore()
 
@@ -72,6 +73,7 @@ const loadCategories = async () => {
               id: cat.categoryId,
               name: cat.categoryName,
               description: cat.description,
+              displayOrder: cat.sortOrder || 0,
               sortOrder: cat.sortOrder,
               createTime: cat.createTime,
               subcategories: [],
@@ -95,28 +97,26 @@ const loadMaterials = async () => {
   
   loading.value = true
   try {
-    const res = await getMaterials({
-      subcategoryId: selectedSubcategory.value.id
-    })
-    if (res.code === 200 && res.data) {
-      if (Array.isArray(res.data)) {
-        // 映射后端字段
-        materials.value = (res.data as any[]).map((mat: any) => ({
-          id: mat.materialId,
-          title: mat.materialName,
-          description: mat.description,
-          fileUrl: mat.fileUrl,
-          fileSize: mat.fileSize,
-          fileType: mat.fileType,
-          uploaderName: mat.uploaderName,
-          uploadTime: mat.uploadTime,
-          downloadCount: mat.downloadCount,
-          categoryId: mat.categoryId,
-          subcategoryId: mat.subcategoryId
-        }))
-      } else {
-        materials.value = res.data.list || []
-      }
+    const res = await http.get<any[]>(`/api/materials/subcategory/${selectedSubcategory.value.id}`)
+    if (res && res.code === 200 && res.data && Array.isArray(res.data)) {
+      // 映射后端字段
+      materials.value = (res.data as any[]).map((mat: any) => ({
+        id: mat.materialId,
+        title: mat.materialName,
+        description: mat.description,
+        fileUrl: mat.fileUrl,
+        fileName: mat.fileName || mat.materialName,
+        fileSize: mat.fileSize,
+        fileType: mat.fileType,
+        categoryId: mat.categoryId,
+        categoryName: mat.categoryName || '',
+        subcategoryId: mat.subcategoryId,
+        subcategoryName: mat.subcategoryName || '',
+        uploaderId: mat.uploaderId || 0,
+        uploaderName: mat.uploaderName,
+        uploadTime: mat.uploadTime,
+        downloadCount: mat.downloadCount
+      }))
     }
   } catch (error: any) {
     console.error('加载资料失败:', error)
@@ -154,7 +154,11 @@ const loadSubcategories = async (categoryId: number) => {
       
       // 更新当前分类的子分类
       if (selectedCategory.value) {
-        selectedCategory.value.subcategories = subcategories
+        selectedCategory.value.subcategories = subcategories.map((sub: any) => ({
+          ...sub,
+          categoryId: selectedCategory.value!.id,
+          displayOrder: sub.sortOrder || 0
+        }))
       }
     }
   } catch (error: any) {
@@ -655,7 +659,7 @@ onMounted(() => {
                 <Folder />
               </el-icon>
               <h3>{{ category.name }}</h3>
-              <el-tag>{{ category.subcategoryCount || 0 }} 个子分类</el-tag>
+              <el-tag>{{ (category as any).subcategoryCount || 0 }} 个子分类</el-tag>
             </div>
             <div v-if="userStore.isMinister" class="card-actions" @click.stop>
               <el-button type="warning" size="small" @click="handleEditCategory(category)">

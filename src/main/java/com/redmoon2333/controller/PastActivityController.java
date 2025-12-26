@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,9 @@ public class PastActivityController {
     
     @Autowired
     private PastActivityService pastActivityService;
+    
+    @Value("${file.base-url:http://localhost:8080}")
+    private String fileBaseUrl;
     
     /**
      * 分页查询往届活动

@@ -77,7 +77,17 @@ const handleCommand = async (command: string) => {
         </div>
         
         <div class="header-right">
-          <el-dropdown @command="handleCommand">
+          <!-- 未登录状态 -->
+          <div v-if="!userStore.isLoggedIn" class="login-actions">
+            <el-button type="primary" @click="router.push('/login')">
+              <el-icon><User /></el-icon>
+              登录
+            </el-button>
+            <el-button @click="router.push('/register')">注册</el-button>
+          </div>
+          
+          <!-- 已登录状态 -->
+          <el-dropdown v-else @command="handleCommand">
             <div class="user-info">
               <el-avatar :size="32" class="user-avatar">
                 {{ userStore.userInfo?.name?.charAt(0) || 'U' }}
@@ -158,6 +168,11 @@ const handleCommand = async (command: string) => {
   font-size: 20px;
   font-weight: 600;
   color: var(--color-primary);
+}
+
+.login-actions {
+  display: flex;
+  gap: var(--spacing-sm);
 }
 
 .user-info {

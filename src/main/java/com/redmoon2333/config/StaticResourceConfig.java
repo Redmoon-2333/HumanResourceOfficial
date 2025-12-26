@@ -35,15 +35,15 @@ public class StaticResourceConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 配置静态资源处理器
-        // 将 /files/** 的请求映射到本地上传目录
+        // 将 /uploads/** 的请求映射到本地上传目录
         String absoluteUploadPath = getAbsoluteUploadPath();
         
-        registry.addResourceHandler("/files/**")
+        registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + absoluteUploadPath + File.separator)
                 .setCachePeriod(3600) // 设置缓存时间为1小时
                 .resourceChain(true);
         
-        logger.info("配置静态资源映射: /files/** -> file:{}", absoluteUploadPath);
+        logger.info("配置静态资源映射: /uploads/** -> file:{}", absoluteUploadPath);
         
         // 保持默认的静态资源处理器
         registry.addResourceHandler("/static/**")

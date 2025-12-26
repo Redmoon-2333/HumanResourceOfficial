@@ -20,9 +20,26 @@ public class PastActivityResponse {
     public PastActivityResponse() {}
     
     public PastActivityResponse(PastActivity pastActivity) {
+        this(pastActivity, null);
+    }
+    
+    public PastActivityResponse(PastActivity pastActivity, String fileBaseUrl) {
         this.pastActivityId = pastActivity.getPastActivityId();
         this.title = pastActivity.getTitle();
-        this.coverImage = pastActivity.getCoverImage();
+        
+        // 将相对路径转换为完整URL
+        if (pastActivity.getCoverImage() != null && fileBaseUrl != null) {
+            String coverImg = pastActivity.getCoverImage();
+            if (!coverImg.startsWith("http")) {
+                String path = coverImg.startsWith("/") ? coverImg : "/" + coverImg;
+                this.coverImage = fileBaseUrl + path;
+            } else {
+                this.coverImage = coverImg;
+            }
+        } else {
+            this.coverImage = pastActivity.getCoverImage();
+        }
+        
         this.pushUrl = pastActivity.getPushUrl();
         this.year = pastActivity.getYear();
         this.createTime = pastActivity.getCreateTime();
@@ -33,9 +50,19 @@ public class PastActivityResponse {
         return new PastActivityResponse(pastActivity);
     }
     
+    public static PastActivityResponse from(PastActivity pastActivity, String fileBaseUrl) {
+        return new PastActivityResponse(pastActivity, fileBaseUrl);
+    }
+    
     public static List<PastActivityResponse> fromList(List<PastActivity> pastActivities) {
         return pastActivities.stream()
                 .map(PastActivityResponse::from)
+                .toList();
+    }
+    
+    public static List<PastActivityResponse> fromList(List<PastActivity> pastActivities, String fileBaseUrl) {
+        return pastActivities.stream()
+                .map(pa -> new PastActivityResponse(pa, fileBaseUrl))
                 .toList();
     }
     

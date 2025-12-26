@@ -75,8 +75,8 @@ const filteredAlumni = computed(() => {
   return alumniByYear.value.map(group => ({
     year: group.year,
     members: group.members.filter(member => 
-      member.name.toLowerCase().includes(kw) ||
-      member.role.toLowerCase().includes(kw)
+      member.name?.toLowerCase().includes(kw) ||
+      member.role?.toLowerCase().includes(kw)
     )
   })).filter(group => group.members.length > 0)
 })
