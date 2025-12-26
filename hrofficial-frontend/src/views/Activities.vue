@@ -138,9 +138,9 @@ const handleSave = async () => {
   try {
     let res
     if (isEdit.value && currentActivity.value) {
-      res = await updateActivity(currentActivity.value.id, activityForm.value)
+      res = await updateActivity(currentActivity.value.id, activityForm.value as any)
     } else {
-      res = await createActivity(activityForm.value)
+      res = await createActivity(activityForm.value as any)
     }
 
     if (res.code === 200) {
@@ -396,6 +396,8 @@ onMounted(() => {
                   fit="cover"
                   class="activity-image"
                   :preview-src-list="activity.images.map(img => img.imageUrl)"
+                  :preview-teleported="true"
+                  :z-index="3000"
                 >
                   <template #error>
                     <div class="image-error-small">
@@ -525,6 +527,10 @@ onMounted(() => {
                   fit="cover"
                   style="width: 100%; height: 150px"
                   :preview-src-list="activityImages.map((img: any) => img.imageUrl)"
+                  :initial-index="activityImages.findIndex((img: any) => img.imageId === image.imageId)"
+                  :preview-teleported="true"
+                  :z-index="3000"
+                  hide-on-click-modal
                 >
                   <template #error>
                     <div class="image-error">

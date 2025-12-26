@@ -56,10 +56,19 @@ class HttpClient {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token过期，跳转到登录页
+          // Token过期或未登录，清除token并提示登录
+          const wasLoggedIn = !!localStorage.getItem('token')
           localStorage.removeItem('token')
-          window.location.href = '/login'
-          throw new Error('登录已过期，请重新登录')
+          localStorage.removeItem('userInfo')
+          
+          if (wasLoggedIn) {
+            // 如果之前是登录状态，token过期后自动退出
+            window.location.href = '/login?expired=1'
+            throw new Error('登录已过期，请重新登录')
+          } else {
+            // 如果未登录，提示需要登录
+            throw new Error('请先登录')
+          }
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -189,10 +198,10 @@ class HttpClient {
             
             // 解析SSE格式：data: 开头的行
             const lines = buffer.split('\n')
-            buffer = lines[lines.length - 1] // 保留最后一个可能不完整的行
+            buffer = lines[lines.length - 1] || '' // 保留最后一个可能不完整的行
             
             for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i].trim()
+              const line = lines[i]?.trim() || ''
               
               // 跳过空行和注释
               if (!line || line.startsWith(':')) {

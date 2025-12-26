@@ -32,6 +32,9 @@ public class PastActivityService {
     @Autowired
     private PastActivityMapper pastActivityMapper;
     
+    @org.springframework.beans.factory.annotation.Value("${file.base-url:http://localhost:8080}")
+    private String fileBaseUrl;
+    
     /**
      * 分页查询往届活动
      * @param pageNum 页码
@@ -72,7 +75,7 @@ public class PastActivityService {
             }
             
             PageInfo<PastActivity> pageInfo = new PageInfo<>(pastActivities);
-            List<PastActivityResponse> responses = PastActivityResponse.fromList(pastActivities);
+            List<PastActivityResponse> responses = PastActivityResponse.fromList(pastActivities, fileBaseUrl);
             
             return PageResponse.of(
                 responses, pageInfo.getPageNum(), pageInfo.getPageSize(), pageInfo.getTotal());
@@ -107,7 +110,7 @@ public class PastActivityService {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "往届活动不存在");
             }
             
-            return PastActivityResponse.from(pastActivity);
+            return PastActivityResponse.from(pastActivity, fileBaseUrl);
             
         } catch (BusinessException e) {
             throw e;
@@ -157,7 +160,7 @@ public class PastActivityService {
             }
             
             logger.info("创建往届活动成功 - ID: {}", pastActivity.getPastActivityId());
-            return PastActivityResponse.from(pastActivity);
+            return PastActivityResponse.from(pastActivity, fileBaseUrl);
             
         } catch (BusinessException e) {
             throw e;
@@ -212,7 +215,7 @@ public class PastActivityService {
             }
             
             logger.info("更新往届活动成功 - ID: {}", pastActivityId);
-            return PastActivityResponse.from(existingActivity);
+            return PastActivityResponse.from(existingActivity, fileBaseUrl);
             
         } catch (BusinessException e) {
             throw e;
