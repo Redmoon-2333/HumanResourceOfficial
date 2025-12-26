@@ -33,6 +33,24 @@ export const createPastActivity = (data: {
   return http.post<PastActivity>('/api/past-activities', requestData)
 }
 
+// 更新往届活动
+export const updatePastActivity = (id: number, data: {
+  title: string
+  description?: string
+  articleUrl: string
+  coverImageUrl: string
+  year: number
+  activityDate?: string
+}) => {
+  const requestData = {
+    title: data.title,
+    coverImage: data.coverImageUrl,
+    pushUrl: data.articleUrl,
+    year: data.year
+  }
+  return http.put<PastActivity>(`/api/past-activities/${id}`, requestData)
+}
+
 // 删除往届活动
 export const deletePastActivity = (id: number) => {
   return http.delete(`/api/past-activities/${id}`)

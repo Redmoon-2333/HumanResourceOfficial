@@ -87,14 +87,22 @@ public class AuthService {
         }
         
         // 验证激活码
-        ActivationCode activationCode = activationCodeMapper.findValidCode(
-                registerRequest.getActivationCode(),
-                ActivationStatus.未使用,
-                LocalDateTime.now()
-        );
+        ActivationCode activationCode = activationCodeMapper.findByCode(registerRequest.getActivationCode());
         
+        // 检查激活码是否存在
         if (activationCode == null) {
             throw new BusinessException(ErrorCode.INVALID_ACTIVATION_CODE);
+        }
+        
+        // 检查激活码是否已使用
+        if (activationCode.getStatus() == ActivationStatus.已使用) {
+            throw new BusinessException(ErrorCode.INVALID_ACTIVATION_CODE, "激活码已被使用");
+        }
+        
+        // 检查激活码是否过期（使用isAfter判断）
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(activationCode.getExpireTime())) {
+            throw new BusinessException(ErrorCode.INVALID_ACTIVATION_CODE, "激活码已过期，过期时间: " + activationCode.getExpireTime() + "，当前时间: " + now);
         }
         
         // 创建新用户
@@ -134,6 +142,20 @@ public class AuthService {
         
         String username = jwtUtil.getUsernameFromToken(token);
         return userMapper.findByUsername(username);
+    }
+    
+    /**
+     * 更新用户信息
+     * @param user 用户信息
+     * @return 更新后的用户信息
+     * @throws BusinessException 更新失败时抛出异常
+     */
+    public User updateUserInfo(User user) {
+        int result = userMapper.update(user);
+        if (result <= 0) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户信息更新失败");
+        }
+        return userMapper.findById(user.getUserId());
     }
     
     /**

@@ -1,9 +1,22 @@
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
 import { useUserStore } from '@/stores/user'
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { getActivities } from '@/api/activity'
+import { getPastActivities } from '@/api/pastActivity'
+import { getAlumni } from '@/api/user'
+import http from '@/utils/http'
 
 const userStore = useUserStore()
+
+const stats = ref({
+  activities: 0,
+  materials: 0,
+  alumni: 0,
+  pastActivities: 0
+})
+
+const loading = ref(false)
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -18,6 +31,64 @@ const quickLinks = [
   { title: 'AI对话', path: '/ai-chat', icon: 'ChatDotRound', color: '#FFC312' },
   { title: '生成策划案', path: '/plan-generator', icon: 'DocumentAdd', color: '#FF4757' }
 ]
+
+const loadStats = async () => {
+  loading.value = true
+  try {
+    // 并发请求所有统计数据
+    const [activitiesRes, pastActivitiesRes, alumniRes, materialsRes] = await Promise.allSettled([
+      getActivities(),
+      getPastActivities({ pageNum: 1, pageSize: 1 }),
+      getAlumni(),
+      http.get('/api/materials')
+    ])
+
+    // 活动总数
+    if (activitiesRes.status === 'fulfilled' && activitiesRes.value.code === 200) {
+      const data = activitiesRes.value.data
+      stats.value.activities = Array.isArray(data) ? data.length : 0
+    }
+
+    // 往届活动总数
+    if (pastActivitiesRes.status === 'fulfilled' && pastActivitiesRes.value.code === 200) {
+      const data = pastActivitiesRes.value.data
+      stats.value.pastActivities = (data as any)?.total || 0
+    }
+
+    // 成员总数（统计独立的人数，去重）
+    if (alumniRes.status === 'fulfilled' && alumniRes.value.code === 200) {
+      const data = alumniRes.value.data
+      if (Array.isArray(data)) {
+        // 使用Set去重，统计独立的人名
+        const uniqueNames = new Set<string>()
+        data.forEach((group: any) => {
+          group.members?.forEach((member: any) => {
+            uniqueNames.add(member.name)
+          })
+        })
+        stats.value.alumni = uniqueNames.size
+      }
+    }
+
+    // 资料总数
+    if (materialsRes.status === 'fulfilled' && materialsRes.value.code === 200) {
+      const data = materialsRes.value.data
+      if (Array.isArray(data)) {
+        stats.value.materials = data.length
+      } else if ((data as any)?.total !== undefined) {
+        stats.value.materials = (data as any).total
+      }
+    }
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadStats()
+})
 </script>
 
 <template>
@@ -54,7 +125,7 @@ const quickLinks = [
       </div>
 
       <!-- 统计卡片 -->
-      <div class="stats-section">
+      <div class="stats-section" v-loading="loading">
         <h2 class="section-title">数据概览</h2>
         <el-row :gutter="20">
           <el-col :xs="12" :sm="6">
@@ -62,7 +133,7 @@ const quickLinks = [
               <div class="stat-content">
                 <el-icon :size="32" color="#FF6B35"><Calendar /></el-icon>
                 <div class="stat-info">
-                  <p class="stat-value">--</p>
+                  <p class="stat-value">{{ stats.activities }}</p>
                   <p class="stat-label">活动总数</p>
                 </div>
               </div>
@@ -74,7 +145,7 @@ const quickLinks = [
               <div class="stat-content">
                 <el-icon :size="32" color="#F7931E"><FolderOpened /></el-icon>
                 <div class="stat-info">
-                  <p class="stat-value">--</p>
+                  <p class="stat-value">{{ stats.materials }}</p>
                   <p class="stat-label">资料总数</p>
                 </div>
               </div>
@@ -86,7 +157,7 @@ const quickLinks = [
               <div class="stat-content">
                 <el-icon :size="32" color="#FFC312"><UserFilled /></el-icon>
                 <div class="stat-info">
-                  <p class="stat-value">--</p>
+                  <p class="stat-value">{{ stats.alumni }}</p>
                   <p class="stat-label">成员总数</p>
                 </div>
               </div>
@@ -98,7 +169,7 @@ const quickLinks = [
               <div class="stat-content">
                 <el-icon :size="32" color="#FF4757"><PictureFilled /></el-icon>
                 <div class="stat-info">
-                  <p class="stat-value">--</p>
+                  <p class="stat-value">{{ stats.pastActivities }}</p>
                   <p class="stat-label">往届活动</p>
                 </div>
               </div>

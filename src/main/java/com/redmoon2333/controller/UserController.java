@@ -173,12 +173,22 @@ public class UserController {
     @PutMapping("/activation-codes/{codeId}/delete")
     public ApiResponse<String> deleteActivationCode(
             @RequestHeader("Authorization") String authHeader,
-            @org.springframework.web.bind.annotation.PathVariable Integer codeId) {
+            @org.springframework.web.bind.annotation.PathVariable String codeId) {
         try {
             logger.info("收到删除激活码的请求，激活码ID: {}", codeId);
+            
+            // 验证codeId是否为有效整数
+            Integer codeIdInt;
+            try {
+                codeIdInt = Integer.parseInt(codeId);
+            } catch (NumberFormatException e) {
+                logger.error("无效的激活码ID: {}", codeId);
+                return ApiResponse.error("无效的激活码ID", 400);
+            }
+            
             String token = authHeader.replace("Bearer ", "");
-            userService.deleteActivationCode(token, codeId);
-            logger.info("成功删除激活码，ID: {}", codeId);
+            userService.deleteActivationCode(token, codeIdInt);
+            logger.info("成功删除激活码，ID: {}", codeIdInt);
             return ApiResponse.success("激活码删除成功", null);
         } catch (BusinessException e) {
             logger.warn("删除激活码失败: {}", e.getErrorCode().getMessage(), e);

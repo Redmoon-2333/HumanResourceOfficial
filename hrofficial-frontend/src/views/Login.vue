@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { login as loginApi } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 const loginForm = ref({
@@ -13,6 +14,14 @@ const loginForm = ref({
   password: ''
 })
 const loading = ref(false)
+
+// 检查是否因为token过期跳转而来
+onMounted(() => {
+  if (route.query.expired === '1') {
+    ElMessage.warning('登录已过期，请重新登录')
+    userStore.logout()
+  }
+})
 
 const handleLogin = async () => {
   if (!loginForm.value.username || !loginForm.value.password) {

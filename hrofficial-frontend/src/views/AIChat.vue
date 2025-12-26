@@ -5,6 +5,7 @@ import { chat } from '@/api/ai'
 import type { ChatRequest } from '@/types'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { markdownToSafeHtml } from '@/utils/markdown'
 
 const userStore = useUserStore()
 
@@ -62,10 +63,12 @@ const handleSend = async () => {
     const response = await chat({ message: userMessage })
     // 非流式，直接返回完整内容
     const aiResponse = response.data as any
-    messages.value[aiMessageIndex].content = aiResponse.response || aiResponse
-    messages.value[aiMessageIndex].streaming = false
-    console.log('完整内容:', messages.value[aiMessageIndex].content)
-    console.log('streaming状态:', messages.value[aiMessageIndex].streaming)
+    if (messages.value[aiMessageIndex]) {
+      messages.value[aiMessageIndex].content = aiResponse.response || aiResponse
+      messages.value[aiMessageIndex].streaming = false
+      console.log('完整内容:', messages.value[aiMessageIndex].content)
+      console.log('streaming状态:', messages.value[aiMessageIndex].streaming)
+    }
     console.log('开始markdown渲染...')
     // 强制重新渲染
     nextTick(() => {
@@ -74,10 +77,12 @@ const handleSend = async () => {
   } catch (error: any) {
     console.error('AI对话失败:', error)
     // 如果AI没有回复任何内容，显示错误信息
-    if (!messages.value[aiMessageIndex].content) {
-      messages.value[aiMessageIndex].content = '抱歉，回复失败，请稍后重试'
+    if (messages.value[aiMessageIndex]) {
+      if (!messages.value[aiMessageIndex].content) {
+        messages.value[aiMessageIndex].content = '抱歉，回复失败，请稍后重试'
+      }
+      messages.value[aiMessageIndex].streaming = false
     }
-    messages.value[aiMessageIndex].streaming = false
     ElMessage.error(error.message || 'AI回复失败')
   } finally {
     loading.value = false
@@ -182,12 +187,20 @@ const handleQuickQuestion = (question: string) => {
                 </span>
                 <span class="message-time">{{ message.timestamp }}</span>
               </div>
+              <!-- 用户消息显示纯文本 -->
               <div 
+                v-if="message.role === 'user'"
                 class="message-text" 
                 style="white-space: pre-wrap; font-family: inherit;" 
               >
                 {{ message.content }}
               </div>
+              <!-- AI消息渲染Markdown -->
+              <div 
+                v-else
+                class="message-text markdown-content" 
+                v-html="markdownToSafeHtml(message.content)"
+              />
             </div>
           </div>
 
@@ -399,6 +412,12 @@ const handleQuickQuestion = (question: string) => {
 }
 
 /* Markdown渲染样式 */
+.markdown-content {
+  font-family: inherit;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
 .message-text :deep(h1),
 .message-text :deep(h2),
 .message-text :deep(h3),
