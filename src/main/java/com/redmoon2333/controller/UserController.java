@@ -7,9 +7,11 @@ import com.redmoon2333.entity.User;
 import com.redmoon2333.entity.ActivationCode;
 import com.redmoon2333.service.UserService;
 import com.redmoon2333.exception.BusinessException;
+import com.redmoon2333.util.RedisMemoryCleanupTask;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,6 +35,9 @@ public class UserController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired(required = false)
+    private RedisMemoryCleanupTask redisMemoryCleanupTask;
     
     /**
      * 调试接口：获取所有用户信息
@@ -196,6 +201,36 @@ public class UserController {
         } catch (Exception e) {
             logger.error("删除激活码时发生异常", e);
             return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+    
+    /**
+     * 手动清理Redis内存中的过期对话
+     * 仅部长可访问
+     * 
+     * @return 清理结果
+     */
+    @PostMapping("/cleanup-memory")
+    public ApiResponse<Map<String, Object>> cleanupRedisMemory() {
+        try {
+            logger.info("收到手动清理Redis内存的请求");
+            
+            if (redisMemoryCleanupTask == null) {
+                logger.warn("Redis清理任务未初始化");
+                return ApiResponse.error("清理功能不可用", 503);
+            }
+            
+            int cleanedCount = redisMemoryCleanupTask.manualCleanup();
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("cleanedCount", cleanedCount);
+            result.put("message", "成功清理 " + cleanedCount + " 个过期会话");
+            
+            logger.info("手动清理完成，清理了 {} 个会话", cleanedCount);
+            return ApiResponse.success("清理成功", result);
+        } catch (Exception e) {
+            logger.error("手动清理Redis内存时发生异常", e);
+            return ApiResponse.error("清理失败: " + e.getMessage(), 500);
         }
     }
 }

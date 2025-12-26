@@ -121,3 +121,11 @@ Desktop.ini
 /redeploy-backend-only.sh
 /uploads/activity-images/2025/11/27/f30ff993-29b7-4308-b5bb-443c5e8b91dc.png
 /激活码功能修复说明.md
+/src/main/resources/rag-knowledge-base/04-部门信息/人力资源中心简介.txt
+/TOOL_CALLING使用说明.md
+/deploy-rag.sh
+/RAG_IMPLEMENTATION_README.md
+/docker-compose-qdrant.yml
+/RAG_QUICK_START.md
+/RAG功能实现总结.md
+/知识库内容模板.md
