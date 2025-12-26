@@ -8,11 +8,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
@@ -45,6 +47,12 @@ public class AIChatService {
     
     @Value("classpath:/prompttemplate/plangenerator.txt")
     private org.springframework.core.io.Resource planTemplate;
+    
+    @Autowired(required = false)
+    private RagRetrievalService ragRetrievalService;
+    
+    @Autowired(required = false)
+    private ToolService toolService;
     
     /**
      * 清理AI返回内容中的多余空行
@@ -147,6 +155,171 @@ public class AIChatService {
             logger.error("流式AI对话处理失败: {}", e.getMessage(), e);
             return Flux.error(new RuntimeException("流式AI对话处理失败: " + e.getMessage(), e));
         }
+    }
+    
+    /**
+     * RAG增强的聊天功能（流式）
+     * 
+     * @param userId 用户ID
+     * @param message 用户消息
+     * @param useRAG 是否启用RAG检索
+     * @return 流式响应
+     */
+    public Flux<String> chatWithRag(Integer userId, String message, boolean useRAG) {
+        return chatWithRag(userId, message, useRAG, false);
+    }
+    
+    /**
+     * RAG增强的聊天功能（流式，支持Tool Calling）
+     * 
+     * @param userId 用户ID
+     * @param message 用户消息
+     * @param useRAG 是否启用RAG检索
+     * @param enableTools 是否启用Tool Calling
+     * @return 流式响应
+     */
+    public Flux<String> chatWithRag(Integer userId, String message, boolean useRAG, boolean enableTools) {
+        logger.info("用户 {} 发送RAG增强消息: {}, 启用RAG: {}, 启用工具: {}", 
+                   userId, message, useRAG, enableTools);
+        
+        // 如果不启用RAG或RAG服务不可用，降级到普通聊天
+        if (!useRAG || ragRetrievalService == null) {
+            logger.debug("RAG未启用或服务不可用，使用普通聊天模式");
+            return chatStream(userId, message);
+        }
+        
+        try {
+            // 1. 检索相关文档
+            List<RagRetrievalService.RetrievedDocument> documents = 
+                ragRetrievalService.retrieve(message);
+            
+            // 2. 格式化上下文
+            String context = ragRetrievalService.formatContext(documents);
+            
+            // 3. 构建增强的系统提示词
+            String enhancedSystemPrompt = SYSTEM_PROMPT + "\n\n" + context;
+            
+            // 4. 如果启用工具，添加工具说明
+            if (enableTools && toolService != null) {
+                enhancedSystemPrompt += "\n\n你可以调用以下工具查询数据库：\n" +
+                    "1. searchDepartmentMembers(name): 根据姓名搜索部门成员\n" +
+                    "2. getAlumniByYear(year): 获取指定年份的往届成员\n" +
+                    "3. getDepartmentStats(): 获取部门统计信息\n" +
+                    "当用户问到相关问题时，你应该主动调用这些工具。";
+            }
+            
+            logger.debug("检索到 {} 个相关文档，上下文长度: {} 字符", 
+                        documents.size(), context.length());
+            
+            // 5. 处理可能的工具调用
+            String processedMessage = message;
+            if (enableTools && toolService != null) {
+                processedMessage = processToolCalls(message);
+            }
+            
+            // 6. 调用AI生成回复
+            String conversationId = "user_" + userId;
+            
+            return qwenChatClient
+                    .prompt()
+                    .system(enhancedSystemPrompt)
+                    .user(processedMessage)
+                    .advisors(advisorSpec -> advisorSpec.param(CONVERSATION_ID, conversationId))
+                    .stream()
+                    .content()
+                    .doOnNext(chunk -> logger.trace("发送RAG数据块: {} 字符", chunk.length()))
+                    .doOnComplete(() -> logger.info("RAG流式对话完成，用户ID: {}", userId))
+                    .doOnError(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset"))) {
+                            logger.warn("客户端提前断开连接，用户ID: {}", userId);
+                        } else {
+                            logger.error("RAG流式对话错误，用户ID: {}, 错误: {}", userId, errorMsg);
+                        }
+                    })
+                    .onErrorResume(error -> {
+                        String errorMsg = error.getMessage();
+                        if (errorMsg != null && (errorMsg.contains("ClientAbortException") 
+                                || errorMsg.contains("Broken pipe")
+                                || errorMsg.contains("Connection reset"))) {
+                            return Flux.empty();
+                        }
+                        return Flux.error(error);
+                    });
+                    
+        } catch (Exception e) {
+            logger.error("RAG检索失败，降级到普通聊天: {}", e.getMessage(), e);
+            // 降级到普通聊天
+            return chatStream(userId, message);
+        }
+    }
+    
+    /**
+     * 处理工具调用
+     * 检测用户消息中是否需要调用工具，如果需要则执行并返回结果
+     * 
+     * @param message 用户消息
+     * @return 处理后的消息
+     */
+    private String processToolCalls(String message) {
+        String lowerMessage = message.toLowerCase();
+        StringBuilder result = new StringBuilder();
+        result.append(message);
+        
+        try {
+            // 检测是否需要搜索成员
+            if (lowerMessage.contains("搜索") || lowerMessage.contains("查找") || 
+                lowerMessage.contains("查询") && (lowerMessage.contains("成员") || lowerMessage.contains("人"))) {
+                
+                // 提取姓名（简单的实现）
+                String[] words = message.split("[、，\\s]+");
+                for (String word : words) {
+                    if (word.length() >= 2 && word.length() <= 4 && 
+                        !word.contains("搜") && !word.contains("查") && 
+                        !word.contains("成员") && !word.contains("人")) {
+                        
+                        String toolResult = toolService.searchDepartmentMembers(word);
+                        result.append("\n\n[查询结果]\n").append(toolResult);
+                        logger.info("执行工具调用: searchDepartmentMembers({})", word);
+                        break;
+                    }
+                }
+            }
+            
+            // 检测是否需要查询往届成员
+            if (lowerMessage.contains("往届") || lowerMessage.contains("历史")) {
+                // 提取年份
+                Integer year = null;
+                if (message.matches(".*\\d{4}.*")) {
+                    String yearStr = message.replaceAll(".*?(\\d{4}).*", "$1");
+                    try {
+                        year = Integer.parseInt(yearStr);
+                    } catch (NumberFormatException e) {
+                        // 忽略
+                    }
+                }
+                
+                String toolResult = toolService.getAlumniByYear(year);
+                result.append("\n\n[查询结果]\n").append(toolResult);
+                logger.info("执行工具调用: getAlumniByYear({})", year);
+            }
+            
+            // 检测是否需要统计信息
+            if (lowerMessage.contains("统计") || lowerMessage.contains("总共") || 
+                lowerMessage.contains("多少人") || lowerMessage.contains("多少届")) {
+                
+                String toolResult = toolService.getDepartmentStats();
+                result.append("\n\n[查询结果]\n").append(toolResult);
+                logger.info("执行工具调用: getDepartmentStats()");
+            }
+            
+        } catch (Exception e) {
+            logger.error("工具调用失败", e);
+        }
+        
+        return result.toString();
     }
     
     /**
