@@ -171,6 +171,13 @@ export interface ChatRequest {
   message: string
 }
 
+// RAG聊天请求
+export interface RagChatRequest {
+  message: string
+  useRAG?: boolean
+  enableTools?: boolean
+}
+
 // AI聊天响应
 export interface ChatResponse {
   response: string

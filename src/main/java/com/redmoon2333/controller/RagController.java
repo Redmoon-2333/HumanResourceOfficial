@@ -104,4 +104,26 @@ public class RagController {
                                     ErrorCode.SYSTEM_ERROR.getCode());
         }
     }
+    
+    /**
+     * 调试接口: 列出所有文件
+     * 查看数据库中实际存储了哪些文件
+     * 
+     * @return 文件列表
+     */
+    @GetMapping("/debug/list-files")
+    @RequireMemberRole("调试检索")
+    public ApiResponse<?> listFiles() {
+        logger.info("收到列出文件请求");
+        
+        try {
+            var files = ragManagementService.listAllFiles();
+            return ApiResponse.success(files);
+            
+        } catch (Exception e) {
+            logger.error("列出文件失败", e);
+            return ApiResponse.error("列出文件失败: " + e.getMessage(), 
+                                    ErrorCode.SYSTEM_ERROR.getCode());
+        }
+    }
 }

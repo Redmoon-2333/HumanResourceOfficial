@@ -18,13 +18,16 @@ public class RagConfig {
      */
     private String knowledgeBasePath = "src/main/resources/rag-knowledge-base";
     
-    /**
+   /**
      * 文本分块大小（字符数）
+     * 减小分块可以提高关键词密度，改善检索效果
+     * 300字符适合实体名称查询（如"秋林阁"、"图书馆"等）
      */
-    private int chunkSize = 800;
+    private int chunkSize = 300;
     
     /**
      * 分块重叠大小（字符数）
+     * 设置为分块大小的30-40%，确保关键信息不被截断
      */
     private int chunkOverlap = 100;
     
@@ -35,6 +38,7 @@ public class RagConfig {
     
     /**
      * 检索时返回的最相关文档数量
+     * 建议设置为3-5，减少内存使用和提高检索效率
      */
     private int retrievalTopK = 5;
     
