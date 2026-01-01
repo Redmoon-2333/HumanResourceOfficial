@@ -2,7 +2,8 @@ import http from '@/utils/http'
 import type {
   ChatRequest,
   ChatResponse,
-  PlanGeneratorRequest
+  PlanGeneratorRequest,
+  RagChatRequest
 } from '@/types'
 
 // AI对话
@@ -16,6 +17,14 @@ export const chatStream = (
   onChunk: (chunk: string) => void
 ) => {
   return http.stream('/api/ai/chat-stream', data, onChunk)
+}
+
+// RAG增强对话（流式）
+export const chatWithRag = (
+  data: RagChatRequest,
+  onChunk: (chunk: string) => void
+) => {
+  return http.stream('/api/ai/chat-with-rag', data, onChunk)
 }
 
 // 生成策划案（非流式）

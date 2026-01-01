@@ -1,10 +1,5 @@
 package com.redmoon2333.config;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingOptions;
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -14,6 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
+
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.grpc.Collections.CreateCollection;
+import io.qdrant.client.grpc.Collections.Distance;
+import io.qdrant.client.grpc.Collections.VectorParams;
+import io.qdrant.client.grpc.Collections.VectorsConfig;
+import jakarta.annotation.PostConstruct;
 
 /**
  * VectorStore 配置类
@@ -32,6 +37,47 @@ public class VectorStoreConfig {
     
     @Autowired
     private RagConfig ragConfig;
+    
+    @Autowired
+    private QdrantClient qdrantClient;
+    
+    /**
+     * 应用启动后初始化Collection
+     * 确保Collection存在，避免NOT_FOUND错误
+     */
+    @PostConstruct
+    public void initializeCollection() {
+        try {
+            logger.info("检查Collection是否存在: {}", collectionName);
+            
+            boolean exists = qdrantClient.collectionExistsAsync(collectionName).get();
+            
+            if (!exists) {
+                logger.warn("Collection {} 不存在，开始创建...", collectionName);
+                
+                VectorParams vectorParams = VectorParams.newBuilder()
+                    .setSize(ragConfig.getVectorDimension())
+                    .setDistance(Distance.Cosine)
+                    .build();
+                
+                CreateCollection createCollection = CreateCollection.newBuilder()
+                    .setCollectionName(collectionName)
+                    .setVectorsConfig(VectorsConfig.newBuilder()
+                        .setParams(vectorParams)
+                        .build())
+                    .build();
+                
+                qdrantClient.createCollectionAsync(createCollection).get();
+                logger.info("Collection {} 创建成功！", collectionName);
+            } else {
+                logger.info("Collection {} 已存在", collectionName);
+            }
+            
+        } catch (Exception e) {
+            logger.error("Collection初始化失败", e);
+            throw new RuntimeException("Collection初始化失败: " + e.getMessage(), e);
+        }
+    }
     
     /**
      * 配置 Embedding 模型
