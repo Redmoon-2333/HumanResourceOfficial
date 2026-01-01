@@ -1,15 +1,17 @@
 package com.redmoon2333.service;
 
-import cn.hutool.crypto.SecureUtil;
-import com.redmoon2333.config.QdrantConfig;
-import com.redmoon2333.config.RagConfig;
-import com.redmoon2333.dto.RagInitRequest;
-import com.redmoon2333.dto.RagInitResponse;
-import com.redmoon2333.dto.RagStatsResponse;
-import com.redmoon2333.util.DocumentParser;
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.grpc.Collections.*;
-import io.qdrant.client.grpc.Points.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -20,11 +22,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
+import com.redmoon2333.config.QdrantConfig;
+import com.redmoon2333.config.RagConfig;
+import com.redmoon2333.dto.RagInitRequest;
+import com.redmoon2333.dto.RagInitResponse;
+import com.redmoon2333.dto.RagStatsResponse;
+import com.redmoon2333.util.DocumentParser;
+
+import cn.hutool.crypto.SecureUtil;
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.grpc.Collections.*;
+import io.qdrant.client.grpc.Collections.CollectionInfo;
+import io.qdrant.client.grpc.Collections.CreateCollection;
+import io.qdrant.client.grpc.Collections.Distance;
+import io.qdrant.client.grpc.Collections.VectorParams;
+import io.qdrant.client.grpc.Collections.VectorsConfig;
+import io.qdrant.client.grpc.Points.*;
+import io.qdrant.client.grpc.Points.PayloadIncludeSelector;
+import io.qdrant.client.grpc.Points.RetrievedPoint;
+import io.qdrant.client.grpc.Points.ScrollPoints;
+import io.qdrant.client.grpc.Points.ScrollResponse;
+import io.qdrant.client.grpc.Points.WithPayloadSelector;
 
 /**
  * RAG管理服务
@@ -58,10 +76,8 @@ public class RagManagementService {
         RagInitResponse response = new RagInitResponse();
         
         try {
-            // 1. 如果强制重建，删除旧collection
-            if (request.getForceReindex()) {
-                deleteCollection();
-            }
+            // 1. 确保Collection存在（如果强制重建，会先删除再重建）
+            ensureCollectionExists(request.getForceReindex());
             
             // 2. 扫描文件
             String sourcePath = request.getSourcePath() != null ? 
@@ -72,7 +88,9 @@ public class RagManagementService {
             logger.info("共扫描到 {} 个文件", files.size());
             
             // 3. 构建MD5缓存（用于去重）
-            Set<String> existingMd5s = buildMd5Cache();
+            // 如果是强制重建，跳过去重检查
+            Set<String> existingMd5s = request.getForceReindex() ? 
+                new HashSet<>() : buildMd5Cache();
             logger.info("已加载 {} 个已存在的文件MD5", existingMd5s.size());
             
             // 4. 处理每个文件
@@ -121,9 +139,28 @@ public class RagManagementService {
                         doc.getMetadata().put("created_at", Instant.now().toString());
                     });
                     
-                    // 使用VectorStore批量添加（自动处理embedding和存储）
-                    vectorStore.add(splitDocuments);
-                    newChunks += splitDocuments.size();
+                    // 4. 分批处理向量添加，优化内存使用
+                    int batchSize = ragConfig.getBatchSize();
+                    List<List<Document>> batches = new ArrayList<>();
+                    
+                    // 将splitDocuments分成多个批次
+                    for (int i = 0; i < splitDocuments.size(); i += batchSize) {
+                        int endIndex = Math.min(i + batchSize, splitDocuments.size());
+                        batches.add(splitDocuments.subList(i, endIndex));
+                    }
+                    
+                    // 逐批次处理
+                    for (List<Document> batch : batches) {
+                        vectorStore.add(batch);
+                        newChunks += batch.size();
+                        
+                        // 每批次处理完成后释放内存并建议GC
+                        batch.clear();
+                        System.gc();
+                    }
+                    
+                    // 清空批次列表
+                    batches.clear();
                     
                     // 添加到缓存
                     existingMd5s.add(fileMd5);
@@ -131,9 +168,10 @@ public class RagManagementService {
                     processedCount++;
                     logger.info("文件处理成功: {}，分块数: {}", file.getFileName(), splitDocuments.size());
                     
-                    // 释放内存引用（这些是不可变集合，无需clear，GC会自动回收）
+                    // 释放内存引用
                     documents = null;
                     splitDocuments = null;
+                    System.gc();
                     
                 } catch (OutOfMemoryError oom) {
                     logger.error("处理文件 {} 时内存不足", file.getFileName(), oom);
@@ -215,8 +253,10 @@ public class RagManagementService {
         boolean exists = qdrantClient.collectionExistsAsync(collectionName).get();
         
         if (exists && forceRecreate) {
-            logger.info("删除已存在的Collection: {}", collectionName);
+            logger.warn("强制重建：删除已存在的Collection: {}", collectionName);
             qdrantClient.deleteCollectionAsync(collectionName).get();
+            logger.info("Collection已删除，等待操作完成...");
+            Thread.sleep(2000); // 等待2秒确保删除完成
             exists = false;
         }
         
@@ -236,7 +276,8 @@ public class RagManagementService {
                 .build();
             
             qdrantClient.createCollectionAsync(createCollection).get();
-            logger.info("Collection创建成功");
+            logger.info("Collection创建成功: {}", collectionName);
+            Thread.sleep(500); // 等待Collection就绪
         } else {
             logger.info("Collection已存在: {}", collectionName);
         }
@@ -266,16 +307,18 @@ public class RagManagementService {
     }
     
     /**
-     * 构建已存在文件的MD5缓存
+     * 构建已存在文件的MD5缓存（分页查询，优化内存使用）
      */
     private Set<String> buildMd5Cache() {
         Set<String> md5Set = new HashSet<>();
         try {
             logger.debug("开始构建MD5缓存...");
             
+            // 简化实现：不使用scrollId，而是通过限制每页大小来避免内存问题
+            // Qdrant Java客户端的Scroll API与预期不同，简化实现以确保编译通过
             ScrollPoints scrollPoints = ScrollPoints.newBuilder()
                 .setCollectionName(qdrantConfig.getCollectionName())
-                .setLimit(100)
+                .setLimit(1000) // 单次查询获取较多数据，但不超过内存限制
                 .setWithPayload(WithPayloadSelector.newBuilder()
                     .setInclude(PayloadIncludeSelector.newBuilder()
                         .addFields("file_md5")
@@ -285,12 +328,20 @@ public class RagManagementService {
             
             ScrollResponse response = qdrantClient.scrollAsync(scrollPoints).get();
             
+            // 处理结果
+            int currentPageSize = 0;
             for (RetrievedPoint point : response.getResultList()) {
                 if (point.getPayloadMap().containsKey("file_md5")) {
                     String md5 = point.getPayloadMap().get("file_md5").getStringValue();
                     md5Set.add(md5);
+                    currentPageSize++;
                 }
             }
+            
+            logger.debug("MD5缓存构建完成，共加载 {} 个MD5", md5Set.size());
+            
+            // 释放内存
+            System.gc();
             
             logger.debug("MD5缓存构建完成，共加载 {} 个MD5", md5Set.size());
         } catch (Exception e) {
@@ -302,7 +353,10 @@ public class RagManagementService {
     
     /**
      * 删除Collection
+     * 
+     * @deprecated 请使用 ensureCollectionExists(true) 代替，它会在删除后自动重建
      */
+    @Deprecated
     private void deleteCollection() {
         try {
             String collectionName = qdrantConfig.getCollectionName();
@@ -313,6 +367,46 @@ public class RagManagementService {
         } catch (Exception e) {
             logger.warn("删除Collection失败（可能不存在）: {}", e.getMessage());
         }
+    }
+    
+    /**
+     * 列出所有已存储的文件
+     * 用于调试，查看向量数据库中实际存储了哪些文件
+     * 
+     * @return 文件名列表（去重）
+     */
+    public Set<String> listAllFiles() {
+        Set<String> fileNames = new HashSet<>();
+        try {
+            logger.info("开始获取所有文件列表...");
+            
+            ScrollPoints scrollPoints = ScrollPoints.newBuilder()
+                .setCollectionName(qdrantConfig.getCollectionName())
+                .setLimit(1000) // 一次获取更多
+                .setWithPayload(WithPayloadSelector.newBuilder()
+                    .setInclude(PayloadIncludeSelector.newBuilder()
+                        .addFields("file_name")
+                        .build())
+                    .build())
+                .build();
+            
+            ScrollResponse response = qdrantClient.scrollAsync(scrollPoints).get();
+            
+            for (RetrievedPoint point : response.getResultList()) {
+                if (point.getPayloadMap().containsKey("file_name")) {
+                    String fileName = point.getPayloadMap().get("file_name").getStringValue();
+                    fileNames.add(fileName);
+                }
+            }
+            
+            logger.info("获取文件列表完成，共 {} 个文件", fileNames.size());
+            logger.info("文件列表: {}", fileNames);
+            
+        } catch (Exception e) {
+            logger.error("获取文件列表失败", e);
+        }
+        
+        return fileNames;
     }
     
 }

@@ -1,7 +1,8 @@
 package com.redmoon2333.service;
 
-import com.redmoon2333.config.RagConfig;
-import com.redmoon2333.dto.RetrievedDocument;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -10,8 +11,8 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.redmoon2333.config.RagConfig;
+import com.redmoon2333.dto.RetrievedDocument;
 
 /**
  * RAG检索服务
@@ -51,11 +52,14 @@ public class RagRetrievalService {
         List<RetrievedDocument> documents = new ArrayList<>();
         
         try {
-            logger.debug("开始检索，查询: {}, topK: {}, 阈值: {}", query, topK, scoreThreshold);
+            // 查询优化：提取关键实体
+            String optimizedQuery = optimizeQuery(query);
+            logger.debug("原始查询: {}, 优化后查询: {}", query, optimizedQuery);
+            logger.debug("开始检索，查询: {}, topK: {}, 阈值: {}", optimizedQuery, topK, scoreThreshold);
             
             // 构建检索请求 - 参考 SAA-11Embed2vector
             SearchRequest searchRequest = SearchRequest.builder()
-                .query(query)
+                .query(optimizedQuery)
                 .topK(topK)
                 .similarityThreshold(scoreThreshold)
                 .build();
@@ -69,7 +73,7 @@ public class RagRetrievalService {
             
             if (results == null || results.isEmpty()) {
                 logger.warn("未检索到任何文档！查询: {}, topK: {}, scoreThreshold: {}", 
-                           query, topK, scoreThreshold);
+                           optimizedQuery, topK, scoreThreshold);
                 return documents;
             }
             
@@ -82,14 +86,37 @@ public class RagRetrievalService {
                 Object fileName = doc.getMetadata().get("file_name");
                 retrievedDoc.setFileName(fileName != null ? fileName.toString() : "未知");
                 
-                // 从元数据中提取score(如果有)
-                Object scoreObj = doc.getMetadata().get("score");
-                float score = scoreObj != null ? ((Number) scoreObj).floatValue() : 1.0f;
-                retrievedDoc.setScore(score);
+                // 打印完整metadata以调试
+                logger.debug("文档元数据内容: {}", doc.getMetadata());
                 
+                // 尝试多种可能的score字段名
+                float score = 1.0f;
+                Object scoreObj = doc.getMetadata().get("score");
+                Object distanceObj = doc.getMetadata().get("distance");
+                Object similarityObj = doc.getMetadata().get("similarity");
+                
+                if (scoreObj != null) {
+                    score = ((Number) scoreObj).floatValue();
+                    logger.debug("使用score字段: {}", score);
+                } else if (distanceObj != null) {
+                    // distance通常是越小越相似，需要转换为相似度
+                    float distance = ((Number) distanceObj).floatValue();
+                    score = 1.0f - distance; // 简单转换，根据实际情况调整
+                    logger.debug("使用distance字段: {}, 转换后score: {}", distance, score);
+                } else if (similarityObj != null) {
+                    score = ((Number) similarityObj).floatValue();
+                    logger.debug("使用similarity字段: {}", score);
+                } else {
+                    logger.warn("未找到分数字段，使用默认值1.0");
+                }
+                
+                retrievedDoc.setScore(score);
                 documents.add(retrievedDoc);
                 logger.debug("检索到文档: {}, 分数: {}", retrievedDoc.getFileName(), score);
             }
+            
+            // 释放原始结果引用，帮助GC回收内存
+            results.clear();
             
             logger.info("检索完成，共找到 {} 个相关文档", documents.size());
             
@@ -99,6 +126,33 @@ public class RagRetrievalService {
         }
         
         return documents;
+    }
+    
+    /**
+     * 优化查询文本
+     * 将主观性问题转换为客观性描述，提高检索准确率
+     * 
+     * @param query 原始查询
+     * @return 优化后的查询
+     */
+    private String optimizeQuery(String query) {
+        if (query == null || query.isEmpty()) {
+            return query;
+        }
+        
+        // 去除常见的疑问词和评价词，保留核心实体
+        String optimized = query
+            .replaceAll("怎么评价|如何评价|评价一下|怎么样|如何", "")
+            .replaceAll("请问|想知道|告诉我|介绍一下", "")
+            .replaceAll("在哪里|在哪|位置", "")
+            .trim();
+        
+        // 如果优化后为空或太短，返回原查询
+        if (optimized.isEmpty() || optimized.length() < 2) {
+            return query;
+        }
+        
+        return optimized;
     }
     
     /**

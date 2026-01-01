@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import Layout from '@/components/Layout.vue'
-import { chat } from '@/api/ai'
-import type { ChatRequest } from '@/types'
-import { ElMessage } from 'element-plus'
+import { chatWithRag } from '@/api/ai'
+import { initializeKnowledgeBase } from '@/api/rag'
+import type { RagChatRequest } from '@/types'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { markdownToSafeHtml } from '@/utils/markdown'
+import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 
 const userStore = useUserStore()
 
-// ... existing code ...
 // HTML转义函数，用于流式输出时显示原始文本
 const escapeHtml = (text: string) => {
   const div = document.createElement('div')
@@ -28,6 +29,41 @@ const messages = ref<Message[]>([])
 const inputMessage = ref('')
 const loading = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
+
+// RAG和ToolCalling选项
+const useRAG = ref(true)  // 默认启用RAG
+const enableTools = ref(false)  // 默认禁用ToolCalling
+
+// 知识库初始化状态
+const initializing = ref(false)
+
+// 后处理AI返回的Markdown内容，确保格式正确
+const postprocessMarkdown = (content: string): string => {
+  if (!content) return ''
+  
+  let processed = content
+  
+  // 1. 修复标题格式：确保##后面有空格，然后添加换行
+  processed = processed.replace(/###+([^\n\s]+)/g, '## $1\n')
+  processed = processed.replace(/##([^\n\s]+)/g, '## $1\n')
+  
+  // 2. 修复列表项：在-前添加换行
+  processed = processed.replace(/([^\n])(- )/g, '$1\n- ')
+  
+  // 3. 修复加粗文本：确保**加粗**格式正确
+  processed = processed.replace(/\*\*(.+?)\*\*/g, '**$1**')
+  
+  // 4. 修复段落：确保段落之间有换行
+  processed = processed.replace(/([^\n])(##)/g, '$1\n\n$2')
+  
+  // 5. 清理多余的空格，但保留换行符
+  processed = processed.replace(/[ \t]+/g, ' ')
+  
+  // 6. 确保列表项之间有换行
+  processed = processed.replace(/- ([^\n]+?)- /g, '- $1\n- ')
+  
+  return processed
+}
 
 // 发送消息（流式）
 const handleSend = async () => {
@@ -60,20 +96,28 @@ const handleSend = async () => {
 
   loading.value = true
   try {
-    const response = await chat({ message: userMessage })
-    // 非流式，直接返回完整内容
-    const aiResponse = response.data as any
+    // 使用RAG增强对话API（流式）
+    await chatWithRag(
+      {
+        message: userMessage,
+        useRAG: useRAG.value,
+        enableTools: enableTools.value
+      },
+      (chunk: string) => {
+        // 处理流式返回的内容
+        if (messages.value[aiMessageIndex]) {
+          messages.value[aiMessageIndex].content += chunk
+          scrollToBottom()
+        }
+      }
+    )
+    
+    // 流式输出完成，更新消息状态并进行后处理
     if (messages.value[aiMessageIndex]) {
-      messages.value[aiMessageIndex].content = aiResponse.response || aiResponse
+      // 对AI返回的内容进行后处理，确保Markdown格式正确
+      messages.value[aiMessageIndex].content = postprocessMarkdown(messages.value[aiMessageIndex].content)
       messages.value[aiMessageIndex].streaming = false
-      console.log('完整内容:', messages.value[aiMessageIndex].content)
-      console.log('streaming状态:', messages.value[aiMessageIndex].streaming)
     }
-    console.log('开始markdown渲染...')
-    // 强制重新渲染
-    nextTick(() => {
-      console.log('渲染完成')
-    })
   } catch (error: any) {
     console.error('AI对话失败:', error)
     // 如果AI没有回复任何内容，显示错误信息
@@ -93,6 +137,46 @@ const handleSend = async () => {
 const handleClear = () => {
   messages.value = []
   ElMessage.success('已清空聊天记录')
+}
+
+// 初始化知识库
+const handleInitializeKnowledgeBase = async () => {
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      '初始化知识库将重新处理所有知识文件，可能需要较长时间。确定要继续吗？',
+      '确认初始化',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    initializing.value = true
+    
+    // 调用初始化API
+    const response = await initializeKnowledgeBase({
+      forceReindex: false // 默认不强制重建
+    })
+    
+    const data = response.data as any
+    if (data.code === 200) {
+      ElMessage.success(`知识库初始化成功！\n处理文件：${data.data.totalFiles}个\n成功：${data.data.processedFiles}个\n失败：${data.data.failedFiles}个`)
+    } else {
+      ElMessage.error(data.message || '初始化失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      // 处理403权限错误
+      if (error.response?.status === 403) {
+        ElMessage.error('权限不足：只有部长可以初始化知识库')
+      } else {
+        ElMessage.error(error.response?.data?.message || error.message || '初始化失败')
+      }
+    }
+  } finally {
+    initializing.value = false
+  }
 }
 
 // 滚动到底部
@@ -131,10 +215,35 @@ const handleQuickQuestion = (question: string) => {
               </el-icon>
               <span class="chat-title">人力资源中心小助理</span>
             </div>
-            <el-button size="small" @click="handleClear" :disabled="messages.length === 0">
-              <el-icon><Delete /></el-icon>
-              清空
-            </el-button>
+            <div class="chat-settings">
+              <el-switch
+                v-model="useRAG"
+                size="small"
+                active-text="RAG"
+                inactive-text="RAG"
+                active-color="var(--color-primary)"
+              />
+              <el-switch
+                v-model="enableTools"
+                size="small"
+                active-text="工具"
+                inactive-text="工具"
+                active-color="var(--color-primary)"
+              />
+              <el-button 
+                size="small" 
+                @click="handleInitializeKnowledgeBase"
+                :loading="initializing"
+                type="warning"
+              >
+                <el-icon><Upload /></el-icon>
+                初始化知识库
+              </el-button>
+              <el-button size="small" @click="handleClear" :disabled="messages.length === 0">
+                <el-icon><Delete /></el-icon>
+                清空
+              </el-button>
+            </div>
           </div>
         </template>
 
@@ -199,8 +308,9 @@ const handleQuickQuestion = (question: string) => {
               <div 
                 v-else
                 class="message-text markdown-content" 
-                v-html="markdownToSafeHtml(message.content)"
-              />
+              >
+                <MarkdownRenderer :content="message.content" />
+              </div>
             </div>
           </div>
 
@@ -274,6 +384,12 @@ const handleQuickQuestion = (question: string) => {
 }
 
 .chat-header > div {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.chat-settings {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
