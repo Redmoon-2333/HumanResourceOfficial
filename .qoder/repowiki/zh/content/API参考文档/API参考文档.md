@@ -2,6 +2,10 @@
 
 <cite>
 **本文档中引用的文件**   
+- [AIChatController.java](file://src/main/java/com/redmoon2333/controller/AIChatController.java)
+- [RagChatRequest.java](file://src/main/java/com/redmoon2333/dto/RagChatRequest.java)
+- [ChatRequest.java](file://src/main/java/com/redmoon2333/dto/ChatRequest.java)
+- [ChatResponse.java](file://src/main/java/com/redmoon2333/dto/ChatResponse.java)
 - [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java)
 - [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java)
 - [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java)
@@ -20,7 +24,19 @@
 - [RequireMinisterRole.java](file://src/main/java/com/redmoon2333/annotation/RequireMinisterRole.java)
 - [PermissionAspect.java](file://src/main/java/com/redmoon2333/aspect/PermissionAspect.java)
 - [JwtAuthenticationFilter.java](file://src/main/java/com/redmoon2333/config/JwtAuthenticationFilter.java)
+- [AIChatService.java](file://src/main/java/com/redmoon2333/service/AIChatService.java)
+- [RagRetrievalService.java](file://src/main/java/com/redmoon2333/service/RagRetrievalService.java)
+- [ToolService.java](file://src/main/java/com/redmoon2333/service/ToolService.java)
+- [RagConfig.java](file://src/main/java/com/redmoon2333/config/RagConfig.java)
 </cite>
+
+## 更新摘要
+**已做更改**   
+- 在“AI对话相关API”部分新增了 **RAG增强AI流式对话接口** 的详细文档
+- 添加了新的请求体结构 `RagChatRequest` 及其参数说明
+- 更新了使用示例，包含 `chatWithRag` 接口的 curl 调用示例
+- 新增了关于RAG和工具调用功能的典型使用场景说明
+- 更新了文档引用文件列表，加入了新增功能相关的源码文件
 
 ## 目录
 1. [简介](#简介)
@@ -298,6 +314,71 @@ AuthController-->>用户 : 返回包含JWT的响应
 - [AlumniResponse.java](file://src/main/java/com/redmoon2333/dto/AlumniResponse.java#L1-L20)
 - [PublicUserInfo.java](file://src/main/java/com/redmoon2333/dto/PublicUserInfo.java#L1-L15)
 
+### AI对话相关API
+
+#### AI对话接口（带用户记忆）
+- **HTTP方法**: POST
+- **URL路径**: `/api/ai/chat`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [ChatRequest](file://src/main/java/com/redmoon2333/dto/ChatRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含聊天响应
+
+#### AI流式对话接口（带用户记忆）
+- **HTTP方法**: POST
+- **URL路径**: `/api/ai/chat-stream`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}, Accept: text/event-stream
+- **请求体结构**: [ChatRequest](file://src/main/java/com/redmoon2333/dto/ChatRequest.java)
+- **响应格式**: text/event-stream 流式响应
+
+#### 生成活动策划案
+- **HTTP方法**: POST
+- **URL路径**: `/api/ai/generate-plan`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}
+- **请求体结构**: [PlanGeneratorRequest](file://src/main/java/com/redmoon2333/dto/PlanGeneratorRequest.java)
+- **响应格式**: [ApiResponse](file://src/main/java/com/redmoon2333/dto/ApiResponse.java) 包含HTML格式的策划案
+
+#### 流式生成活动策划案
+- **HTTP方法**: POST
+- **URL路径**: `/api/ai/generate-plan-stream`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}, Accept: text/event-stream
+- **请求体结构**: [PlanGeneratorRequest](file://src/main/java/com/redmoon2333/dto/PlanGeneratorRequest.java)
+- **响应格式**: text/event-stream 流式响应
+
+#### RAG增强AI流式对话接口
+- **HTTP方法**: POST
+- **URL路径**: `/api/ai/chat-with-rag`
+- **权限要求**: @RequireMemberRole
+- **请求头**: Content-Type: application/json, Authorization: Bearer {JWT}, Accept: text/event-stream
+- **请求体结构**: [RagChatRequest](file://src/main/java/com/redmoon2333/dto/RagChatRequest.java)
+- **响应格式**: text/event-stream 流式响应
+
+**请求体参数说明**:
+```json
+{
+  "message": "用户输入的消息",
+  "useRAG": true,
+  "enableTools": false
+}
+```
+
+- **message**: 用户输入的文本消息
+- **useRAG**: 是否启用RAG检索功能（默认为true）
+- **enableTools**: 是否启用工具调用功能（默认为false）
+
+当 `useRAG` 为 true 时，系统会从知识库中检索相关信息来增强AI回复；当 `enableTools` 为 true 时，AI可调用内部工具查询成员信息、往届成员和部门统计。
+
+**本文档中引用的文件**   
+- [AIChatController.java](file://src/main/java/com/redmoon2333/controller/AIChatController.java#L23-L277)
+- [RagChatRequest.java](file://src/main/java/com/redmoon2333/dto/RagChatRequest.java#L9-L28)
+- [AIChatService.java](file://src/main/java/com/redmoon2333/service/AIChatService.java#L25-L436)
+- [RagRetrievalService.java](file://src/main/java/com/redmoon2333/service/RagRetrievalService.java#L19-L166)
+- [ToolService.java](file://src/main/java/com/redmoon2333/service/ToolService.java#L18-L167)
+- [RagConfig.java](file://src/main/java/com/redmoon2333/config/RagConfig.java#L10-L61)
+
 ## 权限控制
 
 ### 权限注解
@@ -385,11 +466,37 @@ curl -X GET http://localhost:8080/api/materials/download/1 \
   -o "会议纪要.pdf"
 ```
 
+### RAG增强AI对话
+```bash
+# 使用RAG增强对话（启用RAG，禁用工具调用）
+curl -X POST http://localhost:8080/api/ai/chat-with-rag \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "message": "请根据知识库内容回答：人力资源中心的成立背景是什么？",
+    "useRAG": true,
+    "enableTools": false
+  }'
+
+# 使用RAG增强对话并启用工具调用
+curl -X POST http://localhost:8080/api/ai/chat-with-rag \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "message": "帮我查一下叫李四的成员信息",
+    "useRAG": true,
+    "enableTools": true
+  }'
+```
+
 **本文档中引用的文件**   
 - [README.md](file://README.md#L1-L444)
 - [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
 - [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L1-L322)
 - [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
+- [AIChatController.java](file://src/main/java/com/redmoon2333/controller/AIChatController.java#L23-L277)
 
 ## 错误处理
 所有API使用统一的错误响应格式：
@@ -482,9 +589,38 @@ MaterialController-->>部员 : 返回搜索结果
 - [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
 - [MaterialService.java](file://src/main/java/com/redmoon2333/service/MaterialService.java#L1-L20)
 
+### RAG增强对话流程
+```mermaid
+sequenceDiagram
+participant 用户 as 用户
+participant AIChatController as AIChatController
+participant AIChatService as AIChatService
+participant RagRetrievalService as RagRetrievalService
+participant ToolService as ToolService
+用户->>AIChatController : POST /api/ai/chat-with-rag
+AIChatController->>AIChatController : 权限验证(@RequireMemberRole)
+AIChatController->>AIChatService : 调用chatWithRag
+AIChatService->>RagRetrievalService : 检索知识库
+RagRetrievalService-->>AIChatService : 返回相关文档
+AIChatService->>ToolService : 根据需要调用工具
+ToolService-->>AIChatService : 返回查询结果
+AIChatService->>AIChatService : 构建增强提示词
+AIChatService->>QwenClient : 调用大模型生成回复
+QwenClient-->>AIChatService : 返回流式响应
+AIChatService-->>AIChatController : 返回流式数据
+AIChatController-->>用户 : 返回SSE流
+```
+
+**Diagram sources**
+- [AIChatController.java](file://src/main/java/com/redmoon2333/controller/AIChatController.java#L23-L277)
+- [AIChatService.java](file://src/main/java/com/redmoon2333/service/AIChatService.java#L25-L436)
+- [RagRetrievalService.java](file://src/main/java/com/redmoon2333/service/RagRetrievalService.java#L19-L166)
+- [ToolService.java](file://src/main/java/com/redmoon2333/service/ToolService.java#L18-L167)
+
 **本文档中引用的文件**   
 - [AuthController.java](file://src/main/java/com/redmoon2333/controller/AuthController.java#L1-L153)
 - [ActivityController.java](file://src/main/java/com/redmoon2333/controller/ActivityController.java#L1-L322)
 - [MaterialController.java](file://src/main/java/com/redmoon2333/controller/MaterialController.java#L1-L328)
 - [PastActivityController.java](file://src/main/java/com/redmoon2333/controller/PastActivityController.java#L1-L134)
 - [UserController.java](file://src/main/java/com/redmoon2333/controller/UserController.java#L1-L140)
+- [AIChatController.java](file://src/main/java/com/redmoon2333/controller/AIChatController.java#L23-L277)

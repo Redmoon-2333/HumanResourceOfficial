@@ -129,7 +129,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from '../utils/http'
 
 interface RagStats {
@@ -183,10 +183,11 @@ export default defineComponent({
     const loadStats = async () => {
       try {
         const response = await axios.get('/api/rag/stats')
-        if (response.data.code === 200) {
-          stats.value = response.data.data
+        const data = response.data as any
+        if (data.code === 200) {
+          stats.value = data.data
         } else {
-          ElMessage.error(response.data.message || '获取统计信息失败')
+          ElMessage.error(data.message || '获取统计信息失败')
         }
       } catch (error: any) {
         ElMessage.error(error.response?.data?.message || '获取统计信息失败')
@@ -214,12 +215,13 @@ export default defineComponent({
 
       try {
         const response = await axios.post('/api/rag/initialize', initForm.value)
-        if (response.data.code === 200) {
-          initResult.value = response.data.data
+        const data = response.data as any
+        if (data.code === 200) {
+          initResult.value = data.data
           ElMessage.success('知识库初始化完成')
           loadStats()
         } else {
-          ElMessage.error(response.data.message || '初始化失败')
+          ElMessage.error(data.message || '初始化失败')
         }
       } catch (error: any) {
         ElMessage.error(error.response?.data?.message || '初始化失败')
