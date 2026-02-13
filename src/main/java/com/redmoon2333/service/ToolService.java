@@ -5,16 +5,17 @@ import com.redmoon2333.dto.AlumniResponse;
 import com.redmoon2333.dto.PublicUserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Description;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * Tool Calling服务
- * 提供AI可调用的工具方法，用于数据库查询
+ * AI工具服务
+ * 使用 Spring AI 的 @Tool 注解，AI模型会自动识别并决定何时调用这些工具
+ * 无需手动关键词匹配或意图识别
  */
 @Service
 public class ToolService {
@@ -25,14 +26,11 @@ public class ToolService {
     private UserService userService;
     
     /**
-     * 工具1：根据姓名搜索部门成员
-     * AI可以调用此方法查询人力资源中心的成员信息
-     * 
-     * @param name 成员姓名或姓名关键词
-     * @return 成员信息列表的JSON格式字符串
+     * 根据姓名搜索部门成员
      */
-    @Description("根据姓名查询人力资源中心历史或当前成员信息")
-    public String searchDepartmentMembers(String name) {
+    @Tool(description = "根据姓名查询人力资源中心的历史或当前成员信息，用于查找特定人员")
+    public String searchDepartmentMembers(
+            @ToolParam(description = "要搜索的成员姓名或姓名关键词") String name) {
         logger.info("Tool Calling: 搜索部门成员，姓名: {}", name);
         
         try {
@@ -62,14 +60,11 @@ public class ToolService {
     }
     
     /**
-     * 工具2：获取往届成员列表
-     * AI可以调用此方法查询指定年份或所有年份的往届成员
-     * 
-     * @param year 年份，如果为null或0则返回所有年份
-     * @return 往届成员信息的JSON格式字符串
+     * 获取往届成员列表
      */
-    @Description("获取指定年份或所有年份的往届成员信息")
-    public String getAlumniByYear(Integer year) {
+    @Tool(description = "获取人力资源中心的成员列表，可指定年份查询或获取所有年份的成员。用于回答'部门有哪些人'、'成员是谁'、'有2023级的成员'等问题")
+    public String getAlumniByYear(
+            @ToolParam(description = "年份，如果为null或0则返回所有年份的成员") Integer year) {
         logger.info("Tool Calling: 获取往届成员，年份: {}", year);
         
         try {
@@ -128,12 +123,9 @@ public class ToolService {
     }
     
     /**
-     * 工具3：统计部门成员信息
-     * AI可以调用此方法获取部门的统计信息
-     * 
-     * @return 统计信息的字符串
+     * 统计部门成员信息
      */
-    @Description("获取人力资源中心的成员统计信息")
+    @Tool(description = "获取人力资源中心的成员统计信息，包括总人数、届数等。用于回答'部门有多少人'、'人数统计'等问题")
     public String getDepartmentStats() {
         logger.info("Tool Calling: 获取部门统计信息");
         

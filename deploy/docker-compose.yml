@@ -1,0 +1,133 @@
+# ============================================================
+# 人力资源中心官网 - Docker Compose 配置
+# 包含：后端服务、MySQL、Redis Stack
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ===================
+  # 后端服务
+  # ===================
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: hrofficial-backend
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - TZ=Asia/Shanghai
+      # 数据库配置
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-hrofficial}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD}
+      # Redis配置
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      # JWT配置
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-604800000}
+      # 阿里云OSS配置
+      - ALIYUN_OSS_ACCESS_KEY_ID=${ALIYUN_OSS_ACCESS_KEY_ID:-}
+      - ALIYUN_OSS_ACCESS_KEY_SECRET=${ALIYUN_OSS_ACCESS_KEY_SECRET:-}
+      - ALIYUN_OSS_BUCKET_NAME=${ALIYUN_OSS_BUCKET_NAME:-}
+      # 通义千问API
+      - aliQwen_api=${ALIWEN_API_KEY}
+    volumes:
+      - backend-logs:/app/logs
+      - backend-uploads:/app/uploads
+      - backend-knowledge:/app/knowledge-base
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hrofficial-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ===================
+  # MySQL 数据库
+  # ===================
+  mysql:
+    image: mysql:8.0
+    container_name: hrofficial-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME:-hrofficial}
+      - TZ=Asia/Shanghai
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init/init_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=200
+      - --innodb_buffer_pool_size=256M
+    networks:
+      - hrofficial-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===================
+  # Redis Stack (支持向量存储)
+  # ===================
+  redis:
+    image: redis/redis-stack:latest
+    container_name: hrofficial-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_INSIGHT_PORT:-8001}:8001"
+    environment:
+      - REDIS_ARGS=--maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - hrofficial-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ===================
+# 网络配置
+# ===================
+networks:
+  hrofficial-network:
+    driver: bridge
+
+# ===================
+# 数据卷配置
+# ===================
+volumes:
+  mysql-data:
+    name: hrofficial-mysql-data
+  redis-data:
+    name: hrofficial-redis-data
+  backend-logs:
+    name: hrofficial-backend-logs
+  backend-uploads:
+    name: hrofficial-backend-uploads
+  backend-knowledge:
+    name: hrofficial-backend-knowledge

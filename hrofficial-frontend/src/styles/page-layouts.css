@@ -1,0 +1,1477 @@
+/**
+ * ============================================================
+ * 人力资源中心官网 - 页面差异化布局方案
+ * Human Resource Official - Page Layout Variations
+ * ============================================================
+ * 
+ * 本文件定义各页面的独特视觉表现形式，在保持色彩、字体
+ * 系统统一的前提下，通过布局结构、视觉元素、交互方式的
+ * 差异化设计，为每个页面打造独特的视觉个性。
+ * ============================================================
+ */
+
+/* ============================================================
+   页面布局设计总览
+   ============================================================
+   
+   ┌─────────────────────────────────────────────────────────┐
+   │  页面           │  布局风格        │  视觉特征           │
+   ├─────────────────────────────────────────────────────────┤
+   │  首页           │  有机曲线风      │  Blob背景、浮动元素  │
+   │  活动介绍       │  杂志编辑风      │  卡片展开、时间轴    │
+   │  活动详情       │  信息架构风      │  网格信息、画廊展示  │
+   │  往届活动       │  画廊展览风      │  图片主导、悬停遮罩  │
+   │  资料管理       │  文件系统风      │  层级面包屑、树状图  │
+   │  AI对话         │  聊天界面风      │  消息气泡、沉浸式    │
+   │  策划生成       │  工作台风        │  左右分栏、实时预览  │
+   │  往届成员       │  年鉴档案风      │  年份分组、头像墙    │
+   │  个人中心       │  仪表盘风        │  信息卡片、快捷入口  │
+   │  登录/注册      │  沉浸式风        │  全屏背景、居中卡片  │
+   └─────────────────────────────────────────────────────────┘
+   
+   ============================================================ */
+
+/* ============================================================
+   1. 首页 (Home) - 有机曲线风格
+   ============================================================
+   
+   设计理念：
+   - 采用流体有机形状作为背景装饰，营造温暖亲和的氛围
+   - 大标题配合渐变文字效果，建立视觉焦点
+   - 浮动装饰元素增添活力与动感
+   - 数据卡片采用彩色底部边框区分类型
+   
+   布局特征：
+   - Hero区域：全宽渐变背景 + 居中内容 + 浮动装饰
+   - 统计区域：4列网格 + 图标+数字组合
+   - 快捷入口：4列卡片网格 + 渐变悬停效果
+   - 功能特色：4列图标卡片 + 居中布局
+   ============================================================ */
+
+.home-page {
+  /* 页面级变量 */
+  --hero-gradient: linear-gradient(135deg, 
+    rgba(255, 107, 74, 0.08) 0%, 
+    rgba(245, 158, 11, 0.08) 50%, 
+    rgba(227, 85, 50, 0.08) 100%
+  );
+  --blob-blur: 60px;
+  --float-animation-duration: 6s;
+}
+
+/* Hero区域布局 */
+.hero-section {
+  position: relative;
+  padding: var(--space-12) var(--space-8);
+  margin-bottom: var(--space-8);
+  border-radius: var(--radius-3xl);
+  overflow: hidden;
+  background: var(--hero-gradient);
+}
+
+/* 有机Blob装饰 */
+.hero-section .blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(var(--blob-blur));
+  opacity: 0.6;
+  animation: blobFloat 20s ease-in-out infinite;
+}
+
+.hero-section .blob-1 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, var(--coral-500), var(--amber-500));
+  top: -100px;
+  right: -100px;
+}
+
+.hero-section .blob-2 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, var(--amber-500), var(--coral-600));
+  bottom: -50px;
+  left: -50px;
+  animation-delay: -7s;
+}
+
+.hero-section .blob-3 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, var(--rose-400), var(--coral-500));
+  top: 50%;
+  left: 30%;
+  animation-delay: -14s;
+  opacity: 0.4;
+}
+
+/* 网格点状背景 */
+.hero-section .grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 107, 74, 0.15) 1px, transparent 0);
+  background-size: 40px 40px;
+}
+
+/* 浮动元素 */
+.hero-section .floating-elements {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-section .float-item {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: float var(--float-animation-duration) ease-in-out infinite;
+}
+
+/* ============================================================
+   2. 活动介绍 (Activities) - 杂志编辑风格
+   ============================================================
+   
+   设计理念：
+   - 采用杂志排版方式，强调内容的可读性与层次感
+   - 卡片式布局，支持展开/收起查看详情
+   - 流程步骤采用时间轴式展示
+   - 图片画廊采用网格布局
+   
+   布局特征：
+   - Hero区域：左文右图布局 + 统计数据
+   - 工具栏：搜索框 + 新建按钮
+   - 活动卡片：编号 + 标题 + 可展开内容
+   - 流程展示：左侧数字时间轴
+   ============================================================ */
+
+.activities-page {
+  --card-header-gradient: linear-gradient(135deg, var(--coral-50), var(--amber-50));
+  --process-line-color: var(--coral-400);
+}
+
+/* Hero区域 - 双栏布局 */
+.activities-page .hero-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+/* 活动卡片 - 杂志风格 */
+.activities-page .activity-card {
+  background: white;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: all var(--transition-slow);
+}
+
+.activities-page .activity-card:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-4px);
+}
+
+/* 卡片头部 - 渐变背景 */
+.activities-page .card-header-section {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--card-header-gradient);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* 编号样式 */
+.activities-page .card-number {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--coral-300);
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+
+/* 流程时间轴 */
+.activities-page .process-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-left: var(--space-10);
+}
+
+.activities-page .process-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border-left: 3px solid var(--process-line-color);
+}
+
+.activities-page .step-number {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   3. 活动详情 (ActivityDetail) - 信息架构风格
+   ============================================================
+   
+   设计理念：
+   - 清晰的信息层级，便于快速获取关键数据
+   - 网格化信息展示，提高信息密度
+   - 图片画廊采用瀑布流式布局
+   - 状态标签采用渐变胶囊设计
+   
+   布局特征：
+   - 页面头部：渐变背景 + 返回按钮
+   - 信息卡片：6宫格信息展示
+   - 描述区域：独立卡片突出显示
+   - 图片区域：响应式网格画廊
+   ============================================================ */
+
+.activity-detail-page {
+  --info-grid-columns: 3;
+  --gallery-min-width: 280px;
+}
+
+/* 页面头部 - 渐变背景 */
+.activity-detail-page .page-header {
+  position: relative;
+  padding: var(--space-5);
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+}
+
+/* 信息网格 - 6宫格 */
+.activity-detail-page .activity-info-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--info-grid-columns), 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.activity-detail-page .info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(255, 107, 74, 0.03);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 107, 74, 0.1);
+}
+
+.activity-detail-page .info-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 渐变胶囊状态标签 */
+.activity-detail-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 图片画廊网格 */
+.activity-detail-page .images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--gallery-min-width), 1fr));
+  gap: var(--space-4);
+}
+
+.activity-detail-page .image-card {
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+}
+
+.activity-detail-page .image-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ============================================================
+   4. 往届活动 (PastActivities) - 画廊展览风格
+   ============================================================
+   
+   设计理念：
+   - 以图片为核心，突出活动精彩瞬间
+   - 年份筛选器作为主导航元素
+   - 悬停时显示操作遮罩
+   - 卡片采用纵向布局，图片占主导
+   
+   布局特征：
+   - 年份筛选：横向胶囊按钮组
+   - 活动卡片：图片上方 + 信息下方
+   - 悬停效果：渐变遮罩 + 操作按钮
+   - 空状态：居中图标 + 提示文字
+   ============================================================ */
+
+.past-activities-page {
+  --card-image-height: 200px;
+  --hover-overlay-bg: rgba(255, 107, 74, 0.85);
+}
+
+/* 年份筛选 */
+.past-activities-page .filter-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+}
+
+.past-activities-page .year-filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.past-activities-page .year-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.past-activities-page .year-btn.active {
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  color: white;
+}
+
+/* 活动卡片 - 画廊风格 */
+.past-activities-page .activity-card {
+  background: white;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+}
+
+.past-activities-page .activity-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-coral);
+}
+
+/* 图片区域 */
+.past-activities-page .activity-cover {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  height: var(--card-image-height);
+}
+
+.past-activities-page .cover-image {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s ease;
+}
+
+.past-activities-page .activity-card:hover .cover-image {
+  transform: scale(1.05);
+}
+
+/* 年份徽章 */
+.past-activities-page .activity-year-badge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-xs);
+  backdrop-filter: blur(4px);
+}
+
+/* 悬停遮罩 */
+.past-activities-page .hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--hover-overlay-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.past-activities-page .activity-cover:hover .hover-overlay {
+  opacity: 1;
+}
+
+/* ============================================================
+   5. 资料管理 (Materials) - 文件系统风格
+   ============================================================
+   
+   设计理念：
+   - 模拟文件系统的层级结构
+   - 面包屑导航清晰展示当前位置
+   - 分类卡片采用文件夹图标设计
+   - 资料卡片展示文件类型图标
+   
+   布局特征：
+   - 面包屑：图标 + 文字 + 分隔符
+   - 分类视图：网格卡片 + 子分类计数
+   - 资料视图：文件图标 + 元信息
+   - 下载区域：链接输入框 + 操作按钮
+   ============================================================ */
+
+.materials-page {
+  --breadcrumb-height: 48px;
+  --folder-icon-size: 64px;
+  --file-icon-size: 56px;
+}
+
+/* 面包屑导航 */
+.materials-page .breadcrumb-wrapper {
+  margin-bottom: var(--space-6);
+}
+
+.materials-page .breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.materials-page .breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: white;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: 1px solid var(--border-light);
+}
+
+.materials-page .breadcrumb-item.active {
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  color: white;
+  border-color: transparent;
+}
+
+/* 分类卡片 - 文件夹风格 */
+.materials-page .category-card {
+  background: white;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.materials-page .category-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--coral-500), var(--amber-500));
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.materials-page .category-card:hover::before {
+  opacity: 1;
+}
+
+.materials-page .category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-coral);
+}
+
+.materials-page .card-icon {
+  width: var(--folder-icon-size);
+  height: var(--folder-icon-size);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: var(--space-4);
+}
+
+/* 资料卡片 - 文件风格 */
+.materials-page .material-card {
+  background: white;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+}
+
+.materials-page .file-icon {
+  width: var(--file-icon-size);
+  height: var(--file-icon-size);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* 下载区域 */
+.materials-page .download-section {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255, 107, 74, 0.05);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 107, 74, 0.1);
+}
+
+.materials-page .download-content {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.materials-page .download-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--text-secondary);
+  outline: none;
+}
+
+/* ============================================================
+   6. AI对话 (AIChat) - 聊天界面风格
+   ============================================================
+   
+   设计理念：
+   - 沉浸式聊天体验，界面简洁无干扰
+   - 消息气泡区分用户与AI
+   - 实时流式输出展示
+   - 快捷问题快速入口
+   
+   布局特征：
+   - 聊天容器：固定高度 + 滚动区域
+   - 消息列表：左右对齐气泡
+   - 输入区域：底部固定 + 发送按钮
+   - 欢迎界面：居中卡片 + 快捷按钮
+   ============================================================ */
+
+.ai-chat-page {
+  --chat-max-width: 1000px;
+  --message-max-width: 70%;
+  --avatar-size: 40px;
+  --bubble-radius: 16px;
+}
+
+/* 聊天容器 */
+.ai-chat-page .chat-container {
+  flex: 1;
+  background: white;
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 聊天头部 */
+.ai-chat-page .chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(135deg, rgba(255, 107, 74, 0.05), rgba(245, 158, 11, 0.05));
+}
+
+/* 消息区域 */
+.ai-chat-page .chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+  background: linear-gradient(180deg, #FAFAFA 0%, #FFFFFF 100%);
+}
+
+/* 消息项 */
+.ai-chat-page .message-item {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  animation: messageEnter 0.3s ease;
+}
+
+.ai-chat-page .message-item.user {
+  flex-direction: row-reverse;
+}
+
+.ai-chat-page .message-item.user .message-content {
+  align-items: flex-end;
+}
+
+/* 头像 */
+.ai-chat-page .user-avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  background: linear-gradient(135deg, var(--amber-500), var(--amber-600));
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: var(--font-bold);
+  font-size: var(--text-lg);
+}
+
+.ai-chat-page .ai-avatar-small {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+/* 消息气泡 */
+.ai-chat-page .message-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: var(--message-max-width);
+}
+
+.ai-chat-page .message-bubble {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--bubble-radius);
+  line-height: 1.7;
+  word-break: break-word;
+  font-size: var(--text-sm);
+}
+
+.ai-chat-page .message-bubble.user {
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-chat-page .message-bubble.ai {
+  background: white;
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-light);
+}
+
+/* 输入区域 */
+.ai-chat-page .chat-input-area {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-light);
+  background: white;
+}
+
+.ai-chat-page .chat-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  background: #FAFAFA;
+  resize: none;
+  outline: none;
+  transition: all var(--transition-normal);
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.ai-chat-page .chat-input:focus {
+  border-color: var(--coral-400);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(255, 138, 112, 0.1);
+}
+
+/* 快捷问题 */
+.ai-chat-page .quick-questions {
+  width: 100%;
+  max-width: 600px;
+}
+
+.ai-chat-page .quick-btn {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  background: white;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.ai-chat-page .quick-btn:hover {
+  color: var(--coral-500);
+  border-color: rgba(255, 107, 74, 0.3);
+  background: rgba(255, 107, 74, 0.05);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   7. 策划生成 (PlanGenerator) - 工作台风格
+   ============================================================
+   
+   设计理念：
+   - 左右分栏布局，表单与预览并行
+   - 实时预览生成结果
+   - 进度指示器展示生成状态
+   - 专业文档样式的预览区域
+   
+   布局特征：
+   - 左侧：表单输入区 + 生成按钮
+   - 右侧：预览/结果展示区
+   - 流式进度：动画 + 数据统计
+   - 空状态：引导用户开始
+   ============================================================ */
+
+.plan-generator-page {
+  --form-width: 400px;
+  --preview-min-height: 600px;
+}
+
+/* 内容网格 - 左右分栏 */
+.plan-generator-page .content-grid {
+  display: grid;
+  grid-template-columns: var(--form-width) 1fr;
+  gap: var(--space-6);
+}
+
+/* 区块卡片 */
+.plan-generator-page .section-card {
+  background: white;
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+.plan-generator-page .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(135deg, rgba(255, 107, 74, 0.05), rgba(245, 158, 11, 0.05));
+}
+
+/* 表单内容 */
+.plan-generator-page .form-content {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.plan-generator-page .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.plan-generator-page .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.plan-generator-page .form-input,
+.plan-generator-page .form-textarea {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  background: #FAFAFA;
+  outline: none;
+  transition: all var(--transition-normal);
+  font-family: inherit;
+}
+
+.plan-generator-page .form-input:focus,
+.plan-generator-page .form-textarea:focus {
+  border-color: var(--coral-400);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(255, 138, 112, 0.1);
+}
+
+/* 生成按钮 */
+.plan-generator-page .generate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: white;
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  border: none;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-coral);
+}
+
+.plan-generator-page .generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-coral-lg);
+}
+
+/* 流式进度 */
+.plan-generator-page .stream-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10);
+  text-align: center;
+}
+
+.plan-generator-page .spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 107, 74, 0.1);
+  border-top-color: var(--coral-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 预览容器 */
+.plan-generator-page .preview-container {
+  padding: var(--space-6);
+  max-height: 700px;
+  overflow-y: auto;
+}
+
+.plan-generator-page .plan-preview {
+  background: white;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-sm);
+  line-height: 1.9;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+}
+
+/* 预览区域标题样式 */
+.plan-generator-page .plan-preview :deep(h1) {
+  color: var(--coral-500);
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 3px solid var(--coral-500);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.3;
+}
+
+.plan-generator-page .plan-preview :deep(h2) {
+  color: var(--coral-600);
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-4);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   8. 往届成员 (Alumni) - 年鉴档案风格
+   ============================================================
+   
+   设计理念：
+   - 按年份分组展示，形成时间轴感
+   - 头像墙式布局，突出成员个体
+   - 统计卡片展示整体数据
+   - 搜索过滤快速定位
+   
+   布局特征：
+   - 统计区域：4列数据卡片
+   - 搜索栏：圆角输入框 + 清除按钮
+   - 年份区块：标题 + 成员网格
+   - 成员卡片：头像 + 姓名 + 职位标签
+   ============================================================ */
+
+.alumni-page {
+  --avatar-size: 48px;
+  --member-card-min-width: 200px;
+  --year-badge-color: var(--coral-500);
+}
+
+/* 统计卡片 */
+.alumni-page .stats-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.alumni-page .stat-card {
+  background: white;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  transition: all var(--transition-normal);
+}
+
+.alumni-page .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-coral);
+}
+
+.alumni-page .stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 搜索栏 */
+.alumni-page .search-wrapper {
+  position: relative;
+  max-width: 500px;
+}
+
+.alumni-page .search-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-12);
+  font-size: var(--text-base);
+  border: 2px solid var(--border-medium);
+  border-radius: var(--radius-2xl);
+  background: white;
+  outline: none;
+  transition: all var(--transition-normal);
+}
+
+.alumni-page .search-input:focus {
+  border-color: var(--coral-400);
+  box-shadow: 0 0 0 4px rgba(255, 138, 112, 0.1);
+}
+
+/* 年份区块 */
+.alumni-page .year-section {
+  background: white;
+  border-radius: var(--radius-3xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+}
+
+.alumni-page .year-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid rgba(255, 107, 74, 0.1);
+}
+
+.alumni-page .year-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+}
+
+.alumni-page .year-badge .el-icon {
+  color: var(--year-badge-color);
+}
+
+.alumni-page .member-count {
+  padding: var(--space-2) var(--space-4);
+  background: rgba(255, 107, 74, 0.1);
+  color: var(--coral-600);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+/* 成员网格 */
+.alumni-page .members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--member-card-min-width), 1fr));
+  gap: var(--space-4);
+}
+
+.alumni-page .member-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: rgba(255, 107, 74, 0.03);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 107, 74, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.alumni-page .member-card:hover {
+  background: rgba(255, 107, 74, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.1);
+}
+
+.alumni-page .member-avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  flex-shrink: 0;
+}
+
+/* 职位标签 - 渐变胶囊 */
+.alumni-page .member-role {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  width: fit-content;
+}
+
+/* ============================================================
+   9. 个人中心 (Profile) - 仪表盘风格
+   ============================================================
+   
+   设计理念：
+   - 个人信息卡片作为视觉中心
+   - 快捷操作入口便于导航
+   - 身份信息使用徽章展示
+   - 编辑功能集成在对话框中
+   
+   布局特征：
+   - 主卡片：头像 + 基本信息 + 身份徽章
+   - 信息网格：用户名、姓名等字段
+   - 快捷操作：图标 + 文字 + 箭头
+   - 编辑对话框：分区块表单
+   ============================================================ */
+
+.profile-page {
+  --avatar-size-large: 80px;
+  --card-max-width: 900px;
+}
+
+/* 内容区域 */
+.profile-page .profile-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* 主卡片 */
+.profile-page .profile-card {
+  background: white;
+  border-radius: var(--radius-3xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  animation: cardEnter 0.6s ease;
+}
+
+.profile-page .main-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-page .main-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--coral-500), var(--amber-500), var(--rose-400), var(--coral-500));
+}
+
+/* 卡片头部 */
+.profile-page .card-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+/* 头像区域 */
+.profile-page .avatar-wrapper {
+  position: relative;
+}
+
+.profile-page .avatar {
+  width: var(--avatar-size-large);
+  height: var(--avatar-size-large);
+  background: linear-gradient(135deg, #FFF5F0, #FFEDE6);
+  border-radius: var(--radius-3xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.profile-page .avatar-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid rgba(255, 107, 74, 0.2);
+  border-radius: 28px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* 身份徽章 */
+.profile-page .roles-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.profile-page .role-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.profile-page .role-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* 信息网格 */
+.profile-page .info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.profile-page .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: rgba(255, 107, 74, 0.05);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 107, 74, 0.1);
+}
+
+/* 快捷操作卡片 */
+.profile-page .action-card {
+  background: linear-gradient(135deg, rgba(255, 107, 74, 0.05), rgba(245, 158, 11, 0.05));
+}
+
+.profile-page .action-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: white;
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  transition: all var(--transition-normal);
+  border: 1px solid var(--border-light);
+}
+
+.profile-page .action-item:hover {
+  transform: translateX(8px);
+  box-shadow: var(--shadow-md);
+}
+
+.profile-page .action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.profile-page .action-arrow {
+  color: var(--text-tertiary);
+  transition: all var(--transition-normal);
+}
+
+.profile-page .action-item:hover .action-arrow {
+  color: var(--coral-500);
+  transform: translateX(4px);
+}
+
+/* ============================================================
+   10. 登录/注册 (Login/Register) - 沉浸式风格
+   ============================================================
+   
+   设计理念：
+   - 全屏有机曲线背景，营造沉浸感
+   - 居中卡片布局，聚焦登录操作
+   - 玻璃态效果增加层次感
+   - 细腻的微交互提升体验
+   
+   布局特征：
+   - 背景：多层Blob + 浮动形状
+   - 卡片：玻璃态 + 顶部渐变条
+   - Logo：脉冲动画 + 扩散光环
+   - 表单：聚焦时发光效果
+   ============================================================ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFF8F5 0%, #FFFBF5 25%, #FFF5F0 50%, #FDF2F0 75%, #FFF0ED 100%);
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-6);
+}
+
+/* 背景装饰 */
+.login-page .bg-decoration {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-page .blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  animation: blobFloat 20s ease-in-out infinite;
+}
+
+.login-page .blob-1 {
+  width: 600px;
+  height: 600px;
+  background: linear-gradient(135deg, #FFB09E, #FF8A70);
+  top: -200px;
+  right: -200px;
+}
+
+.login-page .blob-2 {
+  width: 500px;
+  height: 500px;
+  background: linear-gradient(135deg, #FCD34D, #FBBF24);
+  bottom: -150px;
+  left: -150px;
+  animation-delay: -5s;
+}
+
+/* 登录卡片 */
+.login-page .login-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-3xl);
+  padding: var(--space-10);
+  box-shadow: 0 25px 80px rgba(234, 88, 12, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  animation: cardEnter 0.8s var(--ease-bounce);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page .login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--coral-500), var(--amber-500), var(--rose-400), var(--coral-500));
+  background-size: 300% 100%;
+  animation: gradientFlow 3s linear infinite;
+}
+
+/* Logo区域 */
+.login-page .logo-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-5);
+  position: relative;
+}
+
+.login-page .logo-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  border-radius: var(--radius-3xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 40px rgba(255, 107, 74, 0.4);
+  position: relative;
+  z-index: 2;
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+/* 表单输入框 */
+.login-page .form-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  padding-right: 48px;
+  font-size: var(--text-base);
+  border: 2px solid rgba(229, 231, 235, 0.8);
+  border-radius: var(--radius-2xl);
+  background: rgba(255, 255, 255, 0.9);
+  transition: all var(--transition-normal);
+  outline: none;
+}
+
+.login-page .form-input:focus {
+  border-color: var(--coral-400);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(255, 138, 112, 0.15);
+}
+
+/* 登录按钮 */
+.login-page .login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-4);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: white;
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  border: none;
+  border-radius: var(--radius-2xl);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page .login-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 12px 32px rgba(255, 107, 74, 0.5);
+}
+
+/* ============================================================
+   11. 响应式适配
+   ============================================================ */
+
+/* 平板适配 */
+@media (max-width: 1024px) {
+  .activities-page .hero-section {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  
+  .plan-generator-page .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .alumni-page .stats-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 手机适配 */
+@media (max-width: 640px) {
+  .activity-detail-page .activity-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .alumni-page .stats-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .alumni-page .members-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  
+  .profile-page .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .login-page .login-card {
+    padding: var(--space-6);
+  }
+}

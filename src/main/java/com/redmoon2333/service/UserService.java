@@ -1,5 +1,7 @@
 package com.redmoon2333.service;
 
+import com.redmoon2333.dto.ActivationCodeResponse;
+import com.redmoon2333.dto.ActivationCodeStatsResponse;
 import com.redmoon2333.dto.AlumniMember;
 import com.redmoon2333.dto.AlumniResponse;
 import com.redmoon2333.dto.PublicUserInfo;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,21 +78,28 @@ public class UserService {
                     continue;
                 }
                 
-                // 分割角色历史，可能包含多个角色
-                String[] roles = roleHistory.split("&");
-                logger.debug("用户 {} 有 {} 个角色", user.getUsername(), roles.length);
+                // 尝试解析JSON数组格式
+                List<String> roleEntries = parseRoleHistory(roleHistory);
+                logger.debug("用户 {} 解析出 {} 个角色条目", user.getUsername(), roleEntries.size());
                 
-                // 处理每个角色
-                for (String role : roles) {
-                    role = role.trim();
-                    logger.debug("处理角色: {}", role);
-                    Matcher matcher = rolePattern.matcher(role);
+                // 处理每个角色条目
+                for (String roleEntry : roleEntries) {
+                    roleEntry = roleEntry.trim();
+                    if (roleEntry.isEmpty()) continue;
+                    
+                    logger.debug("处理角色条目: {}", roleEntry);
+                    
+                    // 匹配"年份+角色"的格式，例如"2024级部长"
+                    Matcher matcher = rolePattern.matcher(roleEntry);
                     
                     if (matcher.matches()) {
                         try {
                             // 提取年份和角色
                             Integer year = Integer.valueOf(matcher.group(1));
-                            String roleName = matcher.group(2);
+                            String roleName = matcher.group(2).trim();
+                            
+                            // 清理角色名中可能残留的JSON字符
+                            roleName = roleName.replace("[", "").replace("]", "").replace("\"", "").replace("'", "").trim();
                             
                             logger.debug("解析出年份: {}, 角色: {}", year, roleName);
                             
@@ -102,12 +112,12 @@ public class UserService {
                             
                             logger.debug("添加部员信息: 用户={}, 年份={}, 角色={}", user.getName(), year, roleName);
                         } catch (NumberFormatException e) {
-                            logger.warn("解析年份失败，角色信息: {}", role, e);
+                            logger.warn("解析年份失败，角色信息: {}", roleEntry, e);
                         } catch (Exception e) {
-                            logger.warn("处理角色信息时发生异常，角色信息: {}", role, e);
+                            logger.warn("处理角色信息时发生异常，角色信息: {}", roleEntry, e);
                         }
                     } else {
-                        logger.debug("角色信息格式不匹配: {}", role);
+                        logger.debug("角色信息格式不匹配: {}", roleEntry);
                     }
                 }
             }
@@ -154,6 +164,90 @@ public class UserService {
             logger.error("获取往届部员信息时发生异常", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取往届部员信息失败", e);
         }
+    }
+    
+    /**
+     * 解析角色历史字符串
+     * 支持格式：
+     * 1. JSON数组: ["2024级部员&2025级部长"]
+     * 2. JSON数组: ["2024级部员", "2025级部长"]
+     * 3. 普通字符串: 2024级部员&2025级部长
+     * 4. 普通字符串: 2024级部员,2025级部长
+     * 
+     * @param roleHistory 角色历史字符串
+     * @return 解析后的角色条目列表
+     */
+    private List<String> parseRoleHistory(String roleHistory) {
+        List<String> result = new ArrayList<>();
+        if (roleHistory == null || roleHistory.trim().isEmpty()) {
+            return result;
+        }
+        
+        String cleaned = roleHistory.trim();
+        
+        // 尝试解析JSON数组格式
+        if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
+            try {
+                // 移除外层的方括号
+                cleaned = cleaned.substring(1, cleaned.length() - 1);
+                
+                // 分割JSON数组元素
+                // 处理格式: "2024级部员&2025级部长" 或 "2024级部员","2025级部长"
+                List<String> jsonElements = new ArrayList<>();
+                StringBuilder current = new StringBuilder();
+                boolean inQuotes = false;
+                
+                for (int i = 0; i < cleaned.length(); i++) {
+                    char c = cleaned.charAt(i);
+                    if (c == '"' && (i == 0 || cleaned.charAt(i - 1) != '\\')) {
+                        inQuotes = !inQuotes;
+                    } else if (c == ',' && !inQuotes) {
+                        jsonElements.add(current.toString().trim());
+                        current = new StringBuilder();
+                    } else {
+                        current.append(c);
+                    }
+                }
+                if (current.length() > 0) {
+                    jsonElements.add(current.toString().trim());
+                }
+                
+                // 处理每个JSON元素，移除引号并按 & 分割
+                for (String element : jsonElements) {
+                    element = element.replace("\"", "").replace("'", "").trim();
+                    if (element.contains("&")) {
+                        // 格式: 2024级部员&2025级部长
+                        String[] parts = element.split("&");
+                        for (String part : parts) {
+                            part = part.trim();
+                            if (!part.isEmpty()) {
+                                result.add(part);
+                            }
+                        }
+                    } else if (!element.isEmpty()) {
+                        result.add(element);
+                    }
+                }
+                
+                return result;
+            } catch (Exception e) {
+                logger.warn("解析JSON数组格式失败，尝试普通格式: {}", roleHistory, e);
+            }
+        }
+        
+        // 普通格式处理
+        cleaned = cleaned.replace("[", "").replace("]", "").replace("\"", "").replace("'", "").trim();
+        
+        // 按 & 或 , 分割
+        String[] parts = cleaned.split("[&,]");
+        for (String part : parts) {
+            part = part.trim();
+            if (!part.isEmpty()) {
+                result.add(part);
+            }
+        }
+        
+        return result;
     }
     
     /**
@@ -234,30 +328,96 @@ public class UserService {
     
     /**
      * 获取用户生成的激活码列表
-     * 
-     * @param token JWT令牦
-     * @return 激活码列表
+     *
+     * @param token JWT令牌
+     * @return 激活码响应DTO列表
      */
-    public List<com.redmoon2333.entity.ActivationCode> getActivationCodesByUser(String token) {
+    public List<ActivationCodeResponse> getActivationCodesByUser(String token) {
         try {
             logger.debug("开始获取用户激活码");
-            
+
             // 获取用户
             User user = authService.getUserFromToken(token);
             if (user == null) {
                 throw new BusinessException(ErrorCode.USER_NOT_FOUND);
             }
-            
+
             // 查询用户生成的激活码
             List<com.redmoon2333.entity.ActivationCode> codes = activationCodeMapper.findByCreatorId(user.getUserId());
             logger.info("成功获取用户 {} 的 {} 个激活码", user.getUsername(), codes.size());
-            return codes;
+
+            // 转换为DTO
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return codes.stream().map(code -> {
+                ActivationCodeResponse dto = new ActivationCodeResponse();
+                dto.setId(code.getCodeId());
+                dto.setCode(code.getCode());
+                dto.setCreatedBy(code.getCreatorId());
+                dto.setCreatorName(user.getUsername());
+                dto.setCreateTime(code.getCreateTime() != null ? code.getCreateTime().format(formatter) : null);
+                dto.setExpireTime(code.getExpireTime() != null ? code.getExpireTime().format(formatter) : null);
+                dto.setUsed(code.getStatus() == com.redmoon2333.enums.ActivationStatus.已使用);
+                dto.setUsedBy(code.getUserId());
+                // 获取使用者名称
+                if (code.getUserId() != null) {
+                    User usedByUser = userMapper.findById(code.getUserId());
+                    dto.setUsedByName(usedByUser != null ? usedByUser.getUsername() : null);
+                }
+                dto.setUsedTime(code.getUseTime() != null ? code.getUseTime().format(formatter) : null);
+                return dto;
+            }).collect(Collectors.toList());
         } catch (BusinessException e) {
             logger.warn("获取用户激活码失败: {}", e.getErrorCode().getMessage(), e);
             throw e;
         } catch (Exception e) {
             logger.error("获取用户激活码时发生异常", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取激活码失败", e);
+        }
+    }
+
+    /**
+     * 获取用户生成的激活码统计数据
+     *
+     * @param token JWT令牌
+     * @return 激活码统计数据
+     */
+    public ActivationCodeStatsResponse getActivationCodeStats(String token) {
+        try {
+            logger.debug("开始获取用户激活码统计数据");
+
+            User user = authService.getUserFromToken(token);
+            if (user == null) {
+                throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
+
+            List<com.redmoon2333.entity.ActivationCode> codes = activationCodeMapper.findByCreatorId(user.getUserId());
+
+            int totalCount = codes.size();
+            int usedCount = 0;
+            int unusedCount = 0;
+            int expiredCount = 0;
+
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            for (com.redmoon2333.entity.ActivationCode code : codes) {
+                if (code.getStatus() == com.redmoon2333.enums.ActivationStatus.已使用) {
+                    usedCount++;
+                } else if (code.getExpireTime() != null && code.getExpireTime().isBefore(now)) {
+                    expiredCount++;
+                } else {
+                    unusedCount++;
+                }
+            }
+
+            logger.info("用户 {} 的激活码统计: 总数={}, 已使用={}, 未使用={}, 已过期={}",
+                    user.getUsername(), totalCount, usedCount, unusedCount, expiredCount);
+
+            return new ActivationCodeStatsResponse(totalCount, unusedCount, usedCount, expiredCount);
+        } catch (BusinessException e) {
+            logger.warn("获取激活码统计数据失败: {}", e.getErrorCode().getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("获取激活码统计数据时发生异常", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取激活码统计数据失败", e);
         }
     }
     

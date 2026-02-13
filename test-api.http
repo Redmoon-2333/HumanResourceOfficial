@@ -1,0 +1,118 @@
+### AI聊天系统 API 测试脚本
+### 使用 VS Code REST Client 插件或 IntelliJ HTTP Client 运行
+
+### 配置
+@baseUrl = http://localhost:8080
+@token = your_jwt_token_here
+
+### 1. 登录获取Token
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+    "username": "your_username",
+    "password": "your_password"
+}
+
+### 2. 测试普通AI对话
+POST {{baseUrl}}/api/ai/chat
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "你好，请介绍一下人力资源中心"
+}
+
+### 3. 测试RAG增强对话（流式）
+POST {{baseUrl}}/api/ai/chat-with-rag
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "如何组织一场成功的活动？",
+    "useRAG": true,
+    "enableTools": false
+}
+
+### 4. 测试流式AI对话
+POST {{baseUrl}}/api/ai/chat-stream
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "请给我一些学习建议"
+}
+
+### 5. 获取性能报告（需要部长权限）
+GET {{baseUrl}}/api/performance/report
+Authorization: Bearer {{token}}
+
+### 6. 重置性能统计（需要部长权限）
+POST {{baseUrl}}/api/performance/reset
+Authorization: Bearer {{token}}
+
+### 7. 初始化知识库（需要部长权限）
+POST {{baseUrl}}/api/rag/initialize
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "forceReindex": false
+}
+
+### 8. 获取知识库统计
+GET {{baseUrl}}/api/rag/stats
+Authorization: Bearer {{token}}
+
+### 9. 测试多轮对话上下文
+### 第一轮
+POST {{baseUrl}}/api/ai/chat-with-rag
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "人力资源中心有哪些部门？",
+    "useRAG": true
+}
+
+### 第二轮（追问）
+POST {{baseUrl}}/api/ai/chat-with-rag
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "它们的职责分别是什么？",
+    "useRAG": true
+}
+
+### 10. 测试意图识别效果
+POST {{baseUrl}}/api/ai/chat-with-rag
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "图书馆在哪里？",
+    "useRAG": true
+}
+
+### 11. 测试流程查询
+POST {{baseUrl}}/api/ai/chat-with-rag
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "如何申请活动场地？需要什么材料？",
+    "useRAG": true
+}
+
+### 12. 测试流式中断（需要手动中断）
+### 发送请求后，在收到部分响应时中断连接
+POST {{baseUrl}}/api/ai/chat-with-rag
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "message": "请详细介绍一下人力资源中心的历史和发展历程",
+    "useRAG": true
+}

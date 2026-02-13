@@ -1,0 +1,512 @@
+/**
+ * ============================================================
+ * 人力资源中心官网 - 视觉设计系统
+ * Human Resource Official - Design System
+ * ============================================================
+ * 
+ * 设计理念：温暖有机的现代主义
+ * Design Philosophy: Warm Organic Modernism
+ * 
+ * 核心特征：
+ * - 暖色调珊瑚橙为主色，传递活力与亲和力
+ * - 有机曲线与流体形状，打破刻板的几何边界
+ * - 杂志式排版，强调内容层次与阅读节奏
+ * - 微交互与细腻动效，提升用户体验
+ * ============================================================
+ */
+
+/* ============================================================
+   1. 色彩系统 / Color System
+   ============================================================ */
+:root {
+  /* 主色调 - 珊瑚橙系列 (Coral Orange) */
+  --coral-50: #FFF5F0;
+  --coral-100: #FFEDE6;
+  --coral-200: #FFD9CC;
+  --coral-300: #FFB09E;
+  --coral-400: #FF8A70;
+  --coral-500: #FF6B4A;  /* 主色 */
+  --coral-600: #E35532;
+  --coral-700: #C44224;
+  --coral-800: #9F351E;
+  --coral-900: #7A2D1B;
+
+  /* 辅助色 - 琥珀黄系列 (Amber) */
+  --amber-50: #FFFBEB;
+  --amber-100: #FEF3C7;
+  --amber-200: #FDE68A;
+  --amber-300: #FCD34D;
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --amber-600: #D97706;
+  --amber-700: #B45309;
+  --amber-800: #92400E;
+  --amber-900: #78350F;
+
+  /* 强调色 - 玫瑰粉系列 (Rose) */
+  --rose-50: #FFF1F2;
+  --rose-100: #FFE4E6;
+  --rose-200: #FECDD3;
+  --rose-300: #FDA4AF;
+  --rose-400: #FB7185;
+  --rose-500: #F43F5E;
+  --rose-600: #E11D48;
+  --rose-700: #BE123C;
+  --rose-800: #9F1239;
+  --rose-900: #881337;
+
+  /* 功能色 - 翡翠绿系列 (Emerald) */
+  --emerald-50: #ECFDF5;
+  --emerald-100: #D1FAE5;
+  --emerald-200: #A7F3D0;
+  --emerald-300: #6EE7B7;
+  --emerald-400: #34D399;
+  --emerald-500: #10B981;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --emerald-800: #065F46;
+  --emerald-900: #064E3B;
+
+  /* 中性色 - 灰度系列 (Gray) */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+
+  /* 语义化颜色映射 */
+  --color-primary: var(--coral-500);
+  --color-primary-light: var(--coral-400);
+  --color-primary-dark: var(--coral-600);
+  --color-secondary: var(--amber-500);
+  --color-accent: var(--rose-500);
+  --color-success: var(--emerald-500);
+  --color-warning: var(--amber-500);
+  --color-error: var(--rose-600);
+  --color-info: #3B82F6;
+
+  /* 文本颜色 */
+  --text-primary: var(--gray-800);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-400);
+  --text-inverse: white;
+  --text-muted: var(--gray-400);
+
+  /* 背景颜色 */
+  --bg-primary: white;
+  --bg-secondary: var(--gray-50);
+  --bg-tertiary: var(--gray-100);
+  --bg-warm: #FFF8F5;
+
+  /* 边框颜色 */
+  --border-light: rgba(0, 0, 0, 0.05);
+  --border-medium: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.12);
+}
+
+/* ============================================================
+   2. 字体系统 / Typography System
+   ============================================================ */
+:root {
+  /* 字体族 */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* 字体大小 - 使用黄金比例 1.25 */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 1.875rem;    /* 30px */
+  --text-4xl: 2.25rem;     /* 36px */
+  --text-5xl: 3rem;        /* 48px */
+
+  /* 字体粗细 */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* 行高 */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* 字间距 */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+}
+
+/* ============================================================
+   3. 间距系统 / Spacing System
+   ============================================================ */
+:root {
+  /* 基础间距 - 4px 基准 */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+  --space-24: 6rem;     /* 96px */
+}
+
+/* ============================================================
+   4. 圆角系统 / Border Radius System
+   ============================================================ */
+:root {
+  --radius-none: 0;
+  --radius-sm: 0.375rem;   /* 6px */
+  --radius-md: 0.5rem;     /* 8px */
+  --radius-lg: 0.75rem;    /* 12px */
+  --radius-xl: 1rem;       /* 16px */
+  --radius-2xl: 1.5rem;    /* 24px */
+  --radius-3xl: 2rem;      /* 32px */
+  --radius-full: 9999px;
+}
+
+/* ============================================================
+   5. 阴影系统 / Shadow System
+   ============================================================ */
+:root {
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* 彩色阴影 */
+  --shadow-coral: 0 4px 20px rgba(255, 107, 74, 0.25);
+  --shadow-coral-lg: 0 8px 32px rgba(255, 107, 74, 0.35);
+  --shadow-amber: 0 4px 20px rgba(245, 158, 11, 0.25);
+}
+
+/* ============================================================
+   6. 过渡与动画 / Transitions & Animations
+   ============================================================ */
+:root {
+  /* 过渡时间 */
+  --transition-fast: 150ms;
+  --transition-normal: 300ms;
+  --transition-slow: 500ms;
+
+  /* 缓动函数 */
+  --ease-linear: linear;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ============================================================
+   7. 页面布局变量 / Page Layout Variables
+   ============================================================ */
+:root {
+  /* 容器宽度 */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1200px;
+  --container-2xl: 1400px;
+
+  /* 页面内边距 */
+  --page-padding: var(--space-6);
+  --page-padding-mobile: var(--space-4);
+}
+
+/* ============================================================
+   8. 组件变量 / Component Variables
+   ============================================================ */
+:root {
+  /* 卡片 */
+  --card-bg: white;
+  --card-radius: var(--radius-2xl);
+  --card-shadow: var(--shadow-sm);
+  --card-shadow-hover: var(--shadow-xl);
+  --card-border: 1px solid var(--border-light);
+  --card-padding: var(--space-6);
+
+  /* 按钮 */
+  --btn-radius: var(--radius-lg);
+  --btn-padding: var(--space-3) var(--space-5);
+  --btn-font-size: var(--text-sm);
+  --btn-font-weight: var(--font-medium);
+
+  /* 输入框 */
+  --input-radius: var(--radius-lg);
+  --input-padding: var(--space-3) var(--space-4);
+  --input-border: 2px solid var(--border-medium);
+  --input-border-focus: 2px solid var(--coral-400);
+  --input-bg: #FAFAFA;
+  --input-bg-focus: white;
+
+  /* 标签 */
+  --badge-radius: var(--radius-full);
+  --badge-padding: var(--space-1) var(--space-3);
+  --badge-font-size: var(--text-xs);
+}
+
+/* ============================================================
+   9. 动画关键帧 / Animation Keyframes
+   ============================================================ */
+
+/* 淡入上移动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 淡入下降动画 */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 浮动动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(5deg);
+  }
+}
+
+/* 流体Blob动画 */
+@keyframes blobFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  25% {
+    transform: translate(30px, -30px) scale(1.05);
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(0.95);
+    border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
+  }
+  75% {
+    transform: translate(20px, 10px) scale(1.02);
+    border-radius: 60% 40% 60% 30% / 70% 30% 50% 60%;
+  }
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+/* 渐变流动动画 */
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* 旋转动画 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 弹跳动画 */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* 加载点动画 */
+@keyframes dotPulse {
+  0%, 100% { transform: scale(0.6); opacity: 0.4; }
+  50% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   10. 工具类 / Utility Classes
+   ============================================================ */
+
+/* 文本渐变 */
+.text-gradient {
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 背景渐变 */
+.bg-gradient-warm {
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 74, 0.08) 0%, 
+    rgba(245, 158, 11, 0.08) 50%, 
+    rgba(227, 85, 50, 0.08) 100%
+  );
+}
+
+.bg-gradient-coral {
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+}
+
+/* 玻璃态效果 */
+.glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* 有机曲线装饰 */
+.organic-blob {
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: blobFloat 20s ease-in-out infinite;
+}
+
+/* 悬停提升效果 */
+.hover-lift {
+  transition: transform var(--transition-normal) var(--ease-out),
+              box-shadow var(--transition-normal) var(--ease-out);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* 卡片入场动画 */
+.card-enter {
+  animation: fadeInUp 0.6s var(--ease-out) forwards;
+  opacity: 0;
+}
+
+/* 交错动画延迟 */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* 隐藏滚动条但保留功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 自定义滚动条 */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--radius-full);
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* ============================================================
+   11. 响应式断点 / Responsive Breakpoints
+   ============================================================ */
+
+/* 小型设备 (手机) */
+@media (max-width: 640px) {
+  :root {
+    --page-padding: var(--space-4);
+    --text-4xl: 1.875rem;
+    --text-3xl: 1.5rem;
+    --text-2xl: 1.25rem;
+  }
+}
+
+/* 中型设备 (平板) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  :root {
+    --page-padding: var(--space-5);
+  }
+}
+
+/* 大型设备 (桌面) */
+@media (min-width: 1025px) {
+  :root {
+    --page-padding: var(--space-6);
+  }
+}
+
+/* ============================================================
+   12. 暗色模式适配 / Dark Mode Support
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary: var(--gray-100);
+    --text-secondary: var(--gray-300);
+    --text-tertiary: var(--gray-500);
+    
+    --bg-primary: var(--gray-900);
+    --bg-secondary: var(--gray-800);
+    --bg-tertiary: var(--gray-700);
+    --bg-warm: #1a1a2e;
+    
+    --border-light: rgba(255, 255, 255, 0.05);
+    --border-medium: rgba(255, 255, 255, 0.1);
+    --border-strong: rgba(255, 255, 255, 0.15);
+    
+    --card-bg: var(--gray-800);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-bg-focus: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ============================================================
+   13. 减少动画偏好 / Reduced Motion Support
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

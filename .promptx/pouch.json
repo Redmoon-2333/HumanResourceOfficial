@@ -1,0 +1,22 @@
+{
+  "currentState": "initial",
+  "stateHistory": [
+    {
+      "from": "initial",
+      "command": "project",
+      "timestamp": "2026-02-13T15:57:45.399Z",
+      "args": [
+        {
+          "workingDirectory": "c:\\Users\\lenovo\\IdeaProjects\\HumanResourceOfficial"
+        }
+      ]
+    },
+    {
+      "from": "initial",
+      "command": "discover",
+      "timestamp": "2026-02-13T15:57:47.784Z",
+      "args": []
+    }
+  ],
+  "lastUpdated": "2026-02-13T15:57:47.876Z"
+}
