@@ -1,41 +1,190 @@
-import http from '@/utils/http'
+/**
+ * AI 对话 API 模块
+ *
+ * 提供AI对话、策划案生成、RAG增强对话等功能
+ * @module api/ai
+ */
+
+import { http } from '@/utils/http'
 import type {
   ChatRequest,
   ChatResponse,
   PlanGeneratorRequest,
-  RagChatRequest
+  RagChatRequest,
+  ApiResponse,
+  StreamChunkCallback
 } from '@/types'
 
-// AI对话
-export const chat = (data: ChatRequest) => {
+// ============================================
+// AI 对话
+// ============================================
+
+/**
+ * AI对话（非流式）
+ * @param data - 对话请求数据
+ * @returns AI响应
+ *
+ * @example
+ * ```typescript
+ * const response = await chat({
+ *   message: '你好，请介绍一下人力资源中心'
+ * })
+ * console.log(response.data.response)
+ * ```
+ */
+export const chat = (
+  data: ChatRequest
+): Promise<ApiResponse<ChatResponse>> => {
   return http.post<ChatResponse>('/api/ai/chat', data)
 }
 
-// AI对话（流式）
+/**
+ * AI对话（流式）
+ * @param data - 对话请求数据
+ * @param onChunk - 流式响应回调函数
+ * @param signal - 用于中断请求的AbortSignal
+ * @returns 完整的AI响应内容
+ *
+ * @example
+ * ```typescript
+ * const controller = createStreamController()
+ * const content = await chatStream(
+ *   { message: '你好' },
+ *   (chunk) => {
+ *     console.log('收到:', chunk)
+ *     // 实时更新UI
+ *   },
+ *   controller.signal
+ * )
+ * ```
+ */
 export const chatStream = (
   data: ChatRequest,
-  onChunk: (chunk: string) => void
-) => {
-  return http.stream('/api/ai/chat-stream', data, onChunk)
+  onChunk: StreamChunkCallback,
+  signal?: AbortSignal
+): Promise<string> => {
+  return http.stream('/api/ai/chat-stream', data, onChunk, signal)
 }
 
-// RAG增强对话（流式）
-export const chatWithRag = (
-  data: RagChatRequest,
-  onChunk: (chunk: string) => void
-) => {
-  return http.stream('/api/ai/chat-with-rag', data, onChunk)
-}
+// ============================================
+// 策划案生成
+// ============================================
 
-// 生成策划案（非流式）
-export const generatePlan = (data: PlanGeneratorRequest) => {
+/**
+ * 生成活动策划案（非流式）
+ * @param data - 策划案生成请求数据
+ * @returns 生成的策划案内容
+ *
+ * @example
+ * ```typescript
+ * const result = await generatePlan({
+ *   theme: '迎新晚会',
+ *   organizer: '人力资源中心',
+ *   eventTime: '2024年9月1日',
+ *   eventLocation: '学生活动中心',
+ *   participants: '全体新生',
+ *   purpose: '欢迎新成员，增进了解'
+ * })
+ * console.log(result.data)
+ * ```
+ */
+export const generatePlan = (
+  data: PlanGeneratorRequest
+): Promise<ApiResponse<string>> => {
   return http.post<string>('/api/ai/generate-plan', data)
 }
 
-// 生成策划案（流式）
+/**
+ * 生成活动策划案（流式）
+ * @param data - 策划案生成请求数据
+ * @param onChunk - 流式响应回调函数
+ * @param signal - 用于中断请求的AbortSignal
+ * @returns 完整的策划案内容
+ *
+ * @example
+ * ```typescript
+ * const controller = createStreamController()
+ * const content = await generatePlanStream(
+ *   { theme: '迎新晚会' },
+ *   (chunk) => {
+ *     // 实时显示生成内容
+ *     appendContent(chunk)
+ *   },
+ *   controller.signal
+ * )
+ * ```
+ */
 export const generatePlanStream = (
   data: PlanGeneratorRequest,
-  onChunk: (chunk: string) => void
-) => {
-  return http.stream('/api/ai/generate-plan-stream', data, onChunk)
+  onChunk: StreamChunkCallback,
+  signal?: AbortSignal
+): Promise<string> => {
+  return http.stream('/api/ai/generate-plan-stream', data, onChunk, signal)
 }
+
+// ============================================
+// RAG 增强对话
+// ============================================
+
+/**
+ * RAG增强的AI流式对话
+ * @param data - RAG对话请求数据
+ * @param onChunk - 流式响应回调函数
+ * @param signal - 用于中断请求的AbortSignal
+ * @returns 完整的AI响应内容
+ *
+ * @example
+ * ```typescript
+ * const controller = createStreamController()
+ * const content = await chatWithRag(
+ *   {
+ *     message: '介绍一下往届的迎新活动',
+ *     useRAG: true,
+ *     enableTools: true
+ *   },
+ *   (chunk) => {
+ *     console.log('收到:', chunk)
+ *   },
+ *   controller.signal
+ * )
+ * ```
+ */
+export const chatWithRag = (
+  data: RagChatRequest,
+  onChunk: StreamChunkCallback,
+  signal?: AbortSignal
+): Promise<string> => {
+  return http.stream('/api/ai/chat-with-rag', data, onChunk, signal)
+}
+
+// ============================================
+// 流式请求控制
+// ============================================
+
+/**
+ * 创建可中断的流式请求控制器
+ * @returns 包含signal和abort方法的对象
+ *
+ * @example
+ * ```typescript
+ * const { signal, abort } = createStreamController()
+ *
+ * // 开始流式请求
+ * generatePlanStream(data, onChunk, signal)
+ *
+ * // 用户点击停止按钮时
+ * abort()
+ * ```
+ */
+export const createStreamController = (): {
+  signal: AbortSignal
+  abort: () => void
+} => {
+  return http.createStreamRequest()
+}
+
+/**
+ * AI对话（简化版，chat的别名）
+ * @deprecated 请使用 chat
+ */
+export const chatWithAI = chat

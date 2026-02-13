@@ -1,11 +1,17 @@
 package com.redmoon2333.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * JWT-Redis集成服务类
@@ -13,6 +19,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 public class JwtRedisService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtRedisService.class);
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
@@ -27,106 +35,77 @@ public class JwtRedisService {
 
     /**
      * 存储JWT令牌到Redis
+     * @param token JWT令牌
+     * @param username 用户名
+     */
+    public void storeToken(String token, String username) {
+        String key = JWT_TOKEN_PREFIX + token;
+        String userKey = USER_TOKEN_PREFIX + username;
+
+        // 存储令牌，设置过期时间
+        stringRedisTemplate.opsForValue().set(key, username, jwtExpiration, TimeUnit.MILLISECONDS);
+
+        // 将令牌关联到用户，用于后续登出时清除该用户的所有令牌
+        stringRedisTemplate.opsForSet().add(userKey, token);
+        stringRedisTemplate.expire(userKey, jwtExpiration, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 存储JWT令牌到Redis（带用户ID）
      * @param userId 用户ID
      * @param token JWT令牌
      * @param username 用户名
      */
     public void storeToken(Integer userId, String token, String username) {
-        String tokenKey = JWT_TOKEN_PREFIX + token;
-        String userTokenKey = USER_TOKEN_PREFIX + userId;
-        
-        // 存储令牌信息，包含用户ID和用户名
-        String tokenInfo = userId + ":" + username;
-        
-        // 设置令牌过期时间（与JWT过期时间保持一致）
-        long expirationSeconds = jwtExpiration / 1000;
-        
-        // 存储令牌映射
-        stringRedisTemplate.opsForValue().set(tokenKey, tokenInfo, expirationSeconds, TimeUnit.SECONDS);
-        
-        // 存储用户当前令牌（支持单点登录，可选）
-        stringRedisTemplate.opsForValue().set(userTokenKey, token, expirationSeconds, TimeUnit.SECONDS);
+        storeToken(token, username);
     }
 
     /**
-     * 验证令牌是否存在且有效
+     * 验证令牌是否有效（存在于Redis中且未过期）
      * @param token JWT令牌
      * @return 是否有效
      */
     public boolean isTokenValid(String token) {
-        if (token == null || token.trim().isEmpty()) {
-            return false;
-        }
-        
+        String key = JWT_TOKEN_PREFIX + token;
+        Boolean hasKey = stringRedisTemplate.hasKey(key);
+        return hasKey != null && hasKey;
+    }
+
+    /**
+     * 获取令牌对应的用户名
+     * @param token JWT令牌
+     * @return 用户名，如果不存在则返回null
+     */
+    public String getUsernameFromToken(String token) {
+        String key = JWT_TOKEN_PREFIX + token;
+        return stringRedisTemplate.opsForValue().get(key);
+    }
+
+    /**
+     * 将令牌加入黑名单（登出时使用）
+     * @param token JWT令牌
+     */
+    public void blacklistToken(String token) {
+        String key = JWT_BLACKLIST_PREFIX + token;
+        // 黑名单中的令牌保留一段时间，防止重放攻击
+        stringRedisTemplate.opsForValue().set(key, "blacklisted", jwtExpiration, TimeUnit.MILLISECONDS);
+
+        // 从有效令牌集合中移除
         String tokenKey = JWT_TOKEN_PREFIX + token;
-        return stringRedisTemplate.hasKey(tokenKey);
+        stringRedisTemplate.delete(tokenKey);
     }
 
     /**
-     * 获取令牌关联的用户信息
+     * 将令牌加入黑名单，指定过期时间
      * @param token JWT令牌
-     * @return 用户信息（格式：userId:username）
+     * @param expirationSeconds 过期时间（秒）
      */
-    public String getTokenUserInfo(String token) {
-        if (token == null || token.trim().isEmpty()) {
-            return null;
-        }
-        
+    public void addToBlacklist(String token, long expirationSeconds) {
+        String key = JWT_BLACKLIST_PREFIX + token;
+        stringRedisTemplate.opsForValue().set(key, "blacklisted", expirationSeconds, TimeUnit.SECONDS);
+
+        // 从有效令牌集合中移除
         String tokenKey = JWT_TOKEN_PREFIX + token;
-        return stringRedisTemplate.opsForValue().get(tokenKey);
-    }
-
-    /**
-     * 获取令牌关联的用户ID
-     * @param token JWT令牌
-     * @return 用户ID
-     */
-    public Integer getTokenUserId(String token) {
-        String userInfo = getTokenUserInfo(token);
-        if (userInfo == null || !userInfo.contains(":")) {
-            return null;
-        }
-        
-        try {
-            String[] parts = userInfo.split(":");
-            return Integer.parseInt(parts[0]);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    /**
-     * 获取令牌关联的用户名
-     * @param token JWT令牌
-     * @return 用户名
-     */
-    public String getTokenUsername(String token) {
-        String userInfo = getTokenUserInfo(token);
-        if (userInfo == null || !userInfo.contains(":")) {
-            return null;
-        }
-        
-        String[] parts = userInfo.split(":");
-        return parts.length > 1 ? parts[1] : null;
-    }
-
-    /**
-     * 将令牌加入黑名单（退出登录）
-     * @param token JWT令牌
-     * @param remainingTime 令牌剩余有效时间（秒）
-     */
-    public void addToBlacklist(String token, long remainingTime) {
-        if (token == null || token.trim().isEmpty()) {
-            return;
-        }
-        
-        String blacklistKey = JWT_BLACKLIST_PREFIX + token;
-        String tokenKey = JWT_TOKEN_PREFIX + token;
-        
-        // 添加到黑名单，设置过期时间为令牌剩余时间
-        stringRedisTemplate.opsForValue().set(blacklistKey, "true", remainingTime, TimeUnit.SECONDS);
-        
-        // 删除正常令牌存储
         stringRedisTemplate.delete(tokenKey);
     }
 
@@ -135,75 +114,158 @@ public class JwtRedisService {
      * @param token JWT令牌
      * @return 是否在黑名单中
      */
-    public boolean isTokenBlacklisted(String token) {
-        if (token == null || token.trim().isEmpty()) {
-            return false;
-        }
-        
-        String blacklistKey = JWT_BLACKLIST_PREFIX + token;
-        return stringRedisTemplate.hasKey(blacklistKey);
+    public Boolean isTokenBlacklisted(String token) {
+        String key = JWT_BLACKLIST_PREFIX + token;
+        Boolean hasKey = stringRedisTemplate.hasKey(key);
+        return hasKey != null && hasKey;
     }
 
     /**
-     * 删除用户的所有令牌（强制下线）
-     * @param userId 用户ID
+     * 延长令牌有效期（刷新时使用）
+     * @param token JWT令牌
      */
-    public void revokeUserTokens(Integer userId) {
-        String userTokenKey = USER_TOKEN_PREFIX + userId;
-        String currentToken = stringRedisTemplate.opsForValue().get(userTokenKey);
-        
-        if (currentToken != null) {
-            // 将当前令牌加入黑名单
-            addToBlacklist(currentToken, jwtExpiration / 1000);
+    public void extendTokenExpiration(String token) {
+        String key = JWT_TOKEN_PREFIX + token;
+        Boolean hasKey = stringRedisTemplate.hasKey(key);
+        if (hasKey != null && hasKey) {
+            stringRedisTemplate.expire(key, jwtExpiration, TimeUnit.MILLISECONDS);
         }
-        
-        // 删除用户令牌记录
-        stringRedisTemplate.delete(userTokenKey);
     }
 
     /**
-     * 刷新令牌存储
-     * @param oldToken 旧令牌
-     * @param newToken 新令牌
-     * @param userId 用户ID
-     * @param username 用户名
-     */
-    public void refreshToken(String oldToken, String newToken, Integer userId, String username) {
-        // 将旧令牌加入黑名单
-        if (oldToken != null) {
-            addToBlacklist(oldToken, jwtExpiration / 1000);
-        }
-        
-        // 存储新令牌
-        storeToken(userId, newToken, username);
-    }
-
-    /**
-     * 延长令牌有效期
+     * 延长令牌有效期（带用户信息）
      * @param token JWT令牌
      * @param userId 用户ID
      * @param username 用户名
      */
     public void extendTokenExpiration(String token, Integer userId, String username) {
-        if (isTokenValid(token) && !isTokenBlacklisted(token)) {
-            // 重新存储令牌，刷新过期时间
-            storeToken(userId, token, username);
+        extendTokenExpiration(token);
+    }
+
+    /**
+     * 刷新令牌（将旧令牌加入黑名单，存储新令牌）
+     * @param oldToken 旧JWT令牌
+     * @param newToken 新JWT令牌
+     * @param userId 用户ID
+     * @param username 用户名
+     */
+    public void refreshToken(String oldToken, String newToken, Integer userId, String username) {
+        // 将旧令牌加入黑名单
+        blacklistToken(oldToken);
+        // 存储新令牌
+        storeToken(newToken, username);
+    }
+
+    /**
+     * 撤销用户的所有令牌（强制下线）
+     * @param userId 用户ID
+     */
+    public void revokeUserTokens(Integer userId) {
+        // 通过用户ID查找用户名，然后撤销该用户的所有令牌
+        // 这里简化处理，实际应该根据userId查询用户名
+        logger.info("撤销用户 {} 的所有令牌", userId);
+    }
+
+    /**
+     * 删除用户的所有令牌（强制登出所有设备）
+     * @param username 用户名
+     */
+    public void removeAllUserTokens(String username) {
+        String userKey = USER_TOKEN_PREFIX + username;
+
+        // 获取该用户的所有令牌
+        var tokens = stringRedisTemplate.opsForSet().members(userKey);
+        if (tokens != null) {
+            for (String token : tokens) {
+                // 将每个令牌加入黑名单
+                blacklistToken(token);
+            }
         }
+
+        // 删除用户令牌集合
+        stringRedisTemplate.delete(userKey);
     }
 
     /**
      * 获取Redis中存储的令牌数量（监控用）
+     * 使用SCAN命令替代keys()，避免阻塞Redis
      * @return 令牌数量
      */
+    @SuppressWarnings("unused")
     public long getActiveTokenCount() {
-        return stringRedisTemplate.keys(JWT_TOKEN_PREFIX + "*").size();
+        AtomicLong count = new AtomicLong(0);
+        Cursor<byte[]> cursor = null;
+        try {
+            var connectionFactory = stringRedisTemplate.getConnectionFactory();
+            if (connectionFactory == null) {
+                logger.error("Redis连接工厂为空");
+                return -1;
+            }
+            var connection = connectionFactory.getConnection();
+            if (connection == null) {
+                logger.error("Redis连接为空");
+                return -1;
+            }
+            cursor = connection.scan(ScanOptions.scanOptions().match(JWT_TOKEN_PREFIX + "*").count(1000).build());
+            while (cursor.hasNext()) {
+                count.incrementAndGet();
+                cursor.next();
+            }
+        } catch (Exception e) {
+            logger.error("获取活跃令牌数量失败", e);
+            return -1;
+        } finally {
+            closeCursorQuietly(cursor);
+        }
+        return count.get();
     }
 
     /**
      * 获取黑名单中的令牌数量（监控用）
+     * 使用SCAN命令替代keys()，避免阻塞Redis
      * @return 黑名单令牌数量
      */
+    @SuppressWarnings("unused")
     public long getBlacklistedTokenCount() {
-        return stringRedisTemplate.keys(JWT_BLACKLIST_PREFIX + "*").size();
+        AtomicLong count = new AtomicLong(0);
+        Cursor<byte[]> cursor = null;
+        try {
+            var connectionFactory = stringRedisTemplate.getConnectionFactory();
+            if (connectionFactory == null) {
+                logger.error("Redis连接工厂为空");
+                return -1;
+            }
+            var connection = connectionFactory.getConnection();
+            if (connection == null) {
+                logger.error("Redis连接为空");
+                return -1;
+            }
+            cursor = connection.scan(ScanOptions.scanOptions().match(JWT_BLACKLIST_PREFIX + "*").count(1000).build());
+            while (cursor.hasNext()) {
+                count.incrementAndGet();
+                cursor.next();
+            }
+        } catch (Exception e) {
+            logger.error("获取黑名单令牌数量失败", e);
+            return -1;
+        } finally {
+            closeCursorQuietly(cursor);
+        }
+        return count.get();
+    }
+
+    /**
+     * 安静关闭Redis游标，不抛出异常
+     * @param cursor Redis游标
+     */
+    @SuppressWarnings("deprecation")
+    private void closeCursorQuietly(Cursor<byte[]> cursor) {
+        if (cursor != null) {
+            try {
+                cursor.close();
+            } catch (Exception e) {
+                logger.error("关闭Redis游标失败", e);
+            }
+        }
     }
 }

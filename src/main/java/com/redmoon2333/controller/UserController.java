@@ -1,10 +1,12 @@
 package com.redmoon2333.controller;
 
+import com.redmoon2333.dto.ActivationCodeResponse;
+import com.redmoon2333.dto.ActivationCodeListResponse;
+import com.redmoon2333.dto.ActivationCodeStatsResponse;
 import com.redmoon2333.dto.AlumniResponse;
 import com.redmoon2333.dto.ApiResponse;
 import com.redmoon2333.dto.PublicUserInfo;
 import com.redmoon2333.entity.User;
-import com.redmoon2333.entity.ActivationCode;
 import com.redmoon2333.service.UserService;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.util.RedisMemoryCleanupTask;
@@ -146,19 +148,24 @@ public class UserController {
     
     /**
      * 获取该用户生成的所有激活码
-     * 
+     *
      * @param authHeader 授权令牌
-     * @return 该用户生成的激活码列表
+     * @return 该用户生成的激活码列表及统计数据
      */
     @GetMapping("/activation-codes")
-    public ApiResponse<List<ActivationCode>> getActivationCodes(
+    public ApiResponse<ActivationCodeListResponse> getActivationCodes(
             @RequestHeader("Authorization") String authHeader) {
         try {
             logger.info("收到获取用户激活码的请求");
             String token = authHeader.replace("Bearer ", "");
-            List<ActivationCode> codes = userService.getActivationCodesByUser(token);
+            List<ActivationCodeResponse> codes = userService.getActivationCodesByUser(token);
+            ActivationCodeStatsResponse stats = userService.getActivationCodeStats(token);
             logger.info("成功获取该用户的 {} 个激活码", codes.size());
-            return ApiResponse.success("查询成功", codes);
+            logger.info("统计数据: 总数={}, 已使用={}, 未使用={}, 已过期={}", 
+                stats.getTotalCount(), stats.getUsedCount(), stats.getUnusedCount(), stats.getExpiredCount());
+            ActivationCodeListResponse response = new ActivationCodeListResponse(codes, stats);
+            logger.debug("响应数据: codes={}, stats={}", response.getCodes().size(), response.getStats());
+            return ApiResponse.success("查询成功", response);
         } catch (BusinessException e) {
             logger.warn("获取用户激活码失败: {}", e.getErrorCode().getMessage(), e);
             return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());

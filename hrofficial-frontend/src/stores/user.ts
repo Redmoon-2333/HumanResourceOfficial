@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from '@/types'
-import { getCurrentUser } from '@/api/auth'
+import { getCurrentUser } from '@/api/user'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref<string | null>(localStorage.getItem('token'))
@@ -37,7 +37,7 @@ export const useUserStore = defineStore('user', () => {
     try {
       const res = await getCurrentUser()
       if (res.code === 200) {
-        userInfo.value = res.data
+        userInfo.value = res.data as User
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)

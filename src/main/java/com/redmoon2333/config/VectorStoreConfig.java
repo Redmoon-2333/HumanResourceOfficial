@@ -2,124 +2,116 @@ package com.redmoon2333.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
+import redis.clients.jedis.JedisPooled;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.grpc.Collections.CreateCollection;
-import io.qdrant.client.grpc.Collections.Distance;
-import io.qdrant.client.grpc.Collections.VectorParams;
-import io.qdrant.client.grpc.Collections.VectorsConfig;
-import jakarta.annotation.PostConstruct;
+import java.util.List;
+import java.util.Map;
 
 /**
- * VectorStore 配置类
- * 参考 Spring AI Alibaba 文档的最佳实践
+ * VectorStore 配置类（精简版）
+ *
+ * 使用 Spring AI Redis Vector Store 进行向量存储
+ * Warning: 需要 Redis 服务端支持 RediSearch 和 RedisJSON 模块
  */
 @Configuration
 public class VectorStoreConfig {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(VectorStoreConfig.class);
-    
-    @Value("${qdrant.collection-name:campus_knowledge}")
-    private String collectionName;
-    
-    @Value("${spring.ai.vectorstore.qdrant.initialize-schema:true}")
-    private boolean initializeSchema;
-    
-    @Autowired
-    private RagConfig ragConfig;
-    
-    @Autowired
-    private QdrantClient qdrantClient;
-    
+
+    @Value("${spring.ai.vectorstore.redis.index-name:spring-ai-index}")
+    private String indexName;
+
+    @Value("${spring.ai.vectorstore.redis.prefix:embedding:}")
+    private String prefix;
+
+    @Value("${spring.data.redis.host:localhost}")
+    private String redisHost;
+
+    @Value("${spring.data.redis.port:6379}")
+    private int redisPort;
+
+    @Bean
+    public JedisPooled jedisPooled() {
+        return new JedisPooled(redisHost, redisPort);
+    }
+
+    @Bean
+    public VectorStore vectorStore(EmbeddingModel embeddingModel, JedisPooled jedis) {
+        logger.info("初始化 Redis Vector Store: {}:{}, index: {}", redisHost, redisPort, indexName);
+
+        // Why: 测试Embedding模型实际输出维度，确保与Redis索引维度一致
+        // Warning: 如果维度不匹配，必须删除Redis索引重建
+        testEmbeddingDimensions(embeddingModel);
+
+        return RedisVectorStore.builder(jedis, embeddingModel)
+                .indexName(indexName)
+                .prefix(prefix)
+                .initializeSchema(true)
+                .build();
+    }
+
     /**
-     * 应用启动后初始化Collection
-     * 确保Collection存在，避免NOT_FOUND错误
+     * 应用启动后自动初始化Redis向量索引
+     * 
+     * Why: initializeSchema(true)只有在添加数据时才会创建索引
+     *      如果索引不存在，查询时会报"No such index"错误
+     *      通过插入并删除一个测试文档来触发索引创建
      */
-    @PostConstruct
-    public void initializeCollection() {
+    @EventListener(ApplicationReadyEvent.class)
+    public void ensureIndexExists(ApplicationReadyEvent event) {
         try {
-            logger.info("检查Collection是否存在: {}", collectionName);
+            VectorStore vs = event.getApplicationContext().getBean(VectorStore.class);
+            JedisPooled jedis = event.getApplicationContext().getBean(JedisPooled.class);
             
-            boolean exists = qdrantClient.collectionExistsAsync(collectionName).get();
-            
-            if (!exists) {
-                logger.warn("Collection {} 不存在，开始创建...", collectionName);
-                
-                VectorParams vectorParams = VectorParams.newBuilder()
-                    .setSize(ragConfig.getVectorDimension())
-                    .setDistance(Distance.Cosine)
-                    .build();
-                
-                CreateCollection createCollection = CreateCollection.newBuilder()
-                    .setCollectionName(collectionName)
-                    .setVectorsConfig(VectorsConfig.newBuilder()
-                        .setParams(vectorParams)
-                        .build())
-                    .build();
-                
-                qdrantClient.createCollectionAsync(createCollection).get();
-                logger.info("Collection {} 创建成功！", collectionName);
-            } else {
-                logger.info("Collection {} 已存在", collectionName);
+            // 检查索引是否存在
+            try {
+                jedis.ftInfo(indexName);
+                logger.info("Redis向量索引 {} 已存在", indexName);
+            } catch (Exception e) {
+                // 索引不存在，通过插入测试文档触发创建
+                logger.info("Redis向量索引不存在，正在创建...");
+                String testDocId = "__init_test_doc__";
+                Document testDoc = new Document(testDocId, "初始化测试文档", Map.of("type", "init"));
+                vs.add(List.of(testDoc));
+                vs.delete(List.of(testDocId));
+                logger.info("Redis向量索引 {} 创建成功", indexName);
             }
-            
         } catch (Exception e) {
-            logger.error("Collection初始化失败", e);
-            throw new RuntimeException("Collection初始化失败: " + e.getMessage(), e);
+            logger.warn("检查/创建Redis向量索引失败: {}", e.getMessage());
         }
     }
-    
+
     /**
-     * 配置 Embedding 模型
-     * 参考文档: SAA-11Embed2vector
+     * 测试Embedding模型实际输出维度
+     *
+     * Why: 确保Embedding模型配置的dimensions参数实际生效
+     *      避免配置与实际输出维度不一致导致的查询错误
+     *
+     * @param embeddingModel Embedding模型
      */
-    @Bean
-    public EmbeddingModel embeddingModel() {
-        String apiKey = System.getenv("aliQwen_api");
-        if (apiKey == null || apiKey.isEmpty()) {
-            throw new RuntimeException("通义千问API Key未配置，请设置环境变量 aliQwen_api");
-        }
-        
-        logger.info("初始化 Embedding 模型: text-embedding-v3");
-        
-        return new DashScopeEmbeddingModel(
-            DashScopeApi.builder().apiKey(apiKey).build()
-        );
-    }
-    
-    /**
-     * 注意: qdrantClient bean 由 QdrantConfig 提供
-     * 此处不再重复定义，避免 bean 冲突
-     */
-    
-    /**
-     * 配置 VectorStore
-     * 使用Builder模式创建
-     */
-    @Bean
-    public VectorStore vectorStore(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
-        logger.info("初始化 VectorStore: collection={}, initSchema={}", 
-                   collectionName, initializeSchema);
-        
+    private void testEmbeddingDimensions(EmbeddingModel embeddingModel) {
         try {
-            // 使用Builder模式 - 传入qdrantClient和embeddingModel
-            return QdrantVectorStore.builder(qdrantClient, embeddingModel)
-                    .collectionName(collectionName)
-                    .initializeSchema(initializeSchema)
-                    .build();
+            float[] embedding = embeddingModel.embed("测试文本");
+            logger.info("Embedding模型实际输出维度: {}", embedding.length);
         } catch (Exception e) {
-            logger.error("VectorStore初始化失败", e);
-            throw new RuntimeException("VectorStore初始化失败: " + e.getMessage(), e);
+            logger.warn("无法测试Embedding模型维度: {}", e.getMessage());
         }
+    }
+
+    public String getIndexName() {
+        return indexName;
+    }
+
+    public String getPrefix() {
+        return prefix;
     }
 }

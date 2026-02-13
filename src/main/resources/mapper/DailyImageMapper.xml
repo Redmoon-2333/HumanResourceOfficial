@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.redmoon2333.mapper.DailyImageMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.redmoon2333.entity.DailyImage">
+        <id column="image_id" property="imageId" jdbcType="INTEGER"/>
+        <result column="image_url" property="imageUrl" jdbcType="VARCHAR"/>
+        <result column="title" property="title" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="sort_order" property="sortOrder" jdbcType="INTEGER"/>
+        <result column="is_active" property="isActive" jdbcType="BOOLEAN"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- SQL片段 -->
+    <sql id="Base_Column_List">
+        image_id, image_url, title, description, sort_order, is_active, create_time, update_time
+    </sql>
+
+    <!-- 根据ID查找图片 -->
+    <select id="findById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM daily_image
+        WHERE image_id = #{imageId}
+    </select>
+
+    <!-- 查询所有启用的图片列表（按排序顺序） -->
+    <select id="findAllActive" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM daily_image
+        WHERE is_active = true
+        ORDER BY sort_order ASC, create_time ASC
+    </select>
+
+    <!-- 查询所有图片列表 -->
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM daily_image
+        ORDER BY sort_order ASC, create_time DESC
+    </select>
+
+    <!-- 插入新图片 -->
+    <insert id="insert" parameterType="com.redmoon2333.entity.DailyImage" useGeneratedKeys="true" keyProperty="imageId">
+        INSERT INTO daily_image (
+            image_url,
+            title,
+            description,
+            sort_order,
+            is_active,
+            create_time,
+            update_time
+        ) VALUES (
+            #{imageUrl},
+            #{title},
+            #{description},
+            #{sortOrder},
+            #{isActive},
+            #{createTime},
+            #{updateTime}
+        )
+    </insert>
+
+    <!-- 更新图片信息 -->
+    <update id="update" parameterType="com.redmoon2333.entity.DailyImage">
+        UPDATE daily_image
+        <set>
+            <if test="imageUrl != null">
+                image_url = #{imageUrl},
+            </if>
+            <if test="title != null">
+                title = #{title},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="sortOrder != null">
+                sort_order = #{sortOrder},
+            </if>
+            <if test="isActive != null">
+                is_active = #{isActive},
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE image_id = #{imageId}
+    </update>
+
+    <!-- 根据ID删除图片 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM daily_image
+        WHERE image_id = #{imageId}
+    </delete>
+
+    <!-- 批量删除图片 -->
+    <delete id="batchDelete">
+        DELETE FROM daily_image
+        WHERE image_id IN
+        <foreach collection="imageIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 获取最大排序号 -->
+    <select id="getMaxSortOrder" resultType="java.lang.Integer">
+        SELECT COALESCE(MAX(sort_order), 0)
+        FROM daily_image
+    </select>
+
+    <!-- 更新图片状态 -->
+    <update id="updateStatus">
+        UPDATE daily_image
+        SET is_active = #{isActive},
+            update_time = NOW()
+        WHERE image_id = #{imageId}
+    </update>
+
+</mapper>

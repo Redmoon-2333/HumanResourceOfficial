@@ -1,0 +1,175 @@
+# ============================================================
+# 人力资源中心官网 - 主配置文件
+# Spring Boot 3.3.5 + Spring AI 1.0.0
+# ============================================================
+
+spring:
+  application:
+    name: HumanResourceOfficial
+    
+  # 激活环境配置
+  profiles:
+    active: dev
+    
+  # 数据源配置（通用）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+        
+  # Redis配置（通用）
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+          
+  # AI Vector Store配置 - Redis Stack
+  ai:
+    # Spring AI Dashscope 配置（统一API Key）
+    # Warning: 生产环境必须通过环境变量设置，禁止使用硬编码密钥
+    dashscope:
+      api-key: ${ALIQWEN_API:}
+    vectorstore:
+      redis:
+        initialize-schema: true
+        index-name: campus-knowledge-index
+        prefix: "rag:embedding:"
+        
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+      
+  # 静态资源配置
+  web:
+    resources:
+      static-locations: classpath:/static/,file:uploads/
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.redmoon2333.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# PageHelper分页配置
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+
+# JWT配置
+jwt:
+  secret: "YourJWTSecretKeyMustBeAtLeast256BitsLongForHS256Algorithm"
+  expiration: 604800000
+
+# 阿里云配置
+aliyun:
+  # 通义千问API配置
+  # Warning: 生产环境必须通过环境变量设置，禁止使用硬编码密钥
+  dashscope:
+    api-key: ${ALIQWEN_API:}
+  # OSS配置（使用环境变量）
+  oss:
+    endpoint: oss-cn-hangzhou.aliyuncs.com
+    accessKeyId: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+    accessKeySecret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    bucketName: ${ALIYUN_OSS_BUCKET_NAME:}
+
+# 本地文件上传配置
+local:
+  file:
+    upload:
+      path: uploads
+
+# RAG配置
+rag:
+  knowledge-base-path: src/main/resources/rag-knowledge-base
+  
+  # ============================================================
+  # 智能分块配置（优化RAG检索效果）
+  # ============================================================
+  # 最大分块大小（字符数），400字符平衡检索精度和语义完整性
+  chunk-size: 400
+  # 分块重叠大小，设置为chunk-size的25%
+  chunk-overlap: 100
+  # 最小分块大小，过小的块会被合并，避免碎片化
+  min-chunk-size: 120
+  # 启用语义分块（按章节、段落、句子边界智能分割）
+  enable-semantic-chunking: true
+  # 自动识别文档类型（结构化/叙述性/技术文档）
+  auto-detect-doc-type: true
+  
+  # Embedding模型配置
+  # text-embedding-v3支持: 1024, 1536(默认), 2048
+  # text-embedding-v2支持: 1536
+  # Warning: 修改维度后必须清空Redis索引重建
+  embedding-model: text-embedding-v3
+  embedding-dimensions: 1024
+  retrieval-top-k: 5
+  score-threshold: 0.0
+  # 此配置应与embedding-dimensions保持一致，用于统计信息显示
+  vector-dimension: 1024
+  enable-batch-processing: true
+  batch-size: 25
+  
+  # ============================================================
+  # 低内存模式配置（适用于2核2G等低配服务器）
+  # Why: 防止RAG初始化时内存溢出导致服务器死机
+  # ============================================================
+  # 启用低内存模式（低配服务器建议设置为true）
+  low-memory-mode: false
+  # 内存使用率警告阈值，超过后触发GC
+  memory-warning-threshold: 0.7
+  # 内存使用率危险阈值，超过后暂停处理等待释放
+  memory-critical-threshold: 0.85
+  # 文件处理间隔（毫秒），降低CPU和内存峰值
+  file-process-delay-ms: 0
+  # 单个文件大小限制（MB），0表示不限制
+  max-file-size-mb: 0
+  # 低内存模式下的批处理大小
+  low-memory-batch-size: 5
+  # 低内存模式下的文件处理间隔（毫秒）
+  low-memory-file-delay-ms: 500
+
+# AI对话记忆配置
+ai:
+  chat:
+    memory:
+      ttl: 168
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.redmoon2333: DEBUG
+    org.springframework.ai: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -37,27 +37,15 @@ public class SecurityConfig {
         // 设置允许的域名 - 使用allowedOriginPatterns而不是allowedOrigins
         // 支持开发环境、生产环境和Docker环境
         configuration.setAllowedOriginPatterns(Arrays.asList(
-            // 本地开发环境 - Vue前端开发服务器（Vite）
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            
-            // 本地开发环境 - 其他前端端口
-            "http://localhost:3000",
-            "http://localhost:8080",
-            "http://localhost:8081",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:8080",
-            "http://127.0.0.1:8081",
+            // 本地开发环境 - Vue前端开发服务器（Vite）- 支持所有端口
+            "http://localhost:*",
+            "http://127.0.0.1:*",
             
             // 生产服务器 - 所有端口
             "http://81.70.218.85",
-            "http://81.70.218.85:80",
-            "http://81.70.218.85:3000",
-            "http://81.70.218.85:8080",
-            "http://81.70.218.85:8081",
+            "http://81.70.218.85:*",
             "https://81.70.218.85",
-            "https://81.70.218.85:443",
-            "https://81.70.218.85:3000",
+            "https://81.70.218.85:*",
             
             // Docker环境支持
             "http://hrofficial-backend:8080",
@@ -67,13 +55,7 @@ public class SecurityConfig {
             
             // 生产环境域名（如果有域名，修改为实际域名）
             "https://yourdomain.com",
-            "https://www.yourdomain.com",
-            
-            // 开发调试支持
-            "http://*",  // 允许所有HTTP（生产环境建议移除）
-            "https://*", // 允许所有HTTPS
-            "file://",   // 支持本地文件
-            "null"       // Chrome等浏览器打开file://时会将origin设为null
+            "https://www.yourdomain.com"
         ));
         
         // 设置允许的HTTP方法

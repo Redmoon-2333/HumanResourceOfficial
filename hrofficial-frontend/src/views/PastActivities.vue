@@ -1,666 +1,673 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
-import { getPastActivities, createPastActivity, updatePastActivity, deletePastActivity, getYears } from '@/api/pastActivity'
-import type { PastActivity } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/stores/user'
+import GlassPanel from '@/components/GlassPanel.vue'
+import AnimatedCounter from '@/components/AnimatedCounter.vue'
+import { ref, computed, onMounted } from 'vue'
+import { getPastActivities } from '@/api/activities'
+import { ElMessage } from 'element-plus'
+import {
+  Calendar,
+  ArrowRight,
+  Filter,
+  Picture,
+  Star,
+  Trophy
+} from '@element-plus/icons-vue'
 
-const userStore = useUserStore()
+// 与后端 PastActivityResponse 匹配的接口
+interface PastActivity {
+  pastActivityId: number
+  title: string
+  coverImage: string
+  pushUrl: string
+  year: number
+  createTime: string
+}
 
+// 前端展示用的活动接口
+interface Activity {
+  id: number
+  title: string
+  coverImage: string
+  pushUrl: string
+  year: number
+  createTime: string
+}
+
+const activities = ref<Activity[]>([])
 const loading = ref(false)
-const activities = ref<PastActivity[]>([])
-const years = ref<number[]>([])
-const selectedYear = ref<number | undefined>()
+const selectedYear = ref<number | 'all'>('all')
 
-const dialogVisible = ref(false)
-const isEdit = ref(false)
-const currentActivity = ref<PastActivity | null>(null)
-const uploadForm = ref({
-  title: '',
-  description: '',
-  articleUrl: '',
-  coverImageUrl: '',
-  year: new Date().getFullYear(),
-  activityDate: ''
+// 获取活动列表
+const fetchActivities = async () => {
+  loading.value = true
+  try {
+    const response = await getPastActivities(1, 100) // 获取前100条
+    if (response.code === 200) {
+      // 后端返回分页数据，需要取 content 或 list
+      const data = response.data?.content || response.data?.list || []
+      // 映射字段名
+      activities.value = data.map((item: PastActivity) => ({
+        id: item.pastActivityId,
+        title: item.title,
+        coverImage: item.coverImage,
+        pushUrl: item.pushUrl,
+        year: item.year,
+        createTime: item.createTime
+      }))
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取活动列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 按年份分组
+const groupedActivities = computed(() => {
+  const groups: Record<number, Activity[]> = {}
+  
+  filteredActivities.value.forEach(activity => {
+    const year = activity.year
+    if (!groups[year]) {
+      groups[year] = []
+    }
+    groups[year]!.push(activity)
+  })
+  
+  // 按年份降序排列
+  return Object.entries(groups)
+    .sort(([a], [b]) => Number(b) - Number(a))
+    .map(([year, items]) => ({
+      year: Number(year),
+      activities: items
+    }))
 })
 
-const coverImageFile = ref<File | null>(null)
-const uploadingCover = ref(false)
-
-// 加载年份列表
-const loadYears = async () => {
-  try {
-    const res = await getYears()
-    if (res.code === 200 && res.data) {
-      years.value = res.data
-    }
-  } catch (error: any) {
-    console.error('加载年份失败:', error)
+// 过滤后的活动
+const filteredActivities = computed(() => {
+  if (selectedYear.value === 'all') {
+    return activities.value
   }
-}
+  return activities.value.filter(a => a.year === selectedYear.value)
+})
 
-// 加载往届活动列表
-const loadActivities = async () => {
-  loading.value = true
-  try {
-    const params: any = {}
-    if (selectedYear.value) {
-      params.year = selectedYear.value
-    }
+// 提取所有年份
+const availableYears = computed(() => {
+  const years = [...new Set(activities.value.map(a => a.year))]
+  return years.sort((a, b) => b - a)
+})
 
-    const res = await getPastActivities(params)
-    console.log('获取往届活动响应:', res)
-    
-    if (res.code === 200 && res.data) {
-      console.log('响应数据类型:', typeof res.data, 'isArray:', Array.isArray(res.data))
-      console.log('响应数据内容:', res.data)
-      console.log('content字段:', res.data.content)
-      console.log('content是否为数组:', Array.isArray(res.data.content))
-      
-      let activityList: any[] = []
-      if (Array.isArray(res.data)) {
-        // 直接返回数组
-        activityList = res.data
-        console.log('数据是数组，直接使用')
-      } else if (res.data.content && Array.isArray(res.data.content)) {
-        // 分页对象，字段名是 content
-        activityList = res.data.content
-        console.log('从分页对象的content字段提取列表')
-      } else if (res.data.list && Array.isArray(res.data.list)) {
-        // 分页对象，字段名是 list（兼容旧格式）
-        activityList = res.data.list
-        console.log('从分页对象的list字段提取列表')
-      }
-      
-      console.log('提取到的活动列表:', activityList)
-      console.log('活动列表长度:', activityList.length)
-      
-      // 转换字段名以兼容前端模板
-      activities.value = activityList.map((activity: any) => ({
-        ...activity,
-        id: activity.pastActivityId,  // 添加 id 别名
-        coverImageUrl: activity.coverImage,  // 添加 coverImageUrl 别名
-        articleUrl: activity.pushUrl  // 添加 articleUrl 别名
-      }))
-      
-      console.log('转换后的活动列表:', activities.value)
-    } else {
-      console.warn('响应格式异常:', res)
-    }
-  } catch (error: any) {
-    console.error('加载往届活动失败:', error)
-    ElMessage.error(error.message || '加载活动失败')
-  } finally {
-    loading.value = false
-  }
-}
+// 统计数据
+const totalActivities = computed(() => activities.value.length)
 
-// 年份筛选
-const handleYearFilter = (year: number | undefined) => {
-  selectedYear.value = year
-  loadActivities()
-}
-
-// 处理封面图片上传
-const handleCoverUpload = (file: any) => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
-  if (!validTypes.includes(file.raw.type)) {
-    ElMessage.error('请上传 JPG/PNG/WEBP 格式的图片')
-    return false
-  }
-  
-  const maxSize = 5 * 1024 * 1024 // 5MB
-  if (file.raw.size > maxSize) {
-    ElMessage.error('图片大小不能超过 5MB')
-    return false
-  }
-  
-  coverImageFile.value = file.raw
-  return false // 阻止自动上传
-}
-
-// 删除封面图片
-const handleCoverRemove = () => {
-  coverImageFile.value = null
-  uploadForm.value.coverImageUrl = ''
-}
-
-// 上传封面图片到服务器
-const uploadCoverImage = async () => {
-  if (!coverImageFile.value) {
-    return uploadForm.value.coverImageUrl // 如果没有新图片，返回现有URL
-  }
-  
-  uploadingCover.value = true
-  try {
-    const formData = new FormData()
-    formData.append('file', coverImageFile.value)
-    
-    const token = localStorage.getItem('token')
-    const response = await fetch('/api/activities/upload-image', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    })
-    
-    // 检查响应状态
-    if (!response.ok) {
-      throw new Error(`上传失败: ${response.status} ${response.statusText}`)
-    }
-    
-    // 检查响应内容类型
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error('服务器返回的不是JSON格式')
-    }
-    
-    const result = await response.json()
-    if (result.code === 200 && result.data) {
-      return result.data // 直接返回URL字符串
-    } else {
-      throw new Error(result.message || '上传失败')
-    }
-  } catch (error: any) {
-    console.error('上传封面图片失败:', error)
-    throw error
-  } finally {
-    uploadingCover.value = false
-  }
-}
-
-// 打开创建对话框
-const handleCreate = () => {
-  isEdit.value = false
-  currentActivity.value = null
-  uploadForm.value = {
-    title: '',
-    description: '',
-    articleUrl: '',
-    coverImageUrl: '',
-    year: new Date().getFullYear(),
-    activityDate: ''
-  }
-  coverImageFile.value = null
-  dialogVisible.value = true
-}
-
-// 打开编辑对话框
-const handleEdit = (activity: PastActivity) => {
-  isEdit.value = true
-  currentActivity.value = activity
-  uploadForm.value = {
-    title: activity.title,
-    description: '',
-    articleUrl: activity.articleUrl || activity.pushUrl,
-    coverImageUrl: activity.coverImageUrl || activity.coverImage,
-    year: activity.year,
-    activityDate: ''
-  }
-  coverImageFile.value = null
-  dialogVisible.value = true
-}
-
-// 保存往届活动
-const handleSave = async () => {
-  if (!uploadForm.value.title) {
-    ElMessage.warning('请输入活动标题')
-    return
-  }
-  if (!uploadForm.value.articleUrl) {
-    ElMessage.warning('请输入推文链接')
-    return
-  }
-  if (!coverImageFile.value && !uploadForm.value.coverImageUrl) {
-    ElMessage.warning('请上传封面图片')
-    return
-  }
-
-  loading.value = true
-  try {
-    // 先上传封面图片
-    const coverUrl = await uploadCoverImage()
-    console.log('图片上传结果:', coverUrl)
-    
-    if (!coverUrl) {
-      throw new Error('图片上传失败，未获取到图片URL')
-    }
-    
-    uploadForm.value.coverImageUrl = coverUrl
-    
-    console.log(isEdit.value ? '准备编辑往届活动:' : '准备创建往届活动:', {
-      title: uploadForm.value.title,
-      articleUrl: uploadForm.value.articleUrl,
-      coverImageUrl: uploadForm.value.coverImageUrl,
-      year: uploadForm.value.year
-    })
-    
-    let res
-    if (isEdit.value && currentActivity.value) {
-      const activityId = currentActivity.value.id || currentActivity.value.pastActivityId
-      res = await updatePastActivity(activityId, uploadForm.value)
-    } else {
-      res = await createPastActivity(uploadForm.value)
-    }
-
-    if (res.code === 200) {
-      ElMessage.success(isEdit.value ? '更新成功' : '创建成功')
-      dialogVisible.value = false
-      loadActivities()
-      loadYears()
-    } else {
-      ElMessage.error(res.message || (isEdit.value ? '更新失败' : '创建失败'))
-    }
-  } catch (error: any) {
-    console.error(isEdit.value ? '编辑往届活动失败:' : '创建往届活动失败:', error)
-    ElMessage.error(error.message || (isEdit.value ? '更新失败' : '创建失败'))
-  } finally {
-    loading.value = false
-  }
-}
-
-// 删除往届活动
-const handleDelete = async (activity: PastActivity) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除往届活动“${activity.title}”吗？`,
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    loading.value = true
-    const activityId = activity.id || activity.pastActivityId
-    const res = await deletePastActivity(activityId)
-    if (res.code === 200) {
-      ElMessage.success('删除成功')
-      loadActivities()
-      loadYears()
-    } else {
-      ElMessage.error(res.message || '删除失败')
-    }
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('删除往届活动失败:', error)
-      ElMessage.error(error.message || '删除失败')
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-// 打开推文链接
-const openArticle = (url: string) => {
+// 打开链接
+const openUrl = (url: string) => {
   window.open(url, '_blank')
 }
 
-// 格式化日期
-const formatDate = (date: string) => {
-  if (!date) return '-'
-  return new Date(date).toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  })
-}
-
 onMounted(() => {
-  loadYears()
-  loadActivities()
+  fetchActivities()
 })
 </script>
 
 <template>
   <Layout>
-    <div class="past-activities-container">
-      <!-- 头部 -->
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">往届活动</h1>
-          <p class="page-subtitle">浏览人力资源中心历年精彩活动</p>
+    <div class="past-activities-page">
+      <!-- Hero区域 -->
+      <div class="hero-section">
+        <div class="hero-background">
+          <div class="gradient-orb orb-1"></div>
+          <div class="gradient-orb orb-2"></div>
+          <div class="floating-shapes">
+            <div class="shape shape-1">
+              <el-icon :size="40" color="rgba(245, 158, 11, 0.3)"><Trophy /></el-icon>
+            </div>
+            <div class="shape shape-2">
+              <el-icon :size="32" color="rgba(255, 107, 74, 0.3)"><Star /></el-icon>
+            </div>
+            <div class="shape shape-3">
+              <el-icon :size="36" color="rgba(16, 185, 129, 0.3)"><Calendar /></el-icon>
+            </div>
+          </div>
         </div>
-        <el-button 
-          v-if="userStore.isMinister" 
-          type="primary" 
-          @click="handleCreate"
-        >
-          <el-icon><Plus /></el-icon>
-          添加往届活动
-        </el-button>
+
+        <div class="hero-content">
+          <div class="hero-badge">
+            <el-icon :size="16"><Trophy /></el-icon>
+            <span>往届活动</span>
+          </div>
+          <!-- Inline CSS Fix: Prevent FOUC - Hero title should be black (#1C1917), not orange -->
+          <h1 class="hero-title" style="color: #1C1917;">
+            精彩回顾
+            <span style="color: #000000;">传承创新</span>
+          </h1>
+          <!-- Inline CSS Fix: Prevent FOUC - Subtitle should be gray (#78716C) -->
+          <p class="hero-subtitle" style="color: #78716C;">
+            回顾人力资源中心历届精彩活动，见证成长与荣耀
+          </p>
+
+          <!-- 统计卡片 -->
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B4A, #E35532);">
+                <el-icon :size="20" color="white"><Trophy /></el-icon>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">
+                  <AnimatedCounter :value="totalActivities" :duration="1500" />
+                </span>
+                <span class="stat-label">活动总数</span>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
+                <el-icon :size="20" color="white"><Calendar /></el-icon>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">
+                  <AnimatedCounter :value="availableYears.length" :duration="1500" />
+                </span>
+                <span class="stat-label">年份跨度</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 年份筛选 -->
-      <el-card class="filter-card">
-        <div class="year-filters">
-          <el-button
-            :type="selectedYear === undefined ? 'primary' : ''"
-            @click="handleYearFilter(undefined)"
-          >
-            全部
-          </el-button>
-          <el-button
-            v-for="year in years"
-            :key="year"
-            :type="selectedYear === year ? 'primary' : ''"
-            @click="handleYearFilter(year)"
-          >
-            {{ year }}年
-          </el-button>
+      <!-- 筛选器 -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <el-icon :size="18"><Filter /></el-icon>
+            <span class="filter-label">年份筛选:</span>
+            <div class="filter-options">
+              <button
+                class="filter-btn"
+                :class="{ active: selectedYear === 'all' }"
+                @click="selectedYear = 'all'"
+              >
+                全部
+              </button>
+              <button
+                v-for="year in availableYears"
+                :key="year"
+                class="filter-btn"
+                :class="{ active: selectedYear === year }"
+                @click="selectedYear = year"
+              >
+                {{ year }}
+              </button>
+            </div>
+          </div>
         </div>
-      </el-card>
+      </div>
 
-      <!-- 活动列表 -->
-      <div v-loading="loading" class="activities-grid">
-        <el-card
-          v-for="activity in activities"
-          :key="activity.id"
-          class="activity-card hover-card"
-          :body-style="{ padding: '0' }"
-        >
-          <!-- 活动封面 -->
-          <div class="activity-cover" @click="openArticle(activity.articleUrl || activity.pushUrl)">
-            <el-image
-              :src="activity.coverImageUrl || activity.coverImage"
-              fit="cover"
-              style="width: 100%; height: 240px; cursor: pointer"
-            >
-              <template #error>
-                <div class="image-error">
-                  <el-icon :size="60" color="var(--color-border)">
-                    <Picture />
-                  </el-icon>
-                  <p>封面加载失败</p>
+      <!-- 时间轴内容 -->
+      <div class="timeline-section">
+        <div v-loading="loading" class="timeline-container">
+          <div
+            v-for="group in groupedActivities"
+            :key="group.year"
+            class="year-group"
+          >
+            <!-- 年份标记 -->
+            <div class="year-marker">
+              <div class="year-badge">
+                <span class="year-text">{{ group.year }}</span>
+                <span class="year-count">{{ group.activities.length }} 个活动</span>
+              </div>
+              <div class="year-line"></div>
+            </div>
+
+            <!-- 活动卡片网格 -->
+            <div class="activities-grid">
+              <div
+                v-for="activity in group.activities"
+                :key="activity.id"
+                class="activity-card"
+                @click="activity.pushUrl && openUrl(activity.pushUrl)"
+              >
+                <div class="activity-image">
+                  <img
+                    v-if="activity.coverImage"
+                    :src="activity.coverImage"
+                    :alt="activity.title"
+                    @error="($event.target as any).style.display='none'"
+                  />
+                  <div v-else class="image-placeholder">
+                    <el-icon :size="48" color="#D1D5DB"><Picture /></el-icon>
+                  </div>
+                  <div class="activity-overlay">
+                    <div class="view-details">
+                      <span>查看详情</span>
+                      <el-icon :size="16"><ArrowRight /></el-icon>
+                    </div>
+                  </div>
                 </div>
-              </template>
-            </el-image>
-            <div class="activity-year-badge">
-              {{ activity.year }}年
-            </div>
-            <div class="hover-overlay">
-              <el-icon :size="48" color="#fff">
-                <View />
-              </el-icon>
-              <p>点击查看推文</p>
+                <div class="activity-content">
+                  <h3 class="activity-title">{{ activity.title }}</h3>
+                  <div class="activity-meta">
+                    <span class="meta-item">
+                      <el-icon :size="14"><Calendar /></el-icon>
+                      {{ new Date(activity.createTime).toLocaleDateString() }}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 活动信息 -->
-          <div class="activity-content">
-            <h3 class="activity-title">{{ activity.title }}</h3>
-            <p class="activity-description">点击封面查看推文详情</p>
-            
-            <div class="activity-footer">
-              <div class="activity-meta">
-                <el-icon color="var(--color-primary)">
-                  <Calendar />
-                </el-icon>
-                <span>{{ formatDate(activity.createTime) }}</span>
-              </div>
-              
-              <div class="actions" v-if="userStore.isMinister">
-                <el-button 
-                  type="primary" 
-                  size="small" 
-                  @click.stop="handleEdit(activity)"
-                >
-                  <el-icon><Edit /></el-icon>
-                  编辑
-                </el-button>
-                <el-button 
-                  type="danger" 
-                  size="small" 
-                  @click.stop="handleDelete(activity)"
-                >
-                  <el-icon><Delete /></el-icon>
-                  删除
-                </el-button>
-              </div>
-            </div>
+          <!-- 空状态 -->
+          <div v-if="groupedActivities.length === 0 && !loading" class="empty-state">
+            <el-icon :size="64" color="#D1D5DB"><Trophy /></el-icon>
+            <p>暂无活动记录</p>
           </div>
-        </el-card>
+        </div>
       </div>
-
-      <!-- 空状态 -->
-      <el-empty
-        v-if="!loading && activities.length === 0"
-        description="暂无往届活动记录"
-      />
-
-      <!-- 创建/编辑对话框 -->
-      <el-dialog
-        v-model="dialogVisible"
-        :title="isEdit ? '编辑往届活动' : '添加往届活动'"
-        width="600px"
-      >
-        <el-form :model="uploadForm" label-width="100px">
-          <el-form-item label="活动标题" required>
-            <el-input v-model="uploadForm.title" placeholder="请输入活动标题" />
-          </el-form-item>
-          <el-form-item label="活动描述">
-            <el-input
-              v-model="uploadForm.description"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入活动描述"
-            />
-          </el-form-item>
-          <el-form-item label="推文链接" required>
-            <el-input 
-              v-model="uploadForm.articleUrl" 
-              placeholder="请输入推文链接(如微信公众号文章链接)" 
-            />
-          </el-form-item>
-          <el-form-item label="封面图片" required>
-            <el-upload
-              :auto-upload="false"
-              :on-change="handleCoverUpload"
-              :on-remove="handleCoverRemove"
-              :limit="1"
-              :file-list="coverImageFile ? [{ name: coverImageFile.name, url: '' }] : []"
-              accept="image/jpeg,image/png,image/jpg,image/webp"
-              list-type="picture-card"
-            >
-              <el-icon><Plus /></el-icon>
-            </el-upload>
-            <div class="upload-tip">支持 JPG/PNG/WEBP 格式，大小不超过 5MB</div>
-          </el-form-item>
-          <el-form-item label="活动年份" required>
-            <el-input-number
-              v-model="uploadForm.year"
-              :min="2000"
-              :max="2100"
-              style="width: 100%"
-            />
-          </el-form-item>
-          <el-form-item label="活动日期">
-            <el-date-picker
-              v-model="uploadForm.activityDate"
-              type="date"
-              placeholder="选择活动日期"
-              style="width: 100%"
-            />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSave" :loading="loading">
-            {{ isEdit ? '更新' : '保存' }}
-          </el-button>
-        </template>
-      </el-dialog>
     </div>
   </Layout>
 </template>
 
 <style scoped>
-.past-activities-container {
-  padding: var(--spacing-lg);
-  max-width: 1400px;
+.past-activities-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FEF9F6 0%, #FFF5F0 100%);
+}
+
+/* Hero区域 */
+.hero-section {
+  position: relative;
+  padding: 80px 40px 60px;
+  overflow: hidden;
+}
+
+.hero-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  top: -100px;
+  right: 10%;
+}
+
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #FB7185, #FF6B4A);
+  bottom: -50px;
+  left: 5%;
+}
+
+.floating-shapes {
+  position: absolute;
+  inset: 0;
+}
+
+.shape {
+  position: absolute;
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.shape-2 {
+  top: 60%;
+  right: 15%;
+  animation-delay: 2s;
+}
+
+.shape-3 {
+  bottom: 20%;
+  left: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
   margin: 0 auto;
+  text-align: center;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
+.hero-badge {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: var(--spacing-xl);
+  gap: 8px;
+  padding: 8px 20px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 50px;
+  color: #F59E0B;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 24px;
 }
 
-.page-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--color-primary);
-  margin: 0 0 var(--spacing-xs) 0;
+.hero-title {
+  font-size: 48px;
+  font-weight: 800;
+  color: #1F2937;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
 }
 
-.page-subtitle {
-  font-size: 16px;
-  color: var(--color-text-secondary);
-  margin: 0;
+.gradient-text {
+  background: linear-gradient(135deg, #F59E0B, #FF6B4A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.filter-card {
-  margin-bottom: var(--spacing-lg);
+.hero-subtitle {
+  font-size: 18px;
+  color: #6B7280;
+  max-width: 500px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
 }
 
-.year-filters {
+/* 统计 */
+.stats-row {
   display: flex;
-  gap: var(--spacing-sm);
+  justify-content: center;
+  gap: 32px;
   flex-wrap: wrap;
 }
 
-.activities-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-.activity-card {
-  transition: all 0.3s ease;
-  overflow: hidden;
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.activity-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.activity-cover {
-  position: relative;
-  cursor: pointer;
-  overflow: hidden;
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1F2937;
 }
 
-.activity-year-badge {
-  position: absolute;
-  top: var(--spacing-md);
-  right: var(--spacing-md);
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-weight: 600;
+.stat-label {
   font-size: 14px;
-  backdrop-filter: blur(4px);
+  color: #6B7280;
 }
 
-.hover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+/* 筛选器 */
+.filter-section {
+  padding: 0 40px 40px;
+}
+
+.filter-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.filter-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.filter-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid #E5E7EB;
+  background: white;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  border-color: #FF6B4A;
+  color: #FF6B4A;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  color: white;
+  border-color: transparent;
+}
+
+/* 时间轴 */
+.timeline-section {
+  padding: 0 40px 60px;
+}
+
+.timeline-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.year-group {
+  margin-bottom: 60px;
+}
+
+.year-marker {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.year-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 16px 28px;
+  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.3);
+}
+
+.year-text {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.year-count {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.year-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, #FF6B4A, transparent);
+}
+
+/* 活动网格 */
+.activities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.activity-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.activity-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.activity-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.activity-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.activity-card:hover .activity-image img {
+  transform: scale(1.1);
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm);
+  background: #F3F4F6;
+}
+
+.activity-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 20px;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.activity-cover:hover .hover-overlay {
+.activity-card:hover .activity-overlay {
   opacity: 1;
 }
 
-.hover-overlay p {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.image-error {
+.view-details {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 240px;
-  background: var(--color-bg-light);
-}
-
-.image-error p {
-  color: var(--color-text-light);
-  margin-top: var(--spacing-sm);
+  gap: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .activity-content {
-  padding: var(--spacing-md);
+  padding: 20px;
 }
 
 .activity-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-sm) 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.activity-description {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 0 0 var(--spacing-md) 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 44px;
-}
-
-.activity-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--color-border);
+  color: #1F2937;
+  margin: 0 0 12px;
+  line-height: 1.4;
 }
 
 .activity-meta {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: 14px;
-  color: var(--color-text-light);
+  gap: 16px;
 }
 
-.actions {
+.meta-item {
   display: flex;
-  gap: var(--spacing-xs);
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #9CA3AF;
 }
 
-.upload-tip {
-  font-size: 12px;
-  color: var(--color-text-secondary);
-  margin-top: var(--spacing-xs);
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 80px 40px;
+  color: #9CA3AF;
+}
+
+.empty-state p {
+  margin-top: 16px;
+  font-size: 16px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 60px 20px 40px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .filter-section,
+  .timeline-section {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .filter-group {
+    flex-wrap: wrap;
+  }
+
+  .activities-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

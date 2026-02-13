@@ -43,12 +43,19 @@ Thumbs.db
 
 ### 数据库相关 ###
 *.sql
+/database/
+/database/*.sql
+/database/PASSWORD_README.md
 
 ### 环境配置文件 ###
 .env
+/deploy/.env
 application-*.yml
 application-*.yaml
 application-*.properties
+# 保留配置模板
+!.env.example
+!/deploy/.env.example
 
 ### 编译后的文件 ###
 *.class
@@ -84,7 +91,6 @@ node_modules/
 ### 系统文件 ###
 .DS_Store
 Desktop.ini
-/.env.example
 /uploads/materials/3063db42-0945-4782-963f-f782bbd2a90f.pdf
 /uploads/activity-images/2025/10/09/9559c0d1-768e-41bd-8718-62bfd0f93a2e.png
 /uploads/187691bf-595d-49a3-b828-fb0cd5aae092.png
@@ -129,3 +135,10 @@ Desktop.ini
 /RAG_QUICK_START.md
 /RAG功能实现总结.md
 /知识库内容模板.md
+
+### tare相关文件夹 ###
+**/trae/
+**/.trae
+**/trae*/
+*trae/
+trae/**

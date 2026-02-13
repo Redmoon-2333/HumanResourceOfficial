@@ -47,13 +47,7 @@ public class AuthController {
             
             // 执行登录，获取包含JWT令牌的结果
             Map<String, Object> loginResult = authService.login(loginRequest);
-            
-            // 添加调试日志
-            System.out.println("Login result: " + loginResult);
-            ApiResponse<Map<String, Object>> response = ApiResponse.success("登录成功", loginResult);
-            System.out.println("Response: " + response);
-            
-            return response;
+            return ApiResponse.success("登录成功", loginResult);
             
         } catch (BusinessException e) {
             System.err.println("Business exception: " + e.getMessage());

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown渲染测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f4;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .message-bubble {
+            background: white;
+            border: 1px solid #e7e5e4;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        
+        .message-text h1 {
+            color: #FF6B4A;
+            margin: 16px 0 8px;
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        
+        .message-text h2 {
+            color: #F59E0B;
+            margin: 14px 0 6px;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        
+        .message-text strong {
+            color: #1C1917;
+            font-weight: 600;
+        }
+        
+        .message-text em {
+            color: #78716C;
+            font-style: italic;
+        }
+        
+        .message-text ul, .message-text ol {
+            padding-left: 24px;
+            margin: 12px 0;
+        }
+        
+        .message-text li {
+            position: relative;
+            padding-left: 24px;
+            margin: 8px 0;
+        }
+        
+        .message-text li::before {
+            content: '•';
+            color: #FF6B4A;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        
+        .markdown-heading {
+            color: #1C1917;
+            border-left: 4px solid #FF6B4A;
+            padding-left: 12px;
+            margin: 12px 0;
+        }
+        
+        .test-title {
+            color: #1C1917;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .test-description {
+            color: #78716C;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">Markdown渲染修复测试</h1>
+        <p class="test-description">测试AI生成内容的Markdown渲染效果</p>
+        
+        <div class="message-bubble">
+            <div class="message-text" id="rendered-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // 配置 marked
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            async: false
+        });
+
+        // 测试内容（模拟AI生成的团建活动策划内容）
+        const testContent = `
+# 团建活动策划方案
+
+## 活动目标
+本次团建活动旨在：
+- **增强团队凝聚力** ✅ 提升成员间的相互了解和信任
+- **放松身心压力** ❌ 缓解日常工作学习的紧张情绪  
+- **激发创新思维** ✅ 通过互动游戏启发新思路
+
+## 活动流程安排
+
+### 第一阶段：集合与破冰 (14:00-14:30)
+——·✨ 集合签到，发放活动物资
+——·✨ 破冰小游戏：名字接龙
+
+### 第二阶段：团队挑战 (14:30-16:00)  
+——·✨ 分组进行户外拓展训练
+——·✨ 团队协作完成指定任务
+
+### 第三阶段：自由交流 (16:00-17:00)
+——·✨ 茶歇时间，自由交谈
+——·✨ 分享心得体会
+
+## 注意事项
+❌ 活动期间请勿擅自离队
+❌ 注意人身安全，遵守活动规则
+✅ 保持通讯畅通，及时汇报情况
+`;
+
+        function renderMarkdown(text) {
+            if (!text) return '';
+            
+            try {
+                // 预处理特殊符号和格式
+                let processedText = text
+                    // 处理常见的项目符号替代方案
+                    .replace(/✅/g, '- [x]')  // 将✅转换为完成的任务列表项
+                    .replace(/❌/g, '- [ ]')   // 将❌转换为未完成的任务列表项
+                    .replace(/——·✨/g, '**·**') // 处理装饰性符号
+                    .replace(/——/g, '-')       // 处理破折号列表
+                    
+                // 处理自定义的强调符号
+                processedText = processedText
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    
+                // 处理标题格式
+                processedText = processedText
+                    .replace(/^(#{1,6})\s+(.*?)(?=\n|$)/gm, function(match, hashes, content) {
+                        const level = hashes.length;
+                        return '<h' + level + ' class="markdown-heading">' + content + '</h' + level + '>';
+                    });
+                
+                const rawHtml = marked.parse(processedText);
+                
+                // DOMPurify配置
+                return DOMPurify.sanitize(rawHtml, {
+                    ADD_ATTR: ['target', 'class'],
+                    ADD_TAGS: ['iframe', 'mark', 'kbd', 'samp'],
+                    FORBID_TAGS: ['script', 'object', 'embed', 'form'],
+                    FORBID_ATTR: ['onerror', 'onload', 'onclick']
+                });
+            } catch (error) {
+                console.warn('Markdown渲染失败:', error);
+                // 降级处理
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\\n/g, '<br>')
+                    .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
+                    .replace(/\\*(.*?)\\*/g, '<em>$1</em>');
+            }
+        }
+
+        // 渲染内容
+        document.getElementById('rendered-content').innerHTML = renderMarkdown(testContent);
+    </script>
+</body>
+</html>

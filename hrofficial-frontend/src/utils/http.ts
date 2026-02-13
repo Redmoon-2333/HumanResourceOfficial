@@ -1,7 +1,7 @@
 import type { ApiResponse } from '@/types'
 
 // 开发环境使用代理，生产环境使用实际地址
-const API_BASE_URL = import.meta.env.PROD 
+const API_BASE_URL = import.meta.env.PROD
   ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
   : '' // 开发环境使用相对路径，通过Vite代理转发
 
@@ -40,7 +40,7 @@ class HttpClient {
     // 为长时间请求添加超时控制（AI生成接口）
     const isAIRequest = url.includes('/api/ai/')
     const controller = new AbortController()
-    const timeoutId = isAIRequest 
+    const timeoutId = isAIRequest
       ? setTimeout(() => controller.abort(), 180000) // AI请求3分钟超时
       : setTimeout(() => controller.abort(), 30000)  // 普通请求30秒超时
 
@@ -60,7 +60,7 @@ class HttpClient {
           const wasLoggedIn = !!localStorage.getItem('token')
           localStorage.removeItem('token')
           localStorage.removeItem('userInfo')
-          
+
           if (wasLoggedIn) {
             // 如果之前是登录状态，token过期后自动退出
             window.location.href = '/login?expired=1'
@@ -87,8 +87,13 @@ class HttpClient {
     }
   }
 
-  async get<T>(url: string): Promise<ApiResponse<T>> {
-    return this.request<T>(url, { method: 'GET' })
+  async get<T>(url: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+    let fullUrl = url
+    if (params) {
+      const queryString = new URLSearchParams(params).toString()
+      fullUrl = `${url}?${queryString}`
+    }
+    return this.request<T>(fullUrl, { method: 'GET' })
   }
 
   async post<T>(url: string, body?: any): Promise<ApiResponse<T>> {
@@ -110,9 +115,16 @@ class HttpClient {
   }
 
   // 上传文件
-  async upload<T>(url: string, file: File, onProgress?: (percent: number) => void): Promise<ApiResponse<T>> {
-    const formData = new FormData()
-    formData.append('file', file)
+  async upload<T>(
+    url: string,
+    file: File,
+    onProgress?: (percent: number) => void,
+    customFormData?: FormData
+  ): Promise<ApiResponse<T>> {
+    const formData = customFormData || new FormData()
+    if (!customFormData) {
+      formData.append('file', file)
+    }
 
     const token = this.getToken()
     const headers: HeadersInit = {}
@@ -155,12 +167,26 @@ class HttpClient {
   }
 
   // 流式请求
-  async stream(url: string, body?: any, onChunk?: (chunk: string) => void): Promise<string> {
+  async stream(
+    url: string,
+    body?: any,
+    onChunk?: (chunk: string) => void,
+    externalSignal?: AbortSignal
+  ): Promise<string> {
     const fullUrl = `${this.baseURL}${url}`
     const headers = this.getHeaders()
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 300000) // 5分钟超时
+
+    // 如果外部提供了signal，监听其abort事件
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        controller.abort()
+      } else {
+        externalSignal.addEventListener('abort', () => controller.abort())
+      }
+    }
 
     try {
       const response = await fetch(fullUrl, {
@@ -195,23 +221,30 @@ class HttpClient {
           if (value) {
             const text = decoder.decode(value, { stream: true })
             buffer += text
-            
+
             // 解析SSE格式：data: 开头的行
             const lines = buffer.split('\n')
             buffer = lines[lines.length - 1] || '' // 保留最后一个可能不完整的行
-            
+
             for (let i = 0; i < lines.length - 1; i++) {
-              const line = lines[i]?.trim() || ''
-              
+              const line = lines[i] || ''
+
               // 跳过空行和注释
-              if (!line || line.startsWith(':')) {
+              if (!line.trim() || line.trim().startsWith(':')) {
                 continue
               }
-              
+
               // 解析 data: 格式
               if (line.startsWith('data:')) {
-                const content = line.substring(5) // 去掉 "data:" 前缀，保留空白符
-                if (content) {
+                // 不使用trim，保留原始内容（包括换行符）
+                const content = line.substring(5)
+                // 空内容表示换行符
+                if (content === '' || content === '\r') {
+                  fullContent += '\n'
+                  if (onChunk) {
+                    onChunk('\n')
+                  }
+                } else {
                   fullContent += content
                   if (onChunk) {
                     onChunk(content)
@@ -224,10 +257,15 @@ class HttpClient {
 
         // 处理buffer中剩余的数据
         if (buffer.trim()) {
-          const line = buffer.trim()
+          const line = buffer
           if (line.startsWith('data:')) {
-            const content = line.substring(5) // 保留空白符
-            if (content) {
+            const content = line.substring(5)
+            if (content === '' || content === '\r') {
+              fullContent += '\n'
+              if (onChunk) {
+                onChunk('\n')
+              }
+            } else if (content) {
               fullContent += content
               if (onChunk) {
                 onChunk(content)
@@ -239,10 +277,15 @@ class HttpClient {
         // 解码最后的数据
         const finalChunk = decoder.decode()
         if (finalChunk) {
-          const line = finalChunk.trim()
+          const line = finalChunk
           if (line.startsWith('data:')) {
-            const content = line.substring(5) // 保留空白符
-            if (content) {
+            const content = line.substring(5)
+            if (content === '' || content === '\r') {
+              fullContent += '\n'
+              if (onChunk) {
+                onChunk('\n')
+              }
+            } else if (content) {
               fullContent += content
               if (onChunk) {
                 onChunk(content)
@@ -263,6 +306,15 @@ class HttpClient {
       return fullContent
     } finally {
       clearTimeout(timeoutId)
+    }
+  }
+
+  // 创建可中断的流式请求控制器
+  createStreamRequest(): { signal: AbortSignal; abort: () => void } {
+    const controller = new AbortController()
+    return {
+      signal: controller.signal,
+      abort: () => controller.abort()
     }
   }
 }

@@ -1,0 +1,52 @@
+# ============================================================
+# 人力资源中心官网 - 开发环境配置
+# ============================================================
+
+spring:
+  # 数据源配置 - 开发环境
+  # Warning: 数据库密码必须通过环境变量或本地配置文件设置，禁止硬编码
+  datasource:
+    url: jdbc:mysql://localhost:3306/hrofficial?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    
+  # Redis配置 - 开发环境
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+
+  # JPA配置 - 开发环境显示SQL
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# 日志配置 - 开发环境详细日志
+logging:
+  level:
+    root: INFO
+    com.redmoon2333: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# 阿里云OSS配置 - 开发环境
+# Warning: 阿里云AccessKey必须通过环境变量设置，禁止硬编码
+aliyun:
+  oss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    accessKeyId: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+    accessKeySecret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    bucketName: ${ALIYUN_OSS_BUCKET_NAME:}
+
+# 开发环境服务器配置
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: always
