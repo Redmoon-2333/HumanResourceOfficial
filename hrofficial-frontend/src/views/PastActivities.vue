@@ -226,7 +226,10 @@ const handleFileChange = async (event: Event) => {
     })
     if (res.code === 200 && res.data) {
       // 拼接完整URL
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+      // Why: 生产环境使用相对路径，开发环境使用环境变量或默认值
+      const baseUrl = import.meta.env.PROD
+        ? '' // 生产环境使用相对路径，Nginx会代理到后端
+        : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
       form.value.coverImage = res.data.startsWith('http')
         ? res.data
         : `${baseUrl}${res.data.startsWith('/') ? '' : '/'}${res.data}`

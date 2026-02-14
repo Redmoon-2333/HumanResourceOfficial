@@ -263,4 +263,33 @@ public class DailyImageService {
         dailyImageMapper.deleteById(imageId);
         logger.info("图片记录删除成功，ID: {}", imageId);
     }
+
+    /**
+     * 仅删除本地文件，不删除数据库记录
+     * Why: 用于编辑图片时替换文件，保留原记录只更新URL
+     *
+     * @param imageId 图片ID
+     */
+    public void deleteImageFileOnly(Integer imageId) {
+        logger.info("仅删除图片文件，不删除记录，ID: {}", imageId);
+
+        // 1. 获取图片信息
+        DailyImage image = dailyImageMapper.findById(imageId);
+        if (image == null) {
+            logger.warn("图片不存在，ID: {}", imageId);
+            return;
+        }
+
+        // 2. 仅删除本地文件
+        String imageUrl = image.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                localFileUtil.deleteFile(imageUrl);
+                logger.info("本地文件删除成功: {}", imageUrl);
+            } catch (Exception e) {
+                logger.warn("删除本地文件失败: {}", imageUrl, e);
+                // 不抛出异常，继续执行
+            }
+        }
+    }
 }

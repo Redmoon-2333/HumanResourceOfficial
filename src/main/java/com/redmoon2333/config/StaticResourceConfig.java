@@ -25,6 +25,9 @@ public class StaticResourceConfig implements WebMvcConfigurer {
     @Value("${local.file.upload.path:uploads}")
     private String uploadPath;
     
+    // Docker环境中的固定上传路径
+    private static final String DOCKER_UPLOAD_PATH = "/app/uploads";
+    
     @PostConstruct
     public void init() {
         // 确保上传目录存在
@@ -36,7 +39,15 @@ public class StaticResourceConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 配置静态资源处理器
         // 将 /uploads/** 的请求映射到本地上传目录
+        // Why: 优先使用Docker环境中的固定路径，确保在容器中能正确访问
         String absoluteUploadPath = getAbsoluteUploadPath();
+        
+        // 检查Docker环境路径是否存在，如果存在则优先使用
+        File dockerUploadDir = new File(DOCKER_UPLOAD_PATH);
+        if (dockerUploadDir.exists() && dockerUploadDir.isDirectory()) {
+            absoluteUploadPath = DOCKER_UPLOAD_PATH;
+            logger.info("检测到Docker环境，使用固定上传路径: {}", DOCKER_UPLOAD_PATH);
+        }
         
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + absoluteUploadPath + File.separator)

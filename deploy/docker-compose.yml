@@ -1,22 +1,93 @@
 # ============================================================
-# 人力资源中心官网 - Docker Compose 配置
-# 包含：后端服务、MySQL、Redis Stack
+# 人力资源中心官网 - Docker Compose 配置 (2G内存优化版)
+# 包含：后端服务、前端服务、MySQL、Redis Stack
 # ============================================================
 
 version: '3.8'
 
 services:
   # ===================
+  # MySQL 数据库
+  # ===================
+  mysql:
+    image: mysql:8.0.40-debian
+    container_name: hrofficial-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-hrofficial}
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init/init_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      # 内存优化配置（适合2G服务器）
+      - --max_connections=50
+      - --innodb_buffer_pool_size=128M
+      - --innodb_log_buffer_size=8M
+      - --innodb_flush_log_at_trx_commit=2
+      - --query_cache_size=16M
+      - --tmp_table_size=16M
+      - --max_heap_table_size=16M
+      - --key_buffer_size=16M
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    networks:
+      - hrofficial-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ===================
+  # Redis Stack (支持向量存储)
+  # ===================
+  redis:
+    image: redis/redis-stack-server:7.4.0-v0
+    container_name: hrofficial-redis
+    restart: unless-stopped
+    environment:
+      - REDIS_ARGS=--maxmemory 192mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - hrofficial-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # ===================
   # 后端服务
   # ===================
   backend:
     build:
       context: ..
-      dockerfile: deploy/Dockerfile
+      dockerfile: deploy/Dockerfile.backend
     container_name: hrofficial-backend
     restart: unless-stopped
-    ports:
-      - "${SERVER_PORT:-8080}:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - TZ=Asia/Shanghai
@@ -33,16 +104,17 @@ services:
       # JWT配置
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION:-604800000}
-      # 阿里云OSS配置
+      # 阿里云配置
+      - ALIYUN_DASHSCOPE_API_KEY=${ALIYUN_DASHSCOPE_API_KEY}
       - ALIYUN_OSS_ACCESS_KEY_ID=${ALIYUN_OSS_ACCESS_KEY_ID:-}
       - ALIYUN_OSS_ACCESS_KEY_SECRET=${ALIYUN_OSS_ACCESS_KEY_SECRET:-}
       - ALIYUN_OSS_BUCKET_NAME=${ALIYUN_OSS_BUCKET_NAME:-}
-      # 通义千问API
-      - aliQwen_api=${ALIWEN_API_KEY}
     volumes:
       - backend-logs:/app/logs
       - backend-uploads:/app/uploads
       - backend-knowledge:/app/knowledge-base
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -51,64 +123,48 @@ services:
     networks:
       - hrofficial-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 60s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 512M
 
   # ===================
-  # MySQL 数据库
+  # 前端服务
   # ===================
-  mysql:
-    image: mysql:8.0
-    container_name: hrofficial-mysql
+  frontend:
+    build:
+      context: ../hrofficial-frontend
+      dockerfile: ../deploy/Dockerfile.frontend
+    container_name: hrofficial-frontend
     restart: unless-stopped
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME:-hrofficial}
       - TZ=Asia/Shanghai
-    volumes:
-      - mysql-data:/var/lib/mysql
-      - ./init/init_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --default-authentication-plugin=mysql_native_password
-      - --max_connections=200
-      - --innodb_buffer_pool_size=256M
-    networks:
-      - hrofficial-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # ===================
-  # Redis Stack (支持向量存储)
-  # ===================
-  redis:
-    image: redis/redis-stack:latest
-    container_name: hrofficial-redis
-    restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6379}:6379"
-      - "${REDIS_INSIGHT_PORT:-8001}:8001"
-    environment:
-      - REDIS_ARGS=--maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis-data:/data
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
     networks:
       - hrofficial-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
       timeout: 5s
-      retries: 5
+      retries: 3
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 32M
 
 # ===================
 # 网络配置

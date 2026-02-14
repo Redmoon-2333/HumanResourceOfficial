@@ -6,6 +6,7 @@ import { getActivity, getActivityImages, uploadActivityImage, deleteActivityImag
 import type { Activity, ActivityImage, ActivityResponse, ActivityImageDTO } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getFullImageUrl, getFullImageUrlList } from '@/utils/image'
 import { 
   ArrowLeft, 
   Upload, 
@@ -328,8 +329,8 @@ onMounted(() => {
         <div v-if="images.length > 0" class="images-grid">
           <div v-for="image in images" :key="image.id" class="image-card">
             <el-image
-              :src="image.imageUrl"
-              :preview-src-list="images.map(img => img.imageUrl)"
+              :src="getFullImageUrl(image.imageUrl)"
+              :preview-src-list="getFullImageUrlList(images.map(img => img.imageUrl))"
               fit="cover"
               class="activity-image"
             />

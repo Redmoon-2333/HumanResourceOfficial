@@ -358,10 +358,13 @@ public class LocalFileUtil {
 
     /**
      * 构建文件访问URL
+     * Why: 生产环境返回完整URL，避免前端端口不一致导致的404
      */
     private String buildAccessUrl(String relativePath) {
         String normalizedPath = relativePath.replace(File.separator, "/");
-        return "/uploads/" + normalizedPath;
+        // 移除末尾的斜杠，避免双斜杠
+        String baseUrl = accessBaseUrl.endsWith("/") ? accessBaseUrl.substring(0, accessBaseUrl.length() - 1) : accessBaseUrl;
+        return baseUrl + "/uploads/" + normalizedPath;
     }
 
     // ==================== 文件删除 ====================

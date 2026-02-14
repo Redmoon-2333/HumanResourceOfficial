@@ -120,14 +120,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         String method = request.getMethod();
-        
+
         // 对于以下路径不进行JWT验证
-        return path.equals("/api/auth/login") || 
-               path.equals("/api/auth/register") || 
+        return path.equals("/api/auth/login") ||
+               path.equals("/api/auth/register") ||
                path.equals("/api/auth/check-username") ||
                path.startsWith("/api/public/") ||
                path.equals("/") ||
                path.startsWith("/static/") ||
+               path.startsWith("/uploads/") ||  // 上传的文件不需要JWT验证
                path.equals("/favicon.ico") ||
                // 活动查询接口（GET方法）不需要JWT验证
                ("GET".equals(method) && path.startsWith("/api/activities")) ||
@@ -135,6 +136,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                ("GET".equals(method) && path.startsWith("/api/past-activities")) ||
                // 用户公开信息查询接口不需要JWT验证
                path.equals("/api/users/alumni") ||
-               path.startsWith("/api/users/search/name");
+               path.startsWith("/api/users/search/name") ||
+               // 日常图片查询接口（GET方法）不需要JWT验证 - "我们的日常"板块所有人可见
+               ("GET".equals(method) && path.equals("/api/daily-images"));
     }
 }

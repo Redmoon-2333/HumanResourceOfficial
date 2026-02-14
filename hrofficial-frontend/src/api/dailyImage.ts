@@ -97,11 +97,20 @@ export const uploadImageByType = (
 }
 
 /**
- * 删除图片及本地文件
+ * 删除图片及本地文件（会删除数据库记录）
  * @param id 图片ID
  */
 export const deleteDailyImageWithFile = (id: number): Promise<ApiResponse<void>> => {
   return http.delete(`/api/daily-images/${id}/with-file`)
+}
+
+/**
+ * 仅删除图片文件，不删除数据库记录
+ * Why: 用于编辑图片时替换文件，保留原记录只更新URL
+ * @param id 图片ID
+ */
+export const deleteDailyImageFileOnly = (id: number): Promise<ApiResponse<void>> => {
+  return http.delete(`/api/daily-images/${id}/file-only`)
 }
 
 /**

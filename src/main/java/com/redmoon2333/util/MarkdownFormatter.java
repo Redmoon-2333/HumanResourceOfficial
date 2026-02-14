@@ -16,10 +16,6 @@ public class MarkdownFormatter {
     /**
      * 清理并格式化AI输出的Markdown内容
      *
-     * 主要修复问题：
-     * 1. 列表项内使用"-"分隔多个主题的问题
-     * 2. 将"-"分隔的内容拆分为独立的列表项
-     *
      * @param content AI原始输出
      * @return 格式化后的内容
      */
@@ -30,162 +26,15 @@ public class MarkdownFormatter {
 
         String original = content;
 
-        // 修复：列表项内使用" - "（空格-空格）分隔多个主题的问题
-        // 例如：- **活动组织**：xxx - **团队协作**：xxx
-        // 修复为：
-        // - **活动组织**：xxx
-        //
-        // - **团队协作**：xxx
-        content = fixListItemSeparators(content);
-
-        // 修复：列表项内使用"-"（无空格）分隔的问题
-        content = fixListItemSeparatorsWithoutSpaces(content);
-
-        // 修复：多个连续的"-"导致的问题
-        content = fixConsecutiveDashes(content);
+        // 只修复明确的格式问题，避免过度处理
+        // 1. 将4个或以上的"-"替换为标准的分割线"---"
+        content = content.replaceAll("-{4,}", "---");
 
         if (!original.equals(content)) {
             logger.debug("Markdown格式已清理");
         }
 
         return content;
-    }
-
-    /**
-     * 修复列表项内使用" - "分隔的问题
-     *
-     * 匹配模式：以"- "开头的一行中包含" - "（用于分隔主题）
-     * 注意：要排除合法的列表开头"- "
-     */
-    private static String fixListItemSeparators(String content) {
-        StringBuilder result = new StringBuilder();
-        String[] lines = content.split("\n");
-
-        for (String line : lines) {
-            // 检查是否是列表项行（以"- "开头）
-            if (line.trim().startsWith("- ")) {
-                String fixedLine = fixSingleListItem(line);
-                result.append(fixedLine);
-            } else {
-                result.append(line);
-            }
-            result.append("\n");
-        }
-
-        // 移除末尾多余的换行
-        if (result.length() > 0 && result.charAt(result.length() - 1) == '\n') {
-            result.setLength(result.length() - 1);
-        }
-
-        return result.toString();
-    }
-
-    /**
-     * 修复单行列表项内的分隔符问题
-     *
-     * 将：- **活动组织**：xxx - **团队协作**：xxx
-     * 改为：- **活动组织**：xxx\n\n- **团队协作**：xxx
-     */
-    private static String fixSingleListItem(String line) {
-        // 找到第一个"- "（列表标记）之后的内容
-        int firstDashIndex = line.indexOf("- ");
-        if (firstDashIndex == -1) {
-            return line;
-        }
-
-        String beforeFirstDash = line.substring(0, firstDashIndex);
-        String afterFirstDash = line.substring(firstDashIndex + 2); // 跳过"- "
-
-        // 在剩余内容中查找" - "（用于分隔主题的）
-        // 需要确保这个"-"不是列表的一部分（前面不是行首）
-        StringBuilder result = new StringBuilder();
-        result.append(beforeFirstDash).append("- ");
-
-        String remaining = afterFirstDash;
-        boolean firstPart = true;
-
-        while (true) {
-            int separatorIndex = findSeparatorIndex(remaining);
-            if (separatorIndex == -1) {
-                // 没有更多分隔符了
-                if (!firstPart) {
-                    result.append("\n").append(beforeFirstDash).append("- ");
-                }
-                result.append(remaining);
-                break;
-            }
-
-            // 提取分隔符前的内容
-            String part = remaining.substring(0, separatorIndex).trim();
-            if (!firstPart) {
-                result.append("\n").append(beforeFirstDash).append("- ");
-            }
-            result.append(part);
-
-            // 继续处理分隔符后的内容
-            remaining = remaining.substring(separatorIndex + 3).trim(); // 跳过" - "
-            firstPart = false;
-        }
-
-        return result.toString();
-    }
-
-    /**
-     * 查找分隔符" - "的位置
-     * 需要确保这个"-"不是代码块、链接或其他特殊语法的一部分
-     */
-    private static int findSeparatorIndex(String text) {
-        int index = 0;
-        while (true) {
-            int found = text.indexOf(" - ", index);
-            if (found == -1) {
-                return -1;
-            }
-
-            // 检查这个"-"是否在加粗文本内（**...**）
-            if (isInsideBold(text, found)) {
-                index = found + 1;
-                continue;
-            }
-
-            // 检查这个"-"前面是否是列表项的开头模式
-            // 例如："xx - **标题" 这种是分隔符
-            // 但 "- **标题" 这种是列表开头，不应该在这里出现
-            return found;
-        }
-    }
-
-    /**
-     * 检查指定位置是否在加粗文本内
-     */
-    private static boolean isInsideBold(String text, int position) {
-        int boldCount = 0;
-        for (int i = 0; i < position; i++) {
-            if (i + 1 < text.length() && text.charAt(i) == '*' && text.charAt(i + 1) == '*') {
-                boldCount++;
-                i++; // 跳过下一个*
-            }
-        }
-        // 如果boldCount是奇数，说明在加粗文本内
-        return boldCount % 2 == 1;
-    }
-
-    /**
-     * 修复列表项内使用"-"（无空格）分隔的问题
-     */
-    private static String fixListItemSeparatorsWithoutSpaces(String content) {
-        // 这种情况比较少见，先简单处理
-        // 例如：- 活动组织：xxx-团队协作：xxx
-        // 这种格式不太常见，暂时不处理复杂逻辑
-        return content;
-    }
-
-    /**
-     * 修复连续的"---"问题
-     */
-    private static String fixConsecutiveDashes(String content) {
-        // 将4个或以上的"-"替换为标准的分割线"---"
-        return content.replaceAll("-{4,}", "---");
     }
 
     /**

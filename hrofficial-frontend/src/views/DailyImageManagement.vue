@@ -48,8 +48,8 @@
           <el-table-column label="图片预览" width="120">
             <template #default="{ row }">
               <el-image
-                :src="row.imageUrl"
-                :preview-src-list="[row.imageUrl]"
+                :src="getFullImageUrl(row.imageUrl)"
+                :preview-src-list="getFullImageUrlList([row.imageUrl])"
                 fit="cover"
                 style="width: 80px; height: 60px; border-radius: 4px;"
                 :preview-teleported="true"
@@ -130,7 +130,7 @@
             >
               <!-- 编辑模式：显示当前图片或新上传的预览 -->
               <div v-if="editingImage && !uploadPreview" class="upload-preview current-image">
-                <img :src="form.imageUrl" alt="当前图片" />
+                <img :src="getFullImageUrl(form.imageUrl)" alt="当前图片" />
                 <div class="upload-overlay">
                   <el-icon><Upload /></el-icon>
                   <span>点击上传新图片替换</span>
@@ -267,8 +267,10 @@ import {
   uploadDailyImage,
   uploadDailyImageFile,
   deleteDailyImageWithFile,
+  deleteDailyImageFileOnly,
   type DailyImage
 } from '@/api/dailyImage'
+import { getFullImageUrl, getFullImageUrlList } from '@/utils/image'
 
 // 状态管理
 const loading = ref(false)
@@ -436,9 +438,11 @@ const submitForm = async () => {
         }
 
         // 2. 删除旧图片文件（只删文件，不删记录）
+        // Why: 使用 deleteDailyImageFileOnly 而不是 deleteDailyImageWithFile
+        // deleteDailyImageWithFile 会删除数据库记录，导致后续 updateImage 失败
         if (editingImage.value.imageUrl) {
           try {
-            await deleteDailyImageWithFile(editingImage.value.imageId)
+            await deleteDailyImageFileOnly(editingImage.value.imageId)
           } catch (e) {
             console.warn('删除旧图片文件失败:', e)
             // 继续执行，不阻断流程
