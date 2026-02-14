@@ -51,12 +51,49 @@ export const uploadDailyImage = (
     formData.append('description', description)
   }
 
-  return http.upload<DailyImage>('/api/daily-images/upload', file, onProgress, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    data: formData
-  })
+  return http.upload<DailyImage>('/api/daily-images/upload', file, onProgress, formData)
+}
+
+/**
+ * 仅上传图片文件，不创建数据库记录
+ * 用于编辑图片时替换文件
+ * @param file 图片文件
+ * @param onProgress 上传进度回调
+ * @returns 上传后的图片URL
+ */
+export const uploadDailyImageFile = (
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<ApiResponse<string>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return http.upload<string>('/api/daily-images/upload-file', file, onProgress, formData)
+}
+
+/**
+ * 图片类型
+ */
+export type ImageType = 'daily' | 'activity' | 'avatar'
+
+/**
+ * 按类型上传图片文件
+ * 支持不同模块的图片上传到对应目录
+ * @param file 图片文件
+ * @param type 图片类型 (daily-我们的日常, activity-活动照片, avatar-用户头像)
+ * @param onProgress 上传进度回调
+ * @returns 上传后的图片URL
+ */
+export const uploadImageByType = (
+  file: File,
+  type: ImageType,
+  onProgress?: (percent: number) => void
+): Promise<ApiResponse<string>> => {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type)
+
+  return http.upload<string>('/api/daily-images/upload-by-type', file, onProgress, formData)
 }
 
 /**

@@ -41,6 +41,7 @@ public class UserService {
     /**
      * 获取往届部员信息
      * 从所有用户的roleHistory中提取出任职经历，然后把同一年的人放到一起
+     * 同一人有多重身份时，只算作1位成员
      * 
      * @return 按年份分组的部员信息列表
      */
@@ -48,11 +49,9 @@ public class UserService {
         try {
             logger.info("开始获取往届部员信息");
             
-            // 获取所有用户
             List<User> allUsers = getAllUsers();
             logger.debug("共获取到 {} 个用户", allUsers.size());
             
-            // 记录所有用户信息用于调试
             if (logger.isDebugEnabled()) {
                 logger.debug("获取到的所有用户信息:");
                 for (User user : allUsers) {
@@ -61,13 +60,11 @@ public class UserService {
                 }
             }
             
-            // 用于存储按年份分组的部员信息
             Map<Integer, List<AlumniMember>> alumniMap = new HashMap<>();
+            Set<String> allUniqueNames = new HashSet<>();
             
-            // 正则表达式匹配"年份+角色"的格式，例如"2024级部长"
             Pattern rolePattern = Pattern.compile("(\\d{4})级(.+)");
             
-            // 遍历所有用户，解析他们的角色历史
             int memberCount = 0;
             for (User user : allUsers) {
                 String roleHistory = user.getRoleHistory();
@@ -78,36 +75,30 @@ public class UserService {
                     continue;
                 }
                 
-                // 尝试解析JSON数组格式
                 List<String> roleEntries = parseRoleHistory(roleHistory);
                 logger.debug("用户 {} 解析出 {} 个角色条目", user.getUsername(), roleEntries.size());
                 
-                // 处理每个角色条目
                 for (String roleEntry : roleEntries) {
                     roleEntry = roleEntry.trim();
                     if (roleEntry.isEmpty()) continue;
                     
                     logger.debug("处理角色条目: {}", roleEntry);
                     
-                    // 匹配"年份+角色"的格式，例如"2024级部长"
                     Matcher matcher = rolePattern.matcher(roleEntry);
                     
                     if (matcher.matches()) {
                         try {
-                            // 提取年份和角色
                             Integer year = Integer.valueOf(matcher.group(1));
                             String roleName = matcher.group(2).trim();
                             
-                            // 清理角色名中可能残留的JSON字符
                             roleName = roleName.replace("[", "").replace("]", "").replace("\"", "").replace("'", "").trim();
                             
                             logger.debug("解析出年份: {}, 角色: {}", year, roleName);
                             
-                            // 创建部员信息
                             AlumniMember member = new AlumniMember(user.getName(), roleName);
                             
-                            // 将部员信息添加到对应年份的列表中
                             alumniMap.computeIfAbsent(year, k -> new ArrayList<>()).add(member);
+                            allUniqueNames.add(user.getName());
                             memberCount++;
                             
                             logger.debug("添加部员信息: 用户={}, 年份={}, 角色={}", user.getName(), year, roleName);
@@ -122,9 +113,8 @@ public class UserService {
                 }
             }
             
-            logger.info("共处理 {} 个部员信息，涉及 {} 个年份", memberCount, alumniMap.size());
+            logger.info("共处理 {} 个身份记录，涉及 {} 个年份，唯一成员 {} 人", memberCount, alumniMap.size(), allUniqueNames.size());
             
-            // 记录年份分组信息用于调试
             if (logger.isDebugEnabled()) {
                 logger.debug("年份分组信息:");
                 for (Map.Entry<Integer, List<AlumniMember>> entry : alumniMap.entrySet()) {
@@ -135,23 +125,27 @@ public class UserService {
                 }
             }
             
-            // 将Map转换为List，并按年份降序排序
             List<AlumniResponse> result = new ArrayList<>();
             List<Integer> sortedYears = new ArrayList<>(alumniMap.keySet());
             Collections.sort(sortedYears, Collections.reverseOrder());
             
             for (Integer year : sortedYears) {
-                AlumniResponse response = new AlumniResponse(year, alumniMap.get(year));
+                List<AlumniMember> yearMembers = alumniMap.get(year);
+                Set<String> yearUniqueNames = new HashSet<>();
+                for (AlumniMember m : yearMembers) {
+                    yearUniqueNames.add(m.getName());
+                }
+                AlumniResponse response = new AlumniResponse(year, yearMembers, yearUniqueNames.size());
                 result.add(response);
             }
             
             logger.info("成功生成往届部员信息，共 {} 个年份", result.size());
             
-            // 记录最终结果用于调试
             if (logger.isDebugEnabled()) {
                 logger.debug("最终结果:");
                 for (AlumniResponse response : result) {
-                    logger.debug("年份: {}, 部员数量: {}", response.getYear(), response.getMembers().size());
+                    logger.debug("年份: {}, 身份记录数: {}, 唯一成员数: {}", 
+                        response.getYear(), response.getMembers().size(), response.getUniqueMemberCount());
                     for (AlumniMember member : response.getMembers()) {
                         logger.debug("  部员: {}, 角色: {}", member.getName(), member.getRole());
                     }

@@ -37,3 +37,13 @@ __screenshots__/
 
 test-results/
 playwright-report/
+
+# 环境配置文件 - 包含敏感信息如API地址、密钥等
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# 保留环境配置模板
+!.env.example

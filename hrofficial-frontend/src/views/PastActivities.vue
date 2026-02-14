@@ -3,16 +3,30 @@ import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
 import AnimatedCounter from '@/components/AnimatedCounter.vue'
 import { ref, computed, onMounted } from 'vue'
-import { getPastActivities } from '@/api/activities'
-import { ElMessage } from 'element-plus'
+import {
+  getPastActivities,
+  createPastActivity,
+  updatePastActivity,
+  deletePastActivity
+} from '@/api/activities'
+import { uploadImageByType } from '@/api/dailyImage'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+import type { PastActivityRequest } from '@/types'
 import {
   Calendar,
   ArrowRight,
   Filter,
   Picture,
   Star,
-  Trophy
+  Trophy,
+  Plus,
+  Edit,
+  Delete,
+  Loading
 } from '@element-plus/icons-vue'
+
+const userStore = useUserStore()
 
 // 与后端 PastActivityResponse 匹配的接口
 interface PastActivity {
@@ -37,6 +51,41 @@ interface Activity {
 const activities = ref<Activity[]>([])
 const loading = ref(false)
 const selectedYear = ref<number | 'all'>('all')
+
+// 管理对话框状态
+const dialogVisible = ref(false)
+const dialogTitle = ref('添加往届活动')
+const isEdit = ref(false)
+const editId = ref<number | null>(null)
+const form = ref<PastActivityRequest>({
+  title: '',
+  coverImage: '',
+  pushUrl: '',
+  year: new Date().getFullYear()
+})
+const formRef = ref()
+const fileInputRef = ref<HTMLInputElement>()
+const uploading = ref(false)
+
+// 表单验证规则
+const rules = {
+  title: [{ required: true, message: '请输入活动标题', trigger: 'blur' }],
+  coverImage: [{ required: true, message: '请上传封面图片', trigger: 'blur' }],
+  pushUrl: [
+    { required: true, message: '请输入推送链接', trigger: 'blur' },
+    {
+      validator: (rule: any, value: string, callback: Function) => {
+        if (!value || value.match(/^(https?:\/\/)/)) {
+          callback()
+        } else {
+          callback(new Error('请输入正确的URL格式（以http://或https://开头）'))
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  year: [{ required: true, message: '请输入年份', trigger: 'blur' }]
+}
 
 // 获取活动列表
 const fetchActivities = async () => {
@@ -106,6 +155,117 @@ const openUrl = (url: string) => {
   window.open(url, '_blank')
 }
 
+// 打开添加对话框
+const handleCreate = () => {
+  isEdit.value = false
+  editId.value = null
+  dialogTitle.value = '添加往届活动'
+  form.value = {
+    title: '',
+    coverImage: '',
+    pushUrl: '',
+    year: new Date().getFullYear()
+  }
+  dialogVisible.value = true
+}
+
+// 打开编辑对话框
+const handleEdit = (activity: Activity, event: Event) => {
+  event.stopPropagation()
+  isEdit.value = true
+  editId.value = activity.id
+  dialogTitle.value = '编辑往届活动'
+  form.value = {
+    title: activity.title,
+    coverImage: activity.coverImage,
+    pushUrl: activity.pushUrl,
+    year: activity.year
+  }
+  dialogVisible.value = true
+}
+
+// 删除活动
+const handleDelete = async (activity: Activity, event: Event) => {
+  event.stopPropagation()
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除活动 "${activity.title}" 吗？`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    await deletePastActivity(activity.id)
+    ElMessage.success('删除成功')
+    fetchActivities()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
+}
+
+// 处理文件选择变化
+const handleFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploading.value = true
+  try {
+    // 使用 activity 类型上传到 images/activities/ 目录
+    const res = await uploadImageByType(file, 'activity', (percent) => {
+      console.log('上传进度:', percent)
+    })
+    if (res.code === 200 && res.data) {
+      // 拼接完整URL
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+      form.value.coverImage = res.data.startsWith('http')
+        ? res.data
+        : `${baseUrl}${res.data.startsWith('/') ? '' : '/'}${res.data}`
+      ElMessage.success('图片上传成功')
+    } else {
+      ElMessage.error(res.message || '图片上传失败')
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '图片上传失败')
+  } finally {
+    uploading.value = false
+    // 清空input值，允许重复选择同一文件
+    input.value = ''
+  }
+}
+
+// 提交表单
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  await formRef.value.validate(async (valid: boolean) => {
+    if (!valid) return
+
+    try {
+      if (isEdit.value && editId.value) {
+        await updatePastActivity(editId.value, form.value)
+        ElMessage.success('更新成功')
+      } else {
+        await createPastActivity(form.value)
+        ElMessage.success('添加成功')
+      }
+      dialogVisible.value = false
+      fetchActivities()
+    } catch (error: any) {
+      ElMessage.error(error.message || (isEdit.value ? '更新失败' : '添加失败'))
+    }
+  })
+}
+
 onMounted(() => {
   fetchActivities()
 })
@@ -146,6 +306,14 @@ onMounted(() => {
           <p class="hero-subtitle" style="color: #78716C;">
             回顾人力资源中心历届精彩活动，见证成长与荣耀
           </p>
+
+          <!-- 管理员操作按钮 -->
+          <div v-if="userStore.isMinister" class="admin-actions">
+            <el-button type="primary" size="large" @click="handleCreate">
+              <el-icon><Plus /></el-icon>
+              添加往届活动
+            </el-button>
+          </div>
 
           <!-- 统计卡片 -->
           <div class="stats-row">
@@ -252,6 +420,25 @@ onMounted(() => {
                       <el-icon :size="14"><Calendar /></el-icon>
                       {{ new Date(activity.createTime).toLocaleDateString() }}
                     </span>
+                    <!-- 管理员操作按钮 -->
+                    <div v-if="userStore.isMinister" class="card-actions">
+                      <el-button
+                        type="primary"
+                        link
+                        size="small"
+                        @click="handleEdit(activity, $event)"
+                      >
+                        <el-icon><Edit /></el-icon>
+                      </el-button>
+                      <el-button
+                        type="danger"
+                        link
+                        size="small"
+                        @click="handleDelete(activity, $event)"
+                      >
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -262,9 +449,87 @@ onMounted(() => {
           <div v-if="groupedActivities.length === 0 && !loading" class="empty-state">
             <el-icon :size="64" color="#D1D5DB"><Trophy /></el-icon>
             <p>暂无活动记录</p>
+            <el-button v-if="userStore.isMinister" type="primary" @click="handleCreate">
+              添加首个活动
+            </el-button>
           </div>
         </div>
       </div>
+
+      <!-- 添加/编辑对话框 -->
+      <el-dialog
+        v-model="dialogVisible"
+        :title="dialogTitle"
+        width="600px"
+        destroy-on-close
+      >
+        <el-form
+          ref="formRef"
+          :model="form"
+          :rules="rules"
+          label-width="100px"
+          class="activity-form"
+        >
+          <el-form-item label="活动标题" prop="title">
+            <el-input
+              v-model="form.title"
+              placeholder="请输入活动标题"
+              maxlength="100"
+              show-word-limit
+            />
+          </el-form-item>
+
+          <el-form-item label="封面图片" prop="coverImage">
+            <div
+              class="cover-uploader"
+              @click="triggerFileInput"
+            >
+              <img v-if="form.coverImage" :src="form.coverImage" class="cover-preview" />
+              <div v-else class="upload-placeholder">
+                <el-icon :size="32"><Plus /></el-icon>
+                <span>点击上传封面</span>
+              </div>
+              <div v-if="form.coverImage" class="cover-overlay">
+                <el-icon :size="24"><Plus /></el-icon>
+                <span>点击更换封面</span>
+              </div>
+            </div>
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleFileChange"
+            />
+            <div v-if="uploading" class="upload-loading">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              上传中...
+            </div>
+          </el-form-item>
+
+          <el-form-item label="推送链接" prop="pushUrl">
+            <el-input
+              v-model="form.pushUrl"
+              placeholder="请输入推送链接（如：https://mp.weixin.qq.com/...）"
+            />
+          </el-form-item>
+
+          <el-form-item label="年份" prop="year">
+            <el-input-number
+              v-model="form.year"
+              :min="2000"
+              :max="2100"
+              :step="1"
+              placeholder="请输入年份"
+            />
+          </el-form-item>
+        </el-form>
+
+        <template #footer>
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
+        </template>
+      </el-dialog>
     </div>
   </Layout>
 </template>
@@ -646,6 +911,153 @@ onMounted(() => {
   font-size: 16px;
 }
 
+/* ============================================
+   管理员操作按钮 - 毛玻璃悬浮风格
+   ============================================ */
+.admin-actions {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin-actions .el-button {
+  background: linear-gradient(135deg, rgba(255, 107, 74, 0.9), rgba(245, 158, 11, 0.9));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.25);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.admin-actions .el-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(255, 107, 74, 0.35);
+  background: linear-gradient(135deg, rgba(255, 107, 74, 1), rgba(245, 158, 11, 1));
+}
+
+.admin-actions .el-button:active {
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   卡片操作按钮 - 毛玻璃图标按钮
+   ============================================ */
+.card-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.card-actions .el-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s ease;
+}
+
+.card-actions .el-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.card-actions .el-button--primary {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  border: none;
+}
+
+.card-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.card-actions .el-button--danger {
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  border: none;
+}
+
+.card-actions .el-button--danger:hover {
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* 表单样式 */
+.activity-form {
+  padding: 20px 0;
+}
+
+.cover-uploader {
+  border: 2px dashed var(--el-border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+  width: 300px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-uploader:hover {
+  border-color: var(--el-color-primary);
+}
+
+.cover-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: white;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.cover-uploader:hover .cover-overlay {
+  opacity: 1;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+}
+
+.upload-loading {
+  margin-top: 8px;
+  color: var(--el-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .hero-section {
@@ -668,6 +1080,11 @@ onMounted(() => {
 
   .activities-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cover-uploader {
+    width: 100%;
+    height: 160px;
   }
 }
 </style>

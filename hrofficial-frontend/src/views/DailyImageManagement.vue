@@ -265,6 +265,7 @@ import {
   deleteImage as deleteImageAPI,
   updateImageStatus,
   uploadDailyImage,
+  uploadDailyImageFile,
   deleteDailyImageWithFile,
   type DailyImage
 } from '@/api/dailyImage'
@@ -295,7 +296,17 @@ const form = reactive({
 const rules = {
   imageUrl: [
     { required: true, message: '请输入图片URL', trigger: 'blur' },
-    { type: 'url', message: '请输入正确的URL格式', trigger: 'blur' }
+    {
+      validator: (rule: any, value: string, callback: Function) => {
+        // 允许绝对URL (http://, https://) 或相对路径 (/uploads/...)
+        if (!value || value.match(/^(https?:\/\/|\/)/)) {
+          callback()
+        } else {
+          callback(new Error('请输入正确的URL格式（以http://、https://或/开头）'))
+        }
+      },
+      trigger: 'blur'
+    }
   ],
   title: [
     { max: 100, message: '标题长度不能超过100个字符', trigger: 'blur' }
@@ -411,32 +422,32 @@ const submitForm = async () => {
     if (editingImage.value) {
       // 编辑模式
       if (uploadFile.value) {
-        // 1. 先上传新图片
-        const uploadRes = await uploadDailyImage(
+        // 1. 先上传新图片文件（不创建数据库记录）
+        const uploadRes = await uploadDailyImageFile(
           uploadFile.value,
-          form.title,
-          form.description,
           (percent) => {
             uploadProgress.value = percent
           }
         )
-        
+
         if (uploadRes.code !== 200) {
           ElMessage.error(uploadRes.message || '图片上传失败')
           return
         }
-        
-        // 2. 删除旧图片文件
-        try {
-          await deleteDailyImageWithFile(editingImage.value.imageId)
-        } catch (e) {
-          console.warn('删除旧图片文件失败:', e)
-          // 继续执行，不阻断流程
+
+        // 2. 删除旧图片文件（只删文件，不删记录）
+        if (editingImage.value.imageUrl) {
+          try {
+            await deleteDailyImageWithFile(editingImage.value.imageId)
+          } catch (e) {
+            console.warn('删除旧图片文件失败:', e)
+            // 继续执行，不阻断流程
+          }
         }
-        
+
         // 3. 更新数据库记录（使用新图片URL）
         const imageData = {
-          imageUrl: uploadRes.data.imageUrl,
+          imageUrl: uploadRes.data,
           title: form.title,
           description: form.description,
           sortOrder: form.sortOrder,

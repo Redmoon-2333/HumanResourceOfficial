@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
 import AnimatedCounter from '@/components/AnimatedCounter.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { getAlumni } from '@/api/user'
 import { ElMessage } from 'element-plus'
-import { User, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { User, ArrowLeft, ArrowRight, StarFilled, Medal } from '@element-plus/icons-vue'
 
 interface Member {
   id: number
@@ -13,10 +13,21 @@ interface Member {
   leaveYear: number
 }
 
+interface OrbitNode {
+  member: Member
+  angle: number
+  speed: number
+  orbitA: number
+  orbitB: number
+  reverse: boolean
+}
+
 const alumni = ref<Member[]>([])
 const loading = ref(false)
 const currentYearIndex = ref(0)
 const isTransitioning = ref(false)
+const yearUniqueCounts = ref<Map<number, number>>(new Map())
+const totalUniqueCount = ref(0)
 
 const fetchAlumni = async () => {
   loading.value = true
@@ -26,18 +37,30 @@ const fetchAlumni = async () => {
       const alumniResponses = response.data || []
       if (Array.isArray(alumniResponses)) {
         let idCounter = 0
-        alumni.value = alumniResponses.flatMap((yearGroup: any) => 
-          yearGroup.members.map((member: any) => {
+        const newYearUniqueCounts = new Map<number, number>()
+        const allUniqueNames = new Set<string>()
+        
+        const allMembers = alumniResponses.flatMap((yearGroup: any) => {
+          const year = yearGroup.year
+          const uniqueCount = yearGroup.uniqueMemberCount || yearGroup.members?.length || 0
+          newYearUniqueCounts.set(year, uniqueCount)
+          
+          return (yearGroup.members || []).map((member: any) => {
             const cleanName = (member.name || '').replace(/[[\]"']/g, '').trim()
             const cleanRole = (member.role || '部员').replace(/[[\]"']/g, '').trim()
+            allUniqueNames.add(cleanName)
             return {
               id: ++idCounter,
               name: cleanName,
               role: cleanRole,
-              leaveYear: yearGroup.year
+              leaveYear: year
             }
           })
-        ) as Member[]
+        }) as Member[]
+        
+        alumni.value = allMembers
+        yearUniqueCounts.value = newYearUniqueCounts
+        totalUniqueCount.value = allUniqueNames.size
       }
     }
   } catch (error: any) {
@@ -59,12 +82,10 @@ const currentMembers = computed(() => {
   return alumni.value.filter(a => a.leaveYear === currentYear.value)
 })
 
-// 按身份分类成员
 const ministers = computed(() => currentMembers.value.filter(m => m.role === '部长'))
 const viceMinisters = computed(() => currentMembers.value.filter(m => m.role === '副部长'))
 const members = computed(() => currentMembers.value.filter(m => m.role === '部员'))
 
-// 切换年份
 const switchYear = (index: number) => {
   if (index === currentYearIndex.value || isTransitioning.value) return
   if (index >= 0 && index < availableYears.value.length) {
@@ -86,13 +107,83 @@ const prevYear = () => {
   switchYear(prev)
 }
 
-// 计算圆形布局位置
-const getCircularPosition = (index: number, total: number, radius: number) => {
-  if (total === 0) return { x: 0, y: 0 }
-  const angle = (index / total) * 2 * Math.PI - Math.PI / 2
+const orbitNodes = ref<OrbitNode[]>([])
+let animationFrameId: number | null = null
+
+const initOrbitNodes = () => {
+  orbitNodes.value = []
+  
+  const ministerList = ministers.value
+  const viceList = viceMinisters.value
+  const memberList = members.value
+  
+  ministerList.forEach((member, index) => {
+    const total = ministerList.length || 1
+    const startAngle = (index / total) * Math.PI * 2
+    orbitNodes.value.push({
+      member,
+      angle: startAngle,
+      speed: 0.0003,
+      orbitA: 240,
+      orbitB: 130,
+      reverse: false
+    })
+  })
+  
+  viceList.forEach((member, index) => {
+    const total = viceList.length || 1
+    const startAngle = (index / total) * Math.PI * 2
+    orbitNodes.value.push({
+      member,
+      angle: startAngle,
+      speed: 0.0002,
+      orbitA: 350,
+      orbitB: 190,
+      reverse: true
+    })
+  })
+  
+  memberList.forEach((member, index) => {
+    const total = memberList.length || 1
+    const startAngle = (index / total) * Math.PI * 2
+    orbitNodes.value.push({
+      member,
+      angle: startAngle,
+      speed: 0.0001,
+      orbitA: 480,
+      orbitB: 260,
+      reverse: false
+    })
+  })
+}
+
+const nodePositions = ref<Record<number, { x: number; y: number }>>({})
+
+const animate = () => {
+  const newPositions: Record<number, { x: number; y: number }> = {}
+  
+  orbitNodes.value.forEach(node => {
+    if (node.reverse) {
+      node.angle -= node.speed * 16.67
+    } else {
+      node.angle += node.speed * 16.67
+    }
+    
+    const x = node.orbitA * Math.cos(node.angle)
+    const y = node.orbitB * Math.sin(node.angle)
+    
+    newPositions[node.member.id] = { x, y }
+  })
+  
+  nodePositions.value = newPositions
+  animationFrameId = requestAnimationFrame(animate)
+}
+
+const getNodeStyle = (memberId: number) => {
+  const pos = nodePositions.value[memberId]
+  if (!pos) return {}
   return {
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius
+    transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`
   }
 }
 
@@ -114,49 +205,97 @@ const getAvatarColor = (name: string, role: string) => {
 }
 
 const stats = computed(() => ({
-  total: alumni.value.length,
+  total: totalUniqueCount.value,
   years: availableYears.value.length,
-  currentYearMembers: currentMembers.value.length
+  currentYearMembers: yearUniqueCounts.value.get(currentYear.value) || currentMembers.value.length
 }))
+
+watch(currentYear, () => {
+  nextTick(() => {
+    initOrbitNodes()
+  })
+})
 
 onMounted(() => {
   fetchAlumni()
 })
+
+onUnmounted(() => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+})
+
+watch([ministers, viceMinisters, members], () => {
+  initOrbitNodes()
+  if (!animationFrameId && orbitNodes.value.length > 0) {
+    animationFrameId = requestAnimationFrame(animate)
+  }
+}, { immediate: true })
 </script>
 
 <template>
   <Layout>
     <div class="alumni-page">
-      <!-- 顶部标题区域 -->
-      <header class="page-header">
-        <div class="header-content">
-          <div class="header-left">
-            <div class="header-badge">
-              <el-icon><User /></el-icon>
-              <span>往届成员</span>
-            </div>
-            <h1 class="header-title">成员星河</h1>
-            <p class="header-subtitle">致敬每一位为人力资源中心付出过的成员</p>
+      <!-- Hero 标题区域 - 星云风格 -->
+      <section class="hero-section">
+        <!-- 有机曲线背景 -->
+        <div class="hero-background">
+          <div class="blob blob-1"></div>
+          <div class="blob blob-2"></div>
+          <div class="blob blob-3"></div>
+          <div class="grid-pattern"></div>
+        </div>
+
+        <!-- 浮动装饰元素 -->
+        <div class="floating-elements">
+          <div class="float-item float-1">
+            <el-icon :size="20"><StarFilled /></el-icon>
           </div>
-          
-          <div class="header-right">
-            <div class="stats-grid">
-              <div class="stat-card">
-                <span class="stat-value"><AnimatedCounter :value="stats.total" /></span>
-                <span class="stat-label">位成员</span>
-              </div>
-              <div class="stat-card">
-                <span class="stat-value"><AnimatedCounter :value="stats.years" /></span>
-                <span class="stat-label">届传承</span>
-              </div>
-              <div class="stat-card highlight">
-                <span class="stat-value"><AnimatedCounter :value="stats.currentYearMembers" /></span>
-                <span class="stat-label">本届成员</span>
-              </div>
+          <div class="float-item float-2">
+            <el-icon :size="18"><User /></el-icon>
+          </div>
+          <div class="float-item float-3">
+            <el-icon :size="16"><Medal /></el-icon>
+          </div>
+        </div>
+
+        <div class="hero-content">
+          <!-- 徽章 -->
+          <div class="hero-badge">
+            <el-icon><User /></el-icon>
+            <span>往届成员</span>
+          </div>
+
+          <!-- 主标题 -->
+          <h1 class="hero-title">
+            <span class="title-highlight">成员星河</span>
+          </h1>
+
+          <!-- 副标题 -->
+          <p class="hero-subtitle">
+            致敬每一位为人力资源中心付出过的成员
+          </p>
+
+          <!-- 统计数据 -->
+          <div class="hero-stats">
+            <div class="stat-item">
+              <span class="stat-value"><AnimatedCounter :value="stats.total" /></span>
+              <span class="stat-label">位成员</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-value"><AnimatedCounter :value="stats.years" /></span>
+              <span class="stat-label">届传承</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item highlight">
+              <span class="stat-value"><AnimatedCounter :value="stats.currentYearMembers" /></span>
+              <span class="stat-label">本届成员</span>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
       <!-- 主内容区域 -->
       <main class="main-content">
@@ -221,7 +360,7 @@ onMounted(() => {
 
           <!-- 成员星河图 -->
           <div class="galaxy-container" :class="{ 'is-transitioning': isTransitioning }">
-            <!-- 轨道环 -->
+            <!-- 轨道环 - 静止不动 -->
             <div class="orbit-ring ring-1"></div>
             <div class="orbit-ring ring-2"></div>
             <div class="orbit-ring ring-3"></div>
@@ -233,52 +372,38 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- 部长 - 内圈 -->
+            <!-- 部长 - 内圈轨道 -->
             <div
-              v-for="(member, index) in ministers"
+              v-for="member in ministers"
               :key="'m-' + member.id"
               class="member-node minister-node"
-              :style="{
-                '--delay': `${index * 0.1}s`,
-                transform: `translate(${getCircularPosition(index, ministers.length || 1, 90).x}px, ${getCircularPosition(index, ministers.length || 1, 90).y}px)`
-              }"
+              :style="getNodeStyle(member.id)"
             >
-              <div class="node-glow" :style="{ background: getAvatarColor(member.name, member.role) }"></div>
-              <div class="node-content" :style="{ background: getAvatarColor(member.name, member.role) }">
+              <div class="node-content">
                 <span class="node-name">{{ member.name }}</span>
-                <span class="node-role">{{ member.role }}</span>
               </div>
             </div>
 
-            <!-- 副部长 - 中圈 -->
+            <!-- 副部长 - 中圈轨道 -->
             <div
-              v-for="(member, index) in viceMinisters"
+              v-for="member in viceMinisters"
               :key="'v-' + member.id"
               class="member-node vice-node"
-              :style="{
-                '--delay': `${index * 0.08}s`,
-                transform: `translate(${getCircularPosition(index, viceMinisters.length || 1, 170).x}px, ${getCircularPosition(index, viceMinisters.length || 1, 170).y}px)`
-              }"
+              :style="getNodeStyle(member.id)"
             >
-              <div class="node-glow" :style="{ background: getAvatarColor(member.name, member.role) }"></div>
-              <div class="node-content" :style="{ background: getAvatarColor(member.name, member.role) }">
+              <div class="node-content">
                 <span class="node-name">{{ member.name }}</span>
-                <span class="node-role">{{ member.role }}</span>
               </div>
             </div>
 
-            <!-- 部员 - 外圈 -->
+            <!-- 部员 - 外圈轨道 -->
             <div
-              v-for="(member, index) in members"
+              v-for="member in members"
               :key="'mem-' + member.id"
               class="member-node member-circle"
-              :style="{
-                '--delay': `${index * 0.05}s`,
-                transform: `translate(${getCircularPosition(index, members.length || 1, 260).x}px, ${getCircularPosition(index, members.length || 1, 260).y}px)`
-              }"
+              :style="getNodeStyle(member.id)"
             >
-              <div class="node-glow" :style="{ background: getAvatarColor(member.name, member.role) }"></div>
-              <div class="node-content" :style="{ background: getAvatarColor(member.name, member.role) }">
+              <div class="node-content">
                 <span class="node-name">{{ member.name }}</span>
               </div>
             </div>
@@ -296,149 +421,380 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ============================================
+   成员星河页面 - 星云毛玻璃风格
+   Galaxy Glassmorphism Design
+   ============================================
+   
+   设计理念：
+   - 深空星云氛围，暖色调光晕
+   - 毛玻璃层次感，保持通透性
+   - 有机曲线装饰，流动感背景
+   - 与整体暖色系统协调统一
+   ============================================ */
+
 .alumni-page {
   min-height: calc(100vh - 64px);
-  background: linear-gradient(135deg, #FFFBF7 0%, #FFF5F0 50%, #FFEDE5 100%);
+  position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(135deg, #FFFBF7 0%, #FFF5F0 50%, #FFEDE6 100%);
 }
 
-/* 顶部标题区域 */
-.page-header {
-  background: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 24px 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+/* ============================================
+   Hero Section - 星云风格标题区
+   ============================================
+   
+   参考首页Hero设计，融入星云元素：
+   - 有机曲线Blob背景
+   - 网格点状装饰
+   - 浮动装饰元素
+   - 居中内容布局
+   ============================================ */
+
+.hero-section {
+  position: relative;
+  padding: var(--space-12, 48px) var(--space-8, 32px);
+  margin: var(--space-6, 24px);
+  margin-bottom: 0;
+  border-radius: 32px;
+  overflow: hidden;
+  background: linear-gradient(135deg,
+    rgba(255, 107, 74, 0.08) 0%,
+    rgba(245, 158, 11, 0.08) 50%,
+    rgba(227, 85, 50, 0.08) 100%
+  );
 }
 
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
+/* 有机曲线背景 */
+.hero-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.6;
+  animation: blobFloat 20s ease-in-out infinite;
+}
+
+.blob-1 {
+  width: 400px;
+  height: 400px;
+  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  top: -100px;
+  right: -100px;
+  animation-delay: 0s;
+}
+
+.blob-2 {
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(135deg, #F59E0B, #E35532);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: -7s;
+}
+
+.blob-3 {
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, #FB7185, #FF6B4A);
+  top: 50%;
+  left: 30%;
+  animation-delay: -14s;
+  opacity: 0.4;
+}
+
+/* 网格点状背景 */
+.grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 107, 74, 0.15) 1px, transparent 0);
+  background-size: 40px 40px;
+}
+
+/* 浮动装饰元素 */
+.floating-elements {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.float-item {
+  position: absolute;
+  width: 48px;
+  height: 48px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 32px;
+  justify-content: center;
+  background: transparent;
+  border-radius: 16px;
+  font-size: 32px;
+  color: var(--coral-500, #FF6B4A);
+  animation: float 6s ease-in-out infinite;
 }
 
-.header-left {
-  flex: 1;
+.float-1 {
+  top: 15%;
+  left: 10%;
+  animation-delay: 0s;
 }
 
-.header-badge {
+.float-2 {
+  top: 25%;
+  right: 15%;
+  animation-delay: -2s;
+}
+
+.float-3 {
+  bottom: 20%;
+  left: 15%;
+  animation-delay: -4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+  }
+}
+
+@keyframes blobFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 15px) scale(0.95);
+  }
+}
+
+/* Hero 内容 */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+.hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: rgba(255, 107, 74, 0.1);
-  border-radius: 20px;
-  color: #FF6B4A;
-  font-size: 13px;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  color: white;
+  border-radius: 100px;
+  font-size: var(--text-sm, 14px);
   font-weight: 500;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-6, 24px);
+  box-shadow: 
+    0 4px 16px rgba(255, 107, 74, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: fadeInDown 0.6s ease;
 }
 
-.header-title {
-  font-size: 32px;
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-title {
+  font-size: var(--text-5xl, 48px);
   font-weight: 800;
-  color: #1C1917;
-  margin-bottom: 6px;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 var(--space-4, 16px) 0;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
-.header-subtitle {
-  font-size: 14px;
-  color: #78716C;
-  font-weight: 400;
+.title-highlight {
+  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.header-right {
-  flex-shrink: 0;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.stats-grid {
+.hero-subtitle {
+  font-size: var(--text-lg, 18px);
+  color: var(--text-secondary, #78716C);
+  line-height: 1.8;
+  max-width: 500px;
+  margin: 0 auto var(--space-8, 32px);
+  animation: fadeInUp 0.6s ease 0.2s both;
+}
+
+/* 统计数据 */
+.hero-stats {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6, 24px);
+  animation: fadeInUp 0.6s ease 0.3s both;
 }
 
-.stat-card {
+.stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 24px;
-  background: #F5F5F4;
-  border-radius: 12px;
-  min-width: 80px;
-  transition: all 0.3s ease;
+  padding: var(--space-4, 16px) var(--space-6, 24px);
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  min-width: 100px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
-.stat-card:hover {
-  background: #E7E5E4;
-  transform: translateY(-2px);
+.stat-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.12);
 }
 
-.stat-card.highlight {
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+.stat-item.highlight {
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 74, 0.95) 0%, 
+    rgba(227, 85, 50, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 74, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.stat-card.highlight .stat-label {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.stat-value {
+.stat-item .stat-value {
   font-size: 28px;
   font-weight: 800;
-  color: #FF6B4A;
+  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1;
 }
 
-.stat-card.highlight .stat-value {
-  color: white;
+.stat-item.highlight .stat-value {
+  background: white;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.stat-label {
+.stat-item .stat-label {
   font-size: 12px;
-  color: #78716C;
-  margin-top: 4px;
+  color: var(--text-tertiary, #A8A29E);
+  margin-top: 6px;
   font-weight: 500;
+}
+
+.stat-item.highlight .stat-label {
+  color: rgba(255, 255, 255, 0.90);
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(180deg, transparent, rgba(255, 107, 74, 0.3), transparent);
 }
 
 /* 主内容区域 */
 .main-content {
+  position: relative;
+  z-index: 5;
   flex: 1;
   display: flex;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  padding: 24px 32px;
-  gap: 24px;
+  padding: var(--space-6, 24px) var(--space-8, 32px);
+  gap: var(--space-6, 24px);
 }
 
-/* 左侧控制面板 */
+/* 左侧控制面板 - 毛玻璃效果 */
 .control-panel {
-  width: 240px;
+  width: 260px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
+/* ============================================
+   面板标题 - 毛玻璃标签风格
+   ============================================ */
 .panel-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #44403C;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #FF6B4A;
-  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1C1917;
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 107, 74, 0.2);
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(255, 107, 74, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* 年份选择器 */
+.panel-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(180deg, #FF6B4A, #F59E0B);
+  border-radius: 2px;
+}
+
+/* 年份选择器 - 毛玻璃卡片 */
 .year-selector {
-  background: white;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 74, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.year-selector:hover {
+  box-shadow: 
+    0 12px 40px rgba(255, 107, 74, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .year-list {
@@ -450,31 +806,56 @@ onMounted(() => {
 .year-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 12px 16px;
-  border: 2px solid transparent;
-  background: #F5F5F4;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 14px 18px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
 }
 
+.year-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 74, 0.08) 0%, 
+    rgba(245, 158, 11, 0.05) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
 .year-btn:hover {
-  background: #E7E5E4;
-  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(6px);
+  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.1);
+}
+
+.year-btn:hover::before {
+  opacity: 1;
 }
 
 .year-btn.active {
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 74, 0.95) 0%, 
+    rgba(227, 85, 50, 0.95) 100%
+  );
   border-color: transparent;
+  box-shadow: 
+    0 6px 24px rgba(255, 107, 74, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .year-num {
   font-size: 18px;
   font-weight: 700;
   color: #44403C;
+  position: relative;
+  z-index: 1;
 }
 
 .year-btn.active .year-num {
@@ -485,70 +866,124 @@ onMounted(() => {
   font-size: 13px;
   color: #A8A29E;
   font-weight: 500;
+  position: relative;
+  z-index: 1;
 }
 
 .year-btn.active .year-suffix {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.90);
 }
 
 .active-indicator {
   position: absolute;
-  right: 12px;
+  right: 14px;
   width: 8px;
   height: 8px;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 0 0 3px rgba(255, 255, 255, 0.3),
+    0 0 12px rgba(255, 255, 255, 0.5);
+  animation: indicatorPulse 2s ease-in-out infinite;
 }
 
-/* 图例面板 */
+@keyframes indicatorPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 3px rgba(255, 255, 255, 0.3),
+      0 0 12px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 5px rgba(255, 255, 255, 0.2),
+      0 0 20px rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* 图例面板 - 毛玻璃卡片 */
 .legend-panel {
-  background: white;
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 74, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.legend-panel:hover {
+  box-shadow: 
+    0 12px 40px rgba(255, 107, 74, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .legend-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: #FAFAF9;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
 }
 
 .legend-item:hover {
-  background: #F5F5F4;
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 107, 74, 0.1);
+  transform: translateX(4px);
 }
 
 .legend-dot {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   flex-shrink: 0;
+  position: relative;
+}
+
+.legend-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  opacity: 0.3;
 }
 
 .legend-dot.minister {
-  background: #FF6B4A;
-  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.2);
+  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  box-shadow: 0 2px 8px rgba(255, 107, 74, 0.4);
+}
+
+.legend-dot.minister::after {
+  background: radial-gradient(circle, rgba(255, 107, 74, 0.4), transparent);
 }
 
 .legend-dot.vice {
-  background: #F59E0B;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.legend-dot.vice::after {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.4), transparent);
 }
 
 .legend-dot.member {
-  background: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.legend-dot.member::after {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.4), transparent);
 }
 
 .legend-text {
@@ -562,21 +997,28 @@ onMounted(() => {
   font-size: 12px;
   color: #A8A29E;
   font-weight: 600;
-  background: white;
-  padding: 2px 8px;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-/* 右侧展示区域 */
+/* 右侧展示区域 - 毛玻璃容器 */
 .display-area {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: white;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 
+    0 12px 48px rgba(255, 107, 74, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* 当前届数标题 */
@@ -584,43 +1026,68 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .nav-arrow {
-  width: 40px;
-  height: 40px;
-  border: 2px solid #E7E5E4;
-  background: white;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 107, 74, 0.2);
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: #78716C;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   font-size: 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .nav-arrow:hover:not(:disabled) {
-  border-color: #FF6B4A;
+  border-color: rgba(255, 107, 74, 0.4);
+  background: rgba(255, 255, 255, 0.95);
   color: #FF6B4A;
   transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(255, 107, 74, 0.15);
 }
 
 .nav-arrow:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .year-display {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 12px 32px;
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
-  border-radius: 30px;
-  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.3);
+  padding: 14px 36px;
+  background: linear-gradient(135deg, 
+    rgba(255, 107, 74, 0.95) 0%, 
+    rgba(227, 85, 50, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 32px;
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 74, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.year-display::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 50%
+  );
+  pointer-events: none;
 }
 
 .year-number {
@@ -628,46 +1095,112 @@ onMounted(() => {
   font-weight: 800;
   color: white;
   line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .year-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.90);
   font-weight: 500;
 }
 
-/* 成员星河图 */
+/* ============================================
+   成员星河图 - 全新椭圆轨道设计
+   ============================================
+   
+   设计原理：
+   1. 轨道环保持静止不动
+   2. 每个成员节点独立沿椭圆轨道运动
+   3. 节点内部反向旋转，保持文字始终水平
+   ============================================ */
+
 .galaxy-container {
   position: relative;
-  width: 600px;
-  height: 600px;
+  width: 100%;
+  max-width: 1000px;
+  height: 560px;
   flex-shrink: 0;
 }
 
+/* 星河背景光晕 */
+.galaxy-container::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 320px;
+  background: radial-gradient(ellipse at center, 
+    rgba(255, 107, 74, 0.1) 0%, 
+    rgba(245, 158, 11, 0.05) 40%, 
+    transparent 70%
+  );
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  animation: galaxyGlow 8s ease-in-out infinite;
+}
+
+/* 星点粒子背景 */
+.galaxy-container::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 107, 74, 0.4), transparent),
+    radial-gradient(2px 2px at 40% 70%, rgba(245, 158, 11, 0.3), transparent),
+    radial-gradient(1px 1px at 60% 20%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 80% 50%, rgba(255, 107, 74, 0.3), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(245, 158, 11, 0.4), transparent),
+    radial-gradient(1px 1px at 90% 10%, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 200px 200px;
+  border-radius: 50%;
+  animation: starTwinkle 4s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+@keyframes galaxyGlow {
+  0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* 轨道环 - 静止不动 */
 .orbit-ring {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 1px dashed rgba(0, 0, 0, 0.08);
+  border: 1px dashed;
+  pointer-events: none;
 }
 
 .ring-1 {
-  width: 180px;
-  height: 180px;
+  width: 480px;
+  height: 260px;
+  border-color: rgba(255, 107, 74, 0.25);
 }
 
 .ring-2 {
-  width: 340px;
-  height: 340px;
+  width: 700px;
+  height: 380px;
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .ring-3 {
-  width: 520px;
+  width: 960px;
   height: 520px;
+  border-color: rgba(255, 107, 74, 0.12);
 }
 
+/* 中心核心 */
 .galaxy-center {
   position: absolute;
   top: 50%;
@@ -677,154 +1210,190 @@ onMounted(() => {
 }
 
 .center-core {
-  width: 70px;
-  height: 70px;
+  width: 120px;
+  height: 120px;
   background: linear-gradient(135deg, #FF6B4A, #E35532);
+  border: 4px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 
-    0 0 0 4px rgba(255, 107, 74, 0.15),
-    0 0 0 8px rgba(255, 107, 74, 0.08),
-    0 12px 40px rgba(255, 107, 74, 0.35);
+    0 0 0 8px rgba(255, 107, 74, 0.15),
+    0 0 0 16px rgba(255, 107, 74, 0.08),
+    0 0 60px rgba(255, 107, 74, 0.4),
+    0 16px 48px rgba(255, 107, 74, 0.3);
+  animation: corePulse 3s ease-in-out infinite;
+}
+
+@keyframes corePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
 
 .core-text {
-  font-size: 20px;
+  font-size: 32px;
   font-weight: 900;
   color: white;
-  letter-spacing: 1px;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* 成员节点 */
+/* ============================================
+   成员节点 - 椭圆轨道运动
+   ============================================
+   
+   使用JavaScript + requestAnimationFrame实现精确椭圆轨道：
+   - 位置由JS实时计算并应用transform
+   - 节点始终保持水平方向
+   - 平滑动画，性能优化
+   ============================================ */
+
 .member-node {
   position: absolute;
   top: 50%;
   left: 50%;
+  cursor: pointer;
+  will-change: transform;
+  transition: opacity 0.3s ease;
+}
+
+/* 节点内容 */
+/* ============================================
+   成员节点样式 - 美化姓名标签
+   ============================================ */
+
+.node-content {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  animation: nodeEnter 0.5s ease backwards;
-  animation-delay: var(--delay, 0s);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    0 0 0 2px rgba(255, 255, 255, 0.15),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 节点内部光泽效果 */
+.node-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, 
+    rgba(255, 255, 255, 0.3) 0%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
+}
+
+.member-node:hover .node-content {
+  transform: scale(1.25);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 3px rgba(255, 255, 255, 0.25),
+    0 0 30px rgba(255, 107, 74, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+/* 姓名标签样式 */
+.node-name {
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.15;
+  text-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 8px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 1;
+  padding: 2px;
+}
+
+/* 不同角色的节点尺寸与样式 */
+/* 部长 - 最大，金色光晕 */
+.minister-node .node-content {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #FF6B4A 0%, #E35532 50%, #C44224 100%);
+  box-shadow: 
+    0 6px 24px rgba(255, 107, 74, 0.4),
+    0 0 0 3px rgba(255, 200, 150, 0.3),
+    0 0 20px rgba(255, 107, 74, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+.minister-node .node-name {
+  font-size: 12px;
+}
+
+.minister-node:hover .node-content {
+  box-shadow: 
+    0 10px 40px rgba(255, 107, 74, 0.5),
+    0 0 0 4px rgba(255, 200, 150, 0.4),
+    0 0 40px rgba(255, 107, 74, 0.5),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+/* 副部长 - 中等，琥珀色光晕 */
+.vice-node .node-content {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 50%, #B45309 100%);
+  box-shadow: 
+    0 5px 20px rgba(245, 158, 11, 0.35),
+    0 0 0 2px rgba(255, 220, 150, 0.25),
+    0 0 15px rgba(245, 158, 11, 0.25),
+    inset 0 2px 4px rgba(255, 255, 255, 0.35);
+}
+
+.vice-node .node-name {
+  font-size: 10px;
+}
+
+.vice-node:hover .node-content {
+  box-shadow: 
+    0 8px 32px rgba(245, 158, 11, 0.45),
+    0 0 0 3px rgba(255, 220, 150, 0.35),
+    0 0 30px rgba(245, 158, 11, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.35);
+}
+
+/* 部员 - 最小，蓝色光晕 */
+.member-circle .node-content {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%);
+  box-shadow: 
+    0 4px 16px rgba(59, 130, 246, 0.3),
+    0 0 0 2px rgba(150, 180, 255, 0.2),
+    0 0 12px rgba(59, 130, 246, 0.2),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+}
+
+.member-circle .node-name {
+  font-size: 9px;
+}
+
+.member-circle:hover .node-content {
+  box-shadow: 
+    0 6px 24px rgba(59, 130, 246, 0.4),
+    0 0 0 3px rgba(150, 180, 255, 0.3),
+    0 0 25px rgba(59, 130, 246, 0.35),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
 }
 
 .galaxy-container.is-transitioning .member-node {
   opacity: 0;
-  transform: scale(0.5) !important;
-}
-
-@keyframes nodeEnter {
-  from {
-    opacity: 0;
-    transform: translate(0, 0) scale(0.5);
-  }
-}
-
-.node-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(12px);
-  opacity: 0.4;
-  transition: all 0.3s ease;
-}
-
-.node-content {
-  position: relative;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 2;
-}
-
-.member-node:hover .node-content {
-  transform: scale(1.15);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-}
-
-.member-node:hover .node-glow {
-  opacity: 0.7;
-  filter: blur(20px);
-}
-
-.node-name {
-  font-weight: 700;
-  text-align: center;
-  line-height: 1.2;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.node-role {
-  font-size: 10px;
-  opacity: 0.95;
-  margin-top: 2px;
-  font-weight: 500;
-}
-
-/* 不同角色的节点尺寸 */
-.minister-node {
-  margin-left: -45px;
-  margin-top: -45px;
-}
-
-.minister-node .node-content {
-  width: 90px;
-  height: 90px;
-}
-
-.minister-node .node-glow {
-  width: 90px;
-  height: 90px;
-}
-
-.minister-node .node-name {
-  font-size: 16px;
-}
-
-.vice-node {
-  margin-left: -36px;
-  margin-top: -36px;
-}
-
-.vice-node .node-content {
-  width: 72px;
-  height: 72px;
-}
-
-.vice-node .node-glow {
-  width: 72px;
-  height: 72px;
-}
-
-.vice-node .node-name {
-  font-size: 13px;
-}
-
-.member-circle {
-  margin-left: -30px;
-  margin-top: -30px;
-}
-
-.member-circle .node-content {
-  width: 60px;
-  height: 60px;
-}
-
-.member-circle .node-glow {
-  width: 60px;
-  height: 60px;
-}
-
-.member-circle .node-name {
-  font-size: 12px;
 }
 
 /* 空状态 */
@@ -835,6 +1404,12 @@ onMounted(() => {
   transform: translate(-50%, -50%);
   text-align: center;
   color: #A8A29E;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.60);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .empty-state p {
@@ -871,33 +1446,61 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    padding: 20px 24px;
+  /* Hero Section 响应式 */
+  .hero-section {
+    padding: var(--space-8, 32px) var(--space-4, 16px);
+    margin: var(--space-4, 16px);
+    border-radius: 24px;
   }
 
-  .header-content {
-    flex-direction: column;
-    gap: 20px;
-    text-align: center;
+  .blob-1 {
+    width: 250px;
+    height: 250px;
   }
 
-  .header-title {
-    font-size: 26px;
+  .blob-2 {
+    width: 180px;
+    height: 180px;
   }
 
-  .stats-grid {
-    justify-content: center;
+  .blob-3 {
+    width: 150px;
+    height: 150px;
   }
 
-  .stat-card {
-    padding: 12px 18px;
-    min-width: 70px;
+  .float-item {
+    width: 36px;
+    height: 36px;
   }
 
-  .stat-value {
+  .hero-title {
+    font-size: 36px;
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+    max-width: 300px;
+  }
+
+  .hero-stats {
+    flex-wrap: wrap;
+    gap: var(--space-4, 16px);
+  }
+
+  .stat-item {
+    padding: var(--space-3, 12px) var(--space-4, 16px);
+    min-width: 80px;
+  }
+
+  .stat-item .stat-value {
     font-size: 22px;
   }
 
+  .stat-divider {
+    display: none;
+  }
+
+  /* 主内容响应式 */
   .main-content {
     padding: 16px 20px;
   }
@@ -906,112 +1509,162 @@ onMounted(() => {
     flex-direction: column;
   }
 
+  /* 星河图响应式 */
   .galaxy-container {
+    height: 420px;
+  }
+
+  .galaxy-container::before {
     width: 400px;
-    height: 400px;
-  }
-
-  .orbit-ring.ring-1 {
-    width: 120px;
-    height: 120px;
-  }
-
-  .orbit-ring.ring-2 {
-    width: 220px;
     height: 220px;
   }
 
+  .orbit-ring.ring-1 {
+    width: 320px;
+    height: 175px;
+  }
+
+  .orbit-ring.ring-2 {
+    width: 480px;
+    height: 260px;
+  }
+
   .orbit-ring.ring-3 {
-    width: 340px;
-    height: 340px;
-  }
-
-  .minister-node {
-    margin-left: -32px;
-    margin-top: -32px;
-  }
-
-  .minister-node .node-content {
-    width: 64px;
-    height: 64px;
-  }
-
-  .minister-node .node-glow {
-    width: 64px;
-    height: 64px;
-  }
-
-  .minister-node .node-name {
-    font-size: 13px;
-  }
-
-  .vice-node {
-    margin-left: -26px;
-    margin-top: -26px;
-  }
-
-  .vice-node .node-content {
-    width: 52px;
-    height: 52px;
-  }
-
-  .vice-node .node-glow {
-    width: 52px;
-    height: 52px;
-  }
-
-  .vice-node .node-name {
-    font-size: 11px;
-  }
-
-  .member-circle {
-    margin-left: -22px;
-    margin-top: -22px;
-  }
-
-  .member-circle .node-content {
-    width: 44px;
-    height: 44px;
-  }
-
-  .member-circle .node-glow {
-    width: 44px;
-    height: 44px;
-  }
-
-  .member-circle .node-name {
-    font-size: 10px;
+    width: 640px;
+    height: 350px;
   }
 
   .center-core {
-    width: 50px;
-    height: 50px;
+    width: 90px;
+    height: 90px;
   }
 
   .core-text {
-    font-size: 16px;
+    font-size: 24px;
+  }
+
+  .minister-node .node-content {
+    width: 40px;
+    height: 40px;
+  }
+
+  .minister-node .node-name {
+    font-size: 10px;
+  }
+
+  .vice-node .node-content {
+    width: 32px;
+    height: 32px;
+  }
+
+  .vice-node .node-name {
+    font-size: 9px;
+  }
+
+  .member-circle .node-content {
+    width: 26px;
+    height: 26px;
+  }
+
+  .member-circle .node-name {
+    font-size: 8px;
   }
 }
 
 @media (max-width: 480px) {
+  .hero-section {
+    padding: var(--space-6, 24px) var(--space-3, 12px);
+    margin: var(--space-3, 12px);
+    border-radius: 20px;
+  }
+
+  .floating-elements {
+    display: none;
+  }
+
+  .hero-title {
+    font-size: 28px;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+  }
+
+  .stat-item {
+    min-width: 70px;
+  }
+
+  .stat-item .stat-value {
+    font-size: 18px;
+  }
+
+  .display-area {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
   .galaxy-container {
-    width: 320px;
     height: 320px;
   }
 
+  .galaxy-container::before {
+    width: 260px;
+    height: 145px;
+  }
+
+  .galaxy-container::after {
+    background-size: 150px 150px;
+  }
+
   .orbit-ring.ring-1 {
-    width: 100px;
-    height: 100px;
+    width: 200px;
+    height: 110px;
   }
 
   .orbit-ring.ring-2 {
-    width: 180px;
-    height: 180px;
+    width: 300px;
+    height: 165px;
   }
 
   .orbit-ring.ring-3 {
-    width: 280px;
-    height: 280px;
+    width: 400px;
+    height: 220px;
+  }
+
+  .center-core {
+    width: 60px;
+    height: 60px;
+  }
+
+  .core-text {
+    font-size: 18px;
+  }
+
+  .minister-node .node-content {
+    width: 32px;
+    height: 32px;
+  }
+
+  .minister-node .node-name {
+    font-size: 9px;
+  }
+
+  .vice-node .node-content {
+    width: 26px;
+    height: 26px;
+  }
+
+  .vice-node .node-name {
+    font-size: 8px;
+  }
+
+  .member-circle .node-content {
+    width: 22px;
+    height: 22px;
+  }
+
+  .member-circle .node-name {
+    font-size: 7px;
   }
 
   .year-display {
