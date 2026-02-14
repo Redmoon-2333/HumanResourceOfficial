@@ -376,4 +376,24 @@ public class DailyImageController {
             return ApiResponse.error("删除失败: " + e.getMessage(), 500);
         }
     }
+
+    /**
+     * 仅删除图片文件，不删除数据库记录
+     * Why: 用于编辑图片时替换文件，保留原记录只更新URL
+     *
+     * @param id 图片ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/{id}/file-only")
+    @RequireMinisterRole("删除日常活动图片文件")
+    public ApiResponse<Void> deleteImageFileOnly(@PathVariable Integer id) {
+        logger.info("仅删除图片文件，不删除记录，ID: {}", id);
+        try {
+            dailyImageService.deleteImageFileOnly(id);
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            logger.error("删除图片文件失败", e);
+            return ApiResponse.error("删除失败: " + e.getMessage(), 500);
+        }
+    }
 }

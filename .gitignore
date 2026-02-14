@@ -142,3 +142,5 @@ Desktop.ini
 **/trae*/
 *trae/
 trae/**
+/uploads/
+/deploy/

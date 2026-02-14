@@ -403,12 +403,21 @@ export interface ActivationCodeStats {
   unusedCount: number
   usedCount: number
   expiredCount: number
+  // 兼容字段别名
+  total?: number
+  unused?: number
+  used?: number
+  expired?: number
 }
 
 // 激活码列表响应（包含统计数据）
 export interface ActivationCodeListResponse {
   codes: ActivationCode[]
   stats: ActivationCodeStats
+  // 兼容字段别名
+  list?: ActivationCode[]
+  activationCodes?: ActivationCode[]
+  statistics?: ActivationCodeStats
 }
 
 // ============================================

@@ -2,7 +2,7 @@ import type { ApiResponse } from '@/types'
 
 // 开发环境使用代理，生产环境使用实际地址
 const API_BASE_URL = import.meta.env.PROD
-  ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
+  ? (import.meta.env.VITE_API_BASE_URL || 'http://81.70.218.85:8080')
   : '' // 开发环境使用相对路径，通过Vite代理转发
 
 // 请求拦截器
@@ -37,11 +37,11 @@ class HttpClient {
     const fullUrl = `${this.baseURL}${url}`
     const headers = this.getHeaders()
 
-    // 为长时间请求添加超时控制（AI生成接口）
-    const isAIRequest = url.includes('/api/ai/')
+    // 为长时间请求添加超时控制（AI生成接口和RAG初始化）
+    const isLongRequest = url.includes('/api/ai/') || url.includes('/api/rag/initialize')
     const controller = new AbortController()
-    const timeoutId = isAIRequest
-      ? setTimeout(() => controller.abort(), 180000) // AI请求3分钟超时
+    const timeoutId = isLongRequest
+      ? setTimeout(() => controller.abort(), 300000) // 长耗时请求5分钟超时
       : setTimeout(() => controller.abort(), 30000)  // 普通请求30秒超时
 
     try {

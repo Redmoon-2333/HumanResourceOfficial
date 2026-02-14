@@ -19,8 +19,11 @@ public class RagConfig {
     
     /**
      * 知识库文件目录路径
+     * 支持通过环境变量 RAG_KNOWLEDGE_BASE_PATH 配置
      */
-    private String knowledgeBasePath = "src/main/resources/rag-knowledge-base";
+    private String knowledgeBasePath = System.getenv("RAG_KNOWLEDGE_BASE_PATH") != null 
+        ? System.getenv("RAG_KNOWLEDGE_BASE_PATH") 
+        : "src/main/resources/rag-knowledge-base";
     
     /**
      * 文本分块大小（字符数）

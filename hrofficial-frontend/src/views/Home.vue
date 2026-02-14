@@ -19,6 +19,7 @@ import {
 } from '@element-plus/icons-vue'
 import { getActiveImages, type DailyImage } from '@/api/dailyImage'
 import { ElMessage } from 'element-plus'
+import { getFullImageUrl } from '@/utils/image'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -72,14 +73,11 @@ const loadCarouselImages = async () => {
   try {
     const res = await getActiveImages()
     if (res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
-      // 处理图片URL，为相对路径添加基础URL
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+      // 处理图片URL，使用工具函数确保完整URL
       carouselImages.value = res.data
         .map((img: any) => ({
           ...img,
-          imageUrl: img.imageUrl?.startsWith('http')
-            ? img.imageUrl
-            : `${baseUrl}${img.imageUrl.startsWith('/') ? '' : '/'}${img.imageUrl}`
+          imageUrl: getFullImageUrl(img.imageUrl)
         }))
         .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
       // 启动自动播放
@@ -100,13 +98,14 @@ const loadCarouselImages = async () => {
 
 // 使用默认图片数据（降级方案）
 const useDefaultImages = () => {
+  // 使用工具函数处理默认图片URL
   carouselImages.value = [
-    { imageId: 1, imageUrl: '/images/daily/life1.jpg', title: '团建聚餐', description: '美食与欢笑', sortOrder: 1, isActive: true, createTime: '', updateTime: '' },
-    { imageId: 2, imageUrl: '/images/daily/life2.jpg', title: '生日庆祝', description: '温馨的祝福', sortOrder: 2, isActive: true, createTime: '', updateTime: '' },
-    { imageId: 3, imageUrl: '/images/daily/life3.jpg', title: '桌游时光', description: '欢乐互动', sortOrder: 3, isActive: true, createTime: '', updateTime: '' },
-    { imageId: 4, imageUrl: '/images/daily/life4.jpg', title: '例会惊喜', description: '奶茶相伴', sortOrder: 4, isActive: true, createTime: '', updateTime: '' },
-    { imageId: 5, imageUrl: '/images/daily/life5.jpg', title: '树洞交流', description: '倾听与分享', sortOrder: 5, isActive: true, createTime: '', updateTime: '' },
-    { imageId: 6, imageUrl: '/images/daily/life6.jpg', title: '小屋聚会', description: '温馨时光', sortOrder: 6, isActive: true, createTime: '', updateTime: '' }
+    { imageId: 1, imageUrl: getFullImageUrl('/images/daily/life1.jpg'), title: '团建聚餐', description: '美食与欢笑', sortOrder: 1, isActive: true, createTime: '', updateTime: '' },
+    { imageId: 2, imageUrl: getFullImageUrl('/images/daily/life2.jpg'), title: '生日庆祝', description: '温馨的祝福', sortOrder: 2, isActive: true, createTime: '', updateTime: '' },
+    { imageId: 3, imageUrl: getFullImageUrl('/images/daily/life3.jpg'), title: '桌游时光', description: '欢乐互动', sortOrder: 3, isActive: true, createTime: '', updateTime: '' },
+    { imageId: 4, imageUrl: getFullImageUrl('/images/daily/life4.jpg'), title: '例会惊喜', description: '奶茶相伴', sortOrder: 4, isActive: true, createTime: '', updateTime: '' },
+    { imageId: 5, imageUrl: getFullImageUrl('/images/daily/life5.jpg'), title: '树洞交流', description: '倾听与分享', sortOrder: 5, isActive: true, createTime: '', updateTime: '' },
+    { imageId: 6, imageUrl: getFullImageUrl('/images/daily/life6.jpg'), title: '小屋聚会', description: '温馨时光', sortOrder: 6, isActive: true, createTime: '', updateTime: '' }
   ]
   startAutoPlay()
 }
@@ -151,33 +150,39 @@ const resumeAutoPlay = () => {
   isAutoPlaying.value = true
 }
 
-// 计算每个图片的3D变换
+// 计算每个图片的3D变换（位置固定，由 track 整体旋转）
 const getItemTransform = (index: number) => {
-  if (totalImages.value === 0) return 'rotateY(0deg) translateZ(350px)'
+  if (totalImages.value === 0) return 'rotateY(0deg) translateZ(280px)'
   const angle = (360 / totalImages.value) * index
-  const radius = 350 // 旋转半径
-  const rotateY = angle - currentIndex.value * (360 / totalImages.value)
-  return `rotateY(${rotateY}deg) translateZ(${radius}px)`
+  const radius = 280
+  const scale = getItemScale(index)
+  // 缩放放在最后，避免影响旋转和位移
+  return `rotateY(${angle}deg) translateZ(${radius}px) scale(${scale})`
 }
 
-// 计算每个图片的透明度（只显示前方的图片）
+// 计算每个图片相对于正面的角度（考虑 track 整体旋转）
+const getNormalizedAngle = (index: number): number => {
+  if (totalImages.value === 0) return 0
+  // 图片原始位置 - track 旋转角度 = 图片当前实际位置
+  const angle = ((360 / totalImages.value) * index - currentIndex.value * (360 / totalImages.value)) % 360
+  return angle < 0 ? angle + 360 : angle
+}
+
+// 计算每个图片的透明度
 const getItemOpacity = (index: number) => {
   if (totalImages.value === 0) return 0
-  const angle = ((360 / totalImages.value) * index - currentIndex.value * (360 / totalImages.value)) % 360
-  const normalizedAngle = angle < 0 ? angle + 360 : angle
-  // 只显示正面90度范围内的图片
-  if (normalizedAngle <= 60 || normalizedAngle >= 300) return 1
-  if (normalizedAngle <= 120 || normalizedAngle >= 240) return 0.3
-  return 0.1
+  const normalizedAngle = getNormalizedAngle(index)
+  // 主图片（正面±30度）完全不透明，其他图片统一半透明
+  if (normalizedAngle <= 30 || normalizedAngle >= 330) return 1
+  return 0.35
 }
 
 // 计算每个图片的缩放
 const getItemScale = (index: number) => {
   if (totalImages.value === 0) return 1
-  const angle = ((360 / totalImages.value) * index - currentIndex.value * (360 / totalImages.value)) % 360
-  const normalizedAngle = angle < 0 ? angle + 360 : angle
-  if (normalizedAngle <= 30 || normalizedAngle >= 330) return 1.1
-  if (normalizedAngle <= 60 || normalizedAngle >= 300) return 0.9
+  const normalizedAngle = getNormalizedAngle(index)
+  // 主图片明显放大，其他图片统一较小尺寸
+  if (normalizedAngle <= 30 || normalizedAngle >= 330) return 1.2
   return 0.7
 }
 
@@ -185,12 +190,13 @@ const getItemScale = (index: number) => {
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   // 如果已经尝试过占位图，则隐藏图片
-  if (img.src.includes('placeholder.jpg')) {
+  if (img.src.includes('data:image')) {
     img.style.display = 'none'
     return
   }
-  // 第一次失败，尝试占位图
-  img.src = '/images/placeholder.jpg'
+  // 第一次失败，使用 base64 占位图
+  // Why: 避免 404 请求，使用内联 SVG 作为占位图
+  img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuaXoOWbvjwvdGV4dD4KPC9zdmc+'
 }
 
 onMounted(() => {
@@ -371,9 +377,8 @@ const goToImageManagement = () => {
                   :key="image.imageId"
                   class="carousel-item"
                   :style="{
-                    transform: getItemTransform(index),
-                    opacity: getItemOpacity(index),
-                    '--scale': getItemScale(index)
+                                                                                                                                                    1                    transform: getItemTransform(index),
+                    opacity: getItemOpacity(index)
                   }"
                 >
                   <div class="carousel-image-wrapper">
@@ -761,6 +766,7 @@ section {
    我们的日常板块
    ============================================ */
 .daily-section {
+  margin-top: var(--space-12);
   animation: fadeInUp 0.6s ease 0.2s forwards;
   opacity: 0;
 }
@@ -842,12 +848,12 @@ section {
    ============================================ */
 .carousel-container {
   position: relative;
-  height: 400px;
-  perspective: 1200px;
+  height: 380px;
+  perspective: 1000px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: var(--space-6);
+  margin-top: var(--space-10);
   background: linear-gradient(135deg,
     rgba(255, 107, 74, 0.03) 0%,
     rgba(245, 158, 11, 0.03) 100%);
@@ -989,8 +995,8 @@ section {
 
 .carousel-3d {
   position: relative;
-  width: 300px;
-  height: 300px;
+  width: 240px;
+  height: 240px;
   transform-style: preserve-3d;
 }
 
@@ -1004,15 +1010,14 @@ section {
 
 .carousel-item {
   position: absolute;
-  width: 280px;
-  height: 280px;
+  width: 220px;
+  height: 220px;
   left: 50%;
   top: 50%;
-  margin-left: -140px;
-  margin-top: -140px;
+  margin-left: -110px;
+  margin-top: -110px;
   transform-style: preserve-3d;
   transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  scale: var(--scale, 1);
 }
 
 .carousel-image-wrapper {
@@ -1216,19 +1221,19 @@ section {
    ============================================ */
 @media (max-width: 1024px) {
   .carousel-container {
-    height: 350px;
+    height: 320px;
   }
 
   .carousel-3d {
-    width: 250px;
-    height: 250px;
+    width: 160px;
+    height: 160px;
   }
 
   .carousel-item {
-    width: 230px;
-    height: 230px;
-    margin-left: -115px;
-    margin-top: -115px;
+    width: 140px;
+    height: 140px;
+    margin-left: -70px;
+    margin-top: -70px;
   }
 }
 
@@ -1263,7 +1268,7 @@ section {
   }
 
   .carousel-container {
-    height: 300px;
+    height: 280px;
   }
 
   .management-entry {
@@ -1281,15 +1286,15 @@ section {
   }
 
   .carousel-3d {
-    width: 200px;
-    height: 200px;
+    width: 160px;
+    height: 160px;
   }
 
   .carousel-item {
-    width: 180px;
-    height: 180px;
-    margin-left: -90px;
-    margin-top: -90px;
+    width: 140px;
+    height: 140px;
+    margin-left: -70px;
+    margin-top: -70px;
   }
 
   .carousel-btn {

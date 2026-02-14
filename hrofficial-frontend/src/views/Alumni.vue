@@ -207,7 +207,7 @@ const getAvatarColor = (name: string, role: string) => {
 const stats = computed(() => ({
   total: totalUniqueCount.value,
   years: availableYears.value.length,
-  currentYearMembers: yearUniqueCounts.value.get(currentYear.value) || currentMembers.value.length
+  currentYearMembers: yearUniqueCounts.value.get(currentYear.value || 0) || currentMembers.value.length
 }))
 
 watch(currentYear, () => {

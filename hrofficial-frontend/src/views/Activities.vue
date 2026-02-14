@@ -5,6 +5,7 @@ import { getActivities, createActivity, updateActivity, deleteActivity, getActiv
 import type { ActivityIntro, ActivityIntroRequest, ActivityImage } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getFullImageUrl, getFullImageUrlList } from '@/utils/image'
 
 const userStore = useUserStore()
 
@@ -552,11 +553,11 @@ onMounted(() => {
                     }"
                   >
                     <el-image
-                      :src="image.imageUrl"
+                      :src="getFullImageUrl(image.imageUrl)"
                       :alt="image.description || '活动图片'"
                       fit="cover"
                       class="gallery-image"
-                      :preview-src-list="activity.images.map(img => img.imageUrl)"
+                      :preview-src-list="getFullImageUrlList(activity.images.map(img => img.imageUrl))"
                       :initial-index="imgIndex"
                       :preview-teleported="true"
                       :z-index="3000"
@@ -716,10 +717,10 @@ onMounted(() => {
               >
                 <div class="image-wrapper">
                   <el-image
-                    :src="image.imageUrl"
+                    :src="getFullImageUrl(image.imageUrl)"
                     fit="cover"
                     class="list-image"
-                    :preview-src-list="activityImages.map((img: any) => img.imageUrl)"
+                    :preview-src-list="getFullImageUrlList(activityImages.map((img: any) => img.imageUrl))"
                     :initial-index="imgIdx"
                     :preview-teleported="true"
                     :z-index="3000"
