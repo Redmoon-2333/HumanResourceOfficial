@@ -193,8 +193,8 @@ public class DailyImageService {
     public DailyImage uploadImage(MultipartFile file, String title, String description) throws IOException {
         logger.info("开始上传日常活动图片: 文件名={}, 标题={}", file.getOriginalFilename(), title);
 
-        // 1. 上传文件到本地存储
-        String imageUrl = localFileUtil.uploadActivityImage(file);
+        // 1. 上传文件到本地存储（使用 daily 分类）
+        String imageUrl = localFileUtil.uploadDailyImage(file);
 
         // 2. 创建图片实体
         DailyImage dailyImage = new DailyImage();
@@ -212,6 +212,24 @@ public class DailyImageService {
 
         logger.info("日常活动图片上传成功: ID={}, URL={}", dailyImage.getImageId(), imageUrl);
         return dailyImage;
+    }
+
+    /**
+     * 仅上传图片文件，不创建数据库记录
+     * 用于编辑图片时替换文件
+     *
+     * @param file 图片文件
+     * @return 上传后的图片URL
+     * @throws IOException 文件上传异常
+     */
+    public String uploadImageFile(MultipartFile file) throws IOException {
+        logger.info("开始上传日常活动图片文件: 文件名={}", file.getOriginalFilename());
+
+        // 上传文件到本地存储（使用 daily 分类）
+        String imageUrl = localFileUtil.uploadDailyImage(file);
+
+        logger.info("日常活动图片文件上传成功: URL={}", imageUrl);
+        return imageUrl;
     }
 
     /**

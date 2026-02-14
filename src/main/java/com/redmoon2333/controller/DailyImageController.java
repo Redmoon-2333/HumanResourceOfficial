@@ -4,6 +4,7 @@ import com.redmoon2333.annotation.RequireMinisterRole;
 import com.redmoon2333.dto.ApiResponse;
 import com.redmoon2333.entity.DailyImage;
 import com.redmoon2333.service.DailyImageService;
+import com.redmoon2333.util.LocalFileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,9 @@ public class DailyImageController {
 
     @Autowired
     private DailyImageService dailyImageService;
+
+    @Autowired
+    private LocalFileUtil localFileUtil;
 
     /**
      * 获取所有启用的图片列表
@@ -266,6 +270,88 @@ public class DailyImageController {
             return ApiResponse.error("文件上传失败: " + e.getMessage(), 500);
         } catch (Exception e) {
             logger.error("上传图片失败", e);
+            return ApiResponse.error("上传失败: " + e.getMessage(), 500);
+        }
+    }
+
+    /**
+     * 仅上传图片文件，不创建数据库记录
+     * 用于编辑图片时替换文件
+     *
+     * @param file 图片文件
+     * @return 上传后的图片URL
+     */
+    @PostMapping("/upload-file")
+    @RequireMinisterRole("上传日常活动图片文件")
+    public ApiResponse<String> uploadImageFile(@RequestParam("file") MultipartFile file) {
+        logger.info("上传日常活动图片文件: 文件名={}", file.getOriginalFilename());
+
+        // 参数校验
+        if (file.isEmpty()) {
+            return ApiResponse.error("图片文件不能为空", 400);
+        }
+
+        try {
+            String imageUrl = dailyImageService.uploadImageFile(file);
+            return ApiResponse.success(imageUrl);
+        } catch (IllegalArgumentException e) {
+            logger.warn("上传图片文件参数错误: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage(), 400);
+        } catch (IOException e) {
+            logger.error("上传图片文件失败", e);
+            return ApiResponse.error("文件上传失败: " + e.getMessage(), 500);
+        } catch (Exception e) {
+            logger.error("上传图片文件失败", e);
+            return ApiResponse.error("上传失败: " + e.getMessage(), 500);
+        }
+    }
+
+    /**
+     * 按类型上传图片文件
+     * 支持不同模块的图片上传到对应目录
+     *
+     * @param file 图片文件
+     * @param type 图片类型 (daily-我们的日常, activity-活动照片, avatar-用户头像)
+     * @return 上传后的图片URL
+     */
+    @PostMapping("/upload-by-type")
+    @RequireMinisterRole("上传图片文件")
+    public ApiResponse<String> uploadImageByType(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("type") String type) {
+        logger.info("按类型上传图片文件: 文件名={}, 类型={}", file.getOriginalFilename(), type);
+
+        // 参数校验
+        if (file.isEmpty()) {
+            return ApiResponse.error("图片文件不能为空", 400);
+        }
+
+        try {
+            LocalFileUtil.ImageType imageType;
+            switch (type) {
+                case "daily":
+                    imageType = LocalFileUtil.ImageType.DAILY;
+                    break;
+                case "activity":
+                    imageType = LocalFileUtil.ImageType.ACTIVITY;
+                    break;
+                case "avatar":
+                    imageType = LocalFileUtil.ImageType.AVATAR;
+                    break;
+                default:
+                    return ApiResponse.error("不支持的图片类型", 400);
+            }
+
+            String imageUrl = localFileUtil.uploadImage(file, imageType);
+            return ApiResponse.success("上传成功", imageUrl);
+        } catch (IllegalArgumentException e) {
+            logger.warn("上传图片文件参数错误: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage(), 400);
+        } catch (IOException e) {
+            logger.error("上传图片文件失败", e);
+            return ApiResponse.error("文件上传失败: " + e.getMessage(), 500);
+        } catch (Exception e) {
+            logger.error("上传图片文件失败", e);
             return ApiResponse.error("上传失败: " + e.getMessage(), 500);
         }
     }

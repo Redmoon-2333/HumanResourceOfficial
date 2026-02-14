@@ -833,30 +833,50 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: var(--space-6);
+  animation: fadeInUp 0.6s ease 0.3s both;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  padding: var(--space-4, 16px) var(--space-6, 24px);
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  min-width: 100px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.stat-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.12);
 }
 
 .stat-number {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
-  color: var(--primary-600);
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1;
 }
 
 .stat-label {
-  font-size: var(--text-sm);
+  font-size: 12px;
   color: var(--text-tertiary);
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 .stat-divider {
   width: 1px;
   height: 40px;
-  background: var(--border-light);
+  background: linear-gradient(180deg, transparent, rgba(255, 107, 74, 0.3), transparent);
 }
 
 /* Hero Visual - 装饰元素 */

@@ -72,7 +72,16 @@ const loadCarouselImages = async () => {
   try {
     const res = await getActiveImages()
     if (res.code === 200 && Array.isArray(res.data) && res.data.length > 0) {
-      carouselImages.value = res.data.sort((a, b) => a.sortOrder - b.sortOrder)
+      // 处理图片URL，为相对路径添加基础URL
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+      carouselImages.value = res.data
+        .map((img: any) => ({
+          ...img,
+          imageUrl: img.imageUrl?.startsWith('http')
+            ? img.imageUrl
+            : `${baseUrl}${img.imageUrl.startsWith('/') ? '' : '/'}${img.imageUrl}`
+        }))
+        .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
       // 启动自动播放
       startAutoPlay()
     } else {
@@ -170,6 +179,18 @@ const getItemScale = (index: number) => {
   if (normalizedAngle <= 30 || normalizedAngle >= 330) return 1.1
   if (normalizedAngle <= 60 || normalizedAngle >= 300) return 0.9
   return 0.7
+}
+
+// 处理图片加载错误 - 防止无限循环
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  // 如果已经尝试过占位图，则隐藏图片
+  if (img.src.includes('placeholder.jpg')) {
+    img.style.display = 'none'
+    return
+  }
+  // 第一次失败，尝试占位图
+  img.src = '/images/placeholder.jpg'
 }
 
 onMounted(() => {
@@ -361,7 +382,7 @@ const goToImageManagement = () => {
                       :alt="image.title"
                       loading="lazy"
                       class="carousel-image"
-                      @error="$event.target.src = '/images/placeholder.jpg'"
+                      @error="handleImageError($event)"
                     />
                     <div class="carousel-image-overlay">
                       <h4>{{ image.title }}</h4>

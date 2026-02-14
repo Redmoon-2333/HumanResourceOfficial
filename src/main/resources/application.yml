@@ -49,7 +49,7 @@ spring:
   # AI Vector Store配置 - Redis Stack
   ai:
     # Spring AI Dashscope 配置（统一API Key）
-    # Warning: 生产环境必须通过环境变量设置，禁止使用硬编码密钥
+    # Warning: 必须通过环境变量 ALIQWEN_API 设置，禁止硬编码密钥
     dashscope:
       api-key: ${ALIQWEN_API:}
     vectorstore:
@@ -93,7 +93,7 @@ jwt:
 # 阿里云配置
 aliyun:
   # 通义千问API配置
-  # Warning: 生产环境必须通过环境变量设置，禁止使用硬编码密钥
+  # Warning: 必须通过环境变量 ALIQWEN_API 设置，禁止硬编码密钥
   dashscope:
     api-key: ${ALIQWEN_API:}
   # OSS配置（使用环境变量）
