@@ -28,7 +28,7 @@ public class SaaLLMConfig {
     private static final String QWEN_MODEL = "qwen-plus";
     private static final String TOOL_MODEL = "qwen-max";
 
-    @Value("${aliyun.dashscope.api-key}")
+    @Value("${spring.ai.dashscope.api-key}")
     private String apiKey;
 
     /**

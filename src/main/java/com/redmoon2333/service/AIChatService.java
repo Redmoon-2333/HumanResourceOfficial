@@ -65,9 +65,13 @@ public class AIChatService {
     public ChatResponse chat(Integer userId, String message) {
         logger.info("用户 {} 发送消息", userId);
 
+        // Why: 使用userId作为conversationId，确保每个用户的对话历史独立隔离
+        String conversationId = "user_" + userId;
+
         String response = chatClient.prompt()
                 .system(promptConfig.getSystemPrompt())
                 .user(message)
+                .advisors(advisor -> advisor.param("chat_memory_conversation_id", conversationId))
                 .call()
                 .content();
 
@@ -84,12 +88,16 @@ public class AIChatService {
     public Flux<String> chatStream(Integer userId, String message) {
         logger.info("用户 {} 发送流式消息", userId);
 
+        // Why: 使用userId作为conversationId，确保每个用户的对话历史独立隔离
+        String conversationId = "user_" + userId;
+
         // 使用缓冲区处理流式内容的格式化
         StringBuilder formatBuffer = new StringBuilder();
 
         return chatClient.prompt()
                 .system(promptConfig.getSystemPrompt())
                 .user(message)
+                .advisors(advisor -> advisor.param("chat_memory_conversation_id", conversationId))
                 .stream()
                 .content()
                 .limitRate(100)
@@ -124,13 +132,17 @@ public class AIChatService {
             return handleToolCalling(message, userId);
         }
 
+        // Why: 使用userId作为conversationId，确保每个用户的对话历史独立隔离
+        String conversationId = "user_" + userId;
+
         // 使用缓冲区处理流式内容的格式化
         StringBuilder formatBuffer = new StringBuilder();
 
         // 标准RAG模式
         var promptSpec = chatClient.prompt()
                 .system(promptConfig.getSystemPrompt())
-                .user(message);
+                .user(message)
+                .advisors(advisor -> advisor.param("chat_memory_conversation_id", conversationId));
 
         // 动态添加RAG Advisor
         if (useRAG && vectorStore != null) {

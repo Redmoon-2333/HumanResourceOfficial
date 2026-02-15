@@ -240,7 +240,7 @@ onMounted(() => {
           <div class="gradient-orb orb-2"></div>
           <div class="floating-keys">
             <div class="key-icon key-1">
-              <el-icon :size="32" color="rgba(255, 107, 74, 0.3)"><Key /></el-icon>
+              <el-icon :size="32" color="rgba(225, 29, 72, 0.3)"><Key /></el-icon>
             </div>
             <div class="key-icon key-2">
               <el-icon :size="24" color="rgba(245, 158, 11, 0.3)"><Key /></el-icon>
@@ -258,7 +258,7 @@ onMounted(() => {
           </div>
           <!-- Inline CSS Fix: Prevent FOUC - Hero title should be black (#1C1917), not orange -->
           <h1 class="hero-title" style="color: #1C1917;">
-            成员账号<span style="color: #FF6B4A;">激活系统</span>
+            成员账号<span style="color: #E11D48;">激活系统</span>
           </h1>
           <!-- Inline CSS Fix: Prevent FOUC - Subtitle should be gray (#78716C) -->
           <p class="hero-subtitle" style="color: #78716C;">
@@ -459,7 +459,7 @@ onMounted(() => {
           <!-- 加载状态 -->
           <div v-if="loading" class="empty-state">
             <div class="empty-icon">
-              <el-icon :size="64" color="#FF6B4A" class="animate-spin"><Refresh /></el-icon>
+              <el-icon :size="64" color="#E11D48" class="animate-spin"><Refresh /></el-icon>
             </div>
             <h3 class="empty-title">加载中...</h3>
             <p class="empty-desc">正在获取激活码数据</p>
@@ -480,7 +480,7 @@ onMounted(() => {
       <div class="info-section">
         <GlassPanel :blur="15" :opacity="0.9" :border-radius="20">
           <div class="info-header">
-            <el-icon :size="20" color="#F59E0B"><Warning /></el-icon>
+            <el-icon :size="20" color="#E11D48"><Warning /></el-icon>
             <span>使用说明</span>
           </div>
           <ul class="info-list">
@@ -498,15 +498,24 @@ onMounted(() => {
 <style scoped>
 .activation-code-page {
   min-height: calc(100vh - 64px);
-  background: linear-gradient(180deg, #FFFBF7 0%, #FFF5F0 100%);
+  background: #FFFFFF;
+  padding: 32px;
   padding-bottom: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Hero区域 */
 .hero-section {
   position: relative;
-  padding: 50px 24px 30px;
+  padding: var(--space-10) var(--space-8);
+  margin: var(--space-8);
+  margin-bottom: 0;
+  border-radius: 32px;
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.06) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 1px solid rgba(225, 29, 72, 0.1);
 }
 
 .hero-background {
@@ -525,24 +534,44 @@ onMounted(() => {
 .orb-1 {
   width: 350px;
   height: 350px;
-  background: linear-gradient(135deg, #FF6B4A, #FB7185);
+  background: radial-gradient(ellipse 65% 55% at 35% 65%, #E11D48 0%, rgba(225, 29, 72, 0.4) 45%, transparent 70%);
   top: -80px;
   right: -80px;
-  animation: float-orb 7s ease-in-out infinite;
+  animation: blobMorph 8s ease-in-out infinite;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  filter: blur(60px);
+  opacity: 0.35;
 }
 
 .orb-2 {
   width: 280px;
   height: 280px;
-  background: linear-gradient(135deg, #F59E0B, #FFD93D);
+  background: radial-gradient(ellipse 55% 65% at 55% 35%, #F43F5E 0%, rgba(244, 63, 94, 0.35) 50%, transparent 65%);
   bottom: -40px;
   left: -40px;
-  animation: float-orb 7s ease-in-out infinite -3.5s;
+  animation: blobMorph 10s ease-in-out infinite -3s;
+  border-radius: 40% 60% 70% 30% / 40% 50% 50% 60%;
+  filter: blur(50px);
+  opacity: 0.25;
 }
 
-@keyframes float-orb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(15px, -15px) scale(1.05); }
+@keyframes blobMorph {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    transform: translate(15px, -25px) scale(1.05) rotate(5deg);
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 40% 70% 60%;
+    transform: translate(-10px, 15px) scale(0.95) rotate(-3deg);
+  }
+  75% {
+    border-radius: 40% 60% 60% 40% / 60% 50% 40% 60%;
+    transform: translate(20px, 10px) scale(1.02) rotate(2deg);
+  }
 }
 
 .floating-keys {
@@ -591,13 +620,29 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(255, 107, 74, 0.1);
-  border: 1px solid rgba(255, 107, 74, 0.2);
+  background: linear-gradient(135deg, #E11D48, #FB7185);
+  border: none;
   border-radius: 20px;
-  color: #FF6B4A;
+  color: white;
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  animation: fadeInDown 0.6s ease both;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
 }
 
 .hero-title {
@@ -606,10 +651,11 @@ onMounted(() => {
   color: #1C1917;
   margin-bottom: 10px;
   letter-spacing: -0.02em;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #FF6B4A 0%, #F59E0B 100%);
+  background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -618,30 +664,54 @@ onMounted(() => {
 .hero-subtitle {
   font-size: 15px;
   color: #78716C;
+  animation: fadeInUp 0.6s ease 0.2s both;
 }
 
 /* 统计区域 */
-.stats-section {
-  max-width: 1200px;
-  margin: 0 auto 24px;
-  padding: 0 24px;
-}
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
 
+.stats-section {
+  position: relative;
+  padding: 24px;
+  margin: var(--space-8);
+  margin-top: var(--space-6);
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid rgba(225, 29, 72, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.stats-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #E11D48, #FB7185);
+  border-radius: 18px 18px 0 0;
+}
+
 .stat-card {
-  background: white;
-  border-radius: 20px;
+  background: #FAFAFA;
+  border-radius: 16px;
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.1);
+  border-color: rgba(225, 29, 72, 0.15);
 }
 
 .stat-card:hover {
@@ -660,7 +730,7 @@ onMounted(() => {
 }
 
 .stat-card.total .stat-icon-bg {
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, #E11D48, #FB7185);
 }
 
 .stat-card.unused .stat-icon-bg {
@@ -697,8 +767,8 @@ onMounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: rgba(255, 107, 74, 0.1);
-  color: #FF6B4A;
+  background: rgba(225, 29, 72, 0.1);
+  color: #E11D48;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -738,7 +808,7 @@ onMounted(() => {
 
 .progress-ring-fill {
   fill: none;
-  stroke: #F59E0B;
+  stroke: #E11D48;
   stroke-width: 3;
   stroke-linecap: round;
   transition: stroke-dasharray 0.5s ease;
@@ -760,7 +830,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, #E11D48, #BE123C);
   color: white;
   border: none;
   border-radius: 12px;
@@ -768,12 +838,12 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.35);
+  box-shadow: 0 4px 16px rgba(225, 29, 72, 0.35);
 }
 
 .generate-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 74, 0.45);
+  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.45);
 }
 
 .generate-btn:disabled {
@@ -788,6 +858,37 @@ onMounted(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
 }
 
 .filter-group {
@@ -847,15 +948,32 @@ onMounted(() => {
 
 .filter-tab.active {
   background: white;
-  color: #FF6B4A;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: #E11D48;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.1);
 }
 
 /* 激活码列表 */
 .codes-section {
+  position: relative;
   max-width: 1200px;
-  margin: 0 auto 24px;
-  padding: 0 24px;
+  margin: var(--space-8);
+  margin-top: var(--space-6);
+  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid rgba(225, 29, 72, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.codes-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #FB7185, #E11D48);
+  border-radius: 18px 18px 0 0;
 }
 
 .table-container {
@@ -958,7 +1076,7 @@ tr:hover .copy-btn {
 }
 
 .copy-btn:hover {
-  background: #FF6B4A;
+  background: #E11D48;
   color: white;
 }
 
@@ -1067,7 +1185,7 @@ tr:hover .copy-btn {
   top: 8px;
   width: 6px;
   height: 6px;
-  background: #F59E0B;
+  background: #E11D48;
   border-radius: 50%;
 }
 

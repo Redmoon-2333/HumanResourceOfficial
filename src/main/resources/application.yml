@@ -92,10 +92,6 @@ jwt:
 
 # 阿里云配置
 aliyun:
-  # 通义千问API配置
-  # Warning: 必须通过环境变量 ALIQWEN_API 设置，禁止硬编码密钥
-  dashscope:
-    api-key: ${ALIQWEN_API:}
   # OSS配置（使用环境变量）
   oss:
     endpoint: oss-cn-hangzhou.aliyuncs.com
@@ -108,6 +104,13 @@ local:
   file:
     upload:
       path: uploads
+    access:
+      # 文件访问基础URL，生产环境应配置为服务器公网地址
+      url: ${FILE_ACCESS_URL:http://localhost:8080}
+
+# 文件访问基础URL - 用于拼接图片完整URL
+file:
+  base-url: ${FILE_ACCESS_URL:http://localhost:8080}
 
 # RAG配置
 rag:

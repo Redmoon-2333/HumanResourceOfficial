@@ -880,6 +880,262 @@
 }
 
 /* ============================================================
+   14. 页面主题色彩系统 / Page Theme Color System
+   ============================================================ */
+
+:root {
+  --page-theme-home: var(--coral-500);
+  --page-theme-home-bg: rgba(255, 107, 74, 0.08);
+  --page-theme-login: var(--amber-500);
+  --page-theme-login-bg: rgba(245, 158, 11, 0.08);
+  --page-theme-activities: var(--rose-500);
+  --page-theme-activities-bg: rgba(244, 63, 94, 0.08);
+  --page-theme-past-activities: #8B5CF6;
+  --page-theme-past-activities-bg: rgba(139, 92, 246, 0.08);
+  --page-theme-alumni: #06B6D4;
+  --page-theme-alumni-bg: rgba(6, 182, 212, 0.08);
+  --page-theme-materials: var(--emerald-500);
+  --page-theme-materials-bg: rgba(16, 185, 129, 0.08);
+  --page-theme-ai-chat: var(--sky-500);
+  --page-theme-ai-chat-bg: rgba(14, 165, 233, 0.08);
+  --page-theme-plan-generator: #A855F7;
+  --page-theme-plan-generator-bg: rgba(168, 85, 247, 0.08);
+  --page-theme-profile: var(--emerald-500);
+  --page-theme-profile-bg: rgba(16, 185, 129, 0.08);
+  --page-theme-activation-code: #F43F5E;
+  --page-theme-activation-code-bg: rgba(244, 63, 94, 0.08);
+  --page-theme-rag-management: #4F46E5;
+  --page-theme-rag-management-bg: rgba(79, 70, 229, 0.08);
+  --page-theme-daily-image: #F59E0B;
+  --page-theme-daily-image-bg: rgba(245, 158, 11, 0.08);
+  --page-theme-not-found: linear-gradient(135deg, var(--coral-500), var(--amber-500), var(--rose-500));
+  --page-theme-not-found-bg: rgba(255, 107, 74, 0.06);
+  
+  --hero-title-size: var(--text-4xl);
+  --hero-title-weight: var(--font-bold);
+  --hero-transition-duration: 0.6s;
+}
+
+/* ============================================================
+   15. 高级动画关键帧库 / Advanced Animation Keyframe Library
+   ============================================================ */
+
+@keyframes heroSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes heroSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes heroSlideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroSlideInBottom {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes heroTextReveal {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.95;
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(80px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(80px) rotate(-360deg);
+  }
+}
+
+@keyframes morphBlob {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
+  }
+  75% {
+    border-radius: 60% 40% 60% 30% / 70% 30% 50% 60%;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 107, 74, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 107, 74, 0.6);
+  }
+}
+
+@keyframes contentStagger {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation utility classes */
+.animate-hero-left {
+  animation: heroSlideInLeft 0.8s var(--ease-spring) forwards;
+}
+.animate-hero-right {
+  animation: heroSlideInRight 0.8s var(--ease-spring) forwards;
+}
+.animate-hero-top {
+  animation: heroSlideInTop 0.8s var(--ease-spring) forwards;
+}
+.animate-hero-bottom {
+  animation: heroSlideInBottom 0.8s var(--ease-spring) forwards;
+}
+.animate-hero-scale {
+  animation: heroScaleIn 0.8s var(--ease-spring) forwards;
+}
+.animate-hero-reveal {
+  animation: heroTextReveal 1s var(--ease-out) forwards;
+}
+.animate-gradient-flow {
+  background-size: 200% 200%;
+  animation: gradientFlow 8s ease infinite;
+}
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+.animate-morph {
+  animation: morphBlob 8s ease-in-out infinite;
+}
+.animate-stagger {
+  animation: contentStagger 0.6s var(--ease-out) forwards;
+  opacity: 0;
+}
+.stagger-delay-1 { animation-delay: 0.1s; }
+.stagger-delay-2 { animation-delay: 0.2s; }
+.stagger-delay-3 { animation-delay: 0.3s; }
+.stagger-delay-4 { animation-delay: 0.4s; }
+.stagger-delay-5 { animation-delay: 0.5s; }
+.stagger-delay-6 { animation-delay: 0.6s; }
+
+/* ============================================================
+   16. Hero Section 通用样式 / Hero Section Common Styles
+   ============================================================ */
+
+.hero-universal {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  padding: var(--space-12) var(--space-8);
+  margin-bottom: var(--space-8);
+  transition: background var(--hero-transition-duration) var(--ease-out);
+}
+
+.hero-title-universal {
+  font-size: var(--hero-title-size);
+  font-weight: var(--hero-title-weight);
+  line-height: 1.1;
+  margin: 0;
+  transition: all var(--hero-transition-duration) var(--ease-spring);
+}
+
+.hero-bg-decoration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ============================================================
    13. 减少动画偏好 / Reduced Motion Support
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
@@ -890,4 +1146,942 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .animate-hero-left,
+  .animate-hero-right,
+  .animate-hero-top,
+  .animate-hero-bottom,
+  .animate-hero-scale,
+  .animate-hero-reveal,
+  .animate-gradient-flow,
+  .animate-breathe,
+  .animate-glow-pulse,
+  .animate-morph,
+  .animate-stagger {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
+
+/* ============================================================
+   17. 页面主题色彩系统增强 / Enhanced Page Theme System
+   ============================================================ */
+
+:root {
+  --page-home: linear-gradient(135deg, rgba(255, 107, 74, 0.12) 0%, rgba(245, 158, 11, 0.08) 50%, rgba(227, 85, 50, 0.06) 100%);
+  --page-home-accent: var(--coral-500);
+  
+  --page-login: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 50%, rgba(217, 119, 6, 0.06) 100%);
+  --page-login-accent: var(--amber-500);
+  
+  --page-register: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(251, 191, 36, 0.08) 50%, rgba(217, 119, 6, 0.06) 100%);
+  --page-register-accent: var(--amber-500);
+  
+  --page-activities: linear-gradient(135deg, rgba(244, 63, 94, 0.12) 0%, rgba(251, 113, 133, 0.08) 50%, rgba(225, 29, 72, 0.06) 100%);
+  --page-activities-accent: var(--rose-500);
+  
+  --page-activity-detail: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(255, 107, 74, 0.08) 50%, rgba(251, 113, 133, 0.06) 100%);
+  --page-activity-detail-accent: var(--rose-400);
+  
+  --page-past-activities: linear-gradient(135deg, rgba(139, 92, 246, 0.12) 0%, rgba(167, 139, 250, 0.08) 50%, rgba(124, 58, 237, 0.06) 100%);
+  --page-past-activities-accent: #8B5CF6;
+  
+  --page-alumni: linear-gradient(135deg, rgba(6, 182, 212, 0.12) 0%, rgba(34, 211, 238, 0.08) 50%, rgba(14, 165, 233, 0.06) 100%);
+  --page-alumni-accent: #06B6D4;
+  
+  --page-materials: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(52, 211, 153, 0.08) 50%, rgba(5, 150, 105, 0.06) 100%);
+  --page-materials-accent: var(--emerald-500);
+  
+  --page-ai-chat: linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(56, 189, 248, 0.08) 50%, rgba(2, 132, 199, 0.06) 100%);
+  --page-ai-chat-accent: var(--sky-500);
+  
+  --page-plan-generator: linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(192, 132, 252, 0.08) 50%, rgba(147, 51, 234, 0.06) 100%);
+  --page-plan-generator-accent: #A855F7;
+  
+  --page-profile: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(52, 211, 153, 0.08) 50%, rgba(5, 150, 105, 0.06) 100%);
+  --page-profile-accent: var(--emerald-500);
+  
+  --page-activation-code: linear-gradient(135deg, rgba(244, 63, 94, 0.12) 0%, rgba(251, 113, 133, 0.08) 50%, rgba(225, 29, 72, 0.06) 100%);
+  --page-activation-code-accent: #F43F5E;
+  
+  --page-rag-management: linear-gradient(135deg, rgba(79, 70, 229, 0.12) 0%, rgba(99, 102, 241, 0.08) 50%, rgba(67, 56, 202, 0.06) 100%);
+  --page-rag-management-accent: #4F46E5;
+  
+  --page-daily-image: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.10) 50%, rgba(217, 119, 6, 0.08) 100%);
+  --page-daily-image-accent: #F59E0B;
+  
+  --page-not-found: linear-gradient(135deg, rgba(255, 107, 74, 0.15) 0%, rgba(245, 158, 11, 0.12) 50%, rgba(244, 63, 94, 0.10) 100%);
+  --page-not-found-accent: var(--coral-500);
+}
+
+/* ============================================================
+   18. Hero Section 动画增强 / Hero Section Animation Enhancement
+   ============================================================ */
+
+@keyframes heroFloatIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes heroSlideFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-80px) rotateY(-15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotateY(0);
+  }
+}
+
+@keyframes heroSlideFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(80px) rotateY(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotateY(0);
+  }
+}
+
+@keyframes heroSlideFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px) rotateX(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+@keyframes heroSlideFromBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(60px) rotateX(-15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0);
+  }
+}
+
+@keyframes heroZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(20px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes heroTypewriter {
+  0% {
+    width: 0;
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
+@keyframes heroGlitch {
+  0%, 100% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+}
+
+@keyframes heroShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes heroPulse3D {
+  0%, 100% {
+    transform: scale(1) translateZ(0);
+    box-shadow: 0 0 0 0 rgba(255, 107, 74, 0.4);
+  }
+  50% {
+    transform: scale(1.02) translateZ(20px);
+    box-shadow: 0 20px 40px -10px rgba(255, 107, 74, 0.3);
+  }
+}
+
+@keyframes heroRotate3D {
+  0% {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+  25% {
+    transform: perspective(1000px) rotateY(5deg) rotateX(2deg);
+  }
+  50% {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+  75% {
+    transform: perspective(1000px) rotateY(-5deg) rotateX(-2deg);
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  }
+}
+
+@keyframes heroWave {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(2deg);
+  }
+  75% {
+    transform: translateY(5px) rotate(-2deg);
+  }
+}
+
+@keyframes heroSplitReveal {
+  0% {
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    opacity: 0;
+  }
+  100% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    opacity: 1;
+  }
+}
+
+@keyframes heroBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes heroFlipIn {
+  0% {
+    opacity: 0;
+    transform: perspective(400px) rotateY(90deg);
+  }
+  40% {
+    transform: perspective(400px) rotateY(-20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(400px) rotateY(10deg);
+  }
+  80% {
+    transform: perspective(400px) rotateY(-5deg);
+  }
+  100% {
+    transform: perspective(400px) rotateY(0deg);
+  }
+}
+
+@keyframes heroLiquid {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    transform: rotate(0deg);
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    transform: rotate(5deg);
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%;
+    transform: rotate(0deg);
+  }
+  75% {
+    border-radius: 60% 40% 60% 30% / 70% 30% 50% 60%;
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes heroNeonPulse {
+  0%, 100% {
+    text-shadow: 
+      0 0 4px currentColor,
+      0 0 11px currentColor,
+      0 0 19px currentColor;
+  }
+  50% {
+    text-shadow: 
+      0 0 8px currentColor,
+      0 0 20px currentColor,
+      0 0 40px currentColor,
+      0 0 80px currentColor;
+  }
+}
+
+@keyframes heroRetroWave {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(30deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+}
+
+@keyframes heroMatrixRain {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Animation utility classes for Hero */
+.animate-hero-float-in {
+  animation: heroFloatIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-slide-left {
+  animation: heroSlideFromLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-slide-right {
+  animation: heroSlideFromRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-slide-top {
+  animation: heroSlideFromTop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-slide-bottom {
+  animation: heroSlideFromBottom 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-zoom {
+  animation: heroZoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-bounce {
+  animation: heroBounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-flip {
+  animation: heroFlipIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-split {
+  animation: heroSplitReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-hero-liquid {
+  animation: heroLiquid 8s ease-in-out infinite;
+}
+
+.animate-hero-neon {
+  animation: heroNeonPulse 2s ease-in-out infinite;
+}
+
+.animate-hero-retro {
+  background-size: 200% 200%;
+  animation: heroRetroWave 4s ease infinite;
+}
+
+.animate-hero-pulse-3d {
+  animation: heroPulse3D 3s ease-in-out infinite;
+}
+
+.animate-hero-rotate-3d {
+  animation: heroRotate3D 8s ease-in-out infinite;
+}
+
+.animate-hero-wave {
+  animation: heroWave 4s ease-in-out infinite;
+}
+
+/* ============================================================
+   19. Hero Section 位置样式 / Hero Section Position Styles
+   ============================================================ */
+
+.hero-position-center {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-position-left {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero-position-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.hero-position-left-top {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-top: var(--space-8);
+}
+
+.hero-position-right-top {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding-top: var(--space-8);
+}
+
+.hero-position-left-bottom {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-bottom: var(--space-8);
+}
+
+.hero-position-right-bottom {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding-bottom: var(--space-8);
+}
+
+.hero-position-scattered {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+.hero-position-scattered .hero-title {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+}
+
+.hero-position-scattered .hero-subtitle {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
+  text-align: right;
+}
+
+/* ============================================================
+   20. 页面过渡动画 / Page Transition Animations
+   ============================================================ */
+
+.page-transition-enter-active {
+  animation: pageSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.page-transition-leave-active {
+  animation: pageSlideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes pageSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+}
+
+/* Hero Background Transition */
+.hero-bg-transition {
+  transition: 
+    background 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Hero Title Position Transition */
+.hero-title-transition {
+  transition: 
+    transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.4s ease;
+}
+
+/* ============================================================
+   21. 微交互增强 / Micro-interaction Enhancement
+   ============================================================ */
+
+@keyframes rippleEffect {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.1); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+
+@keyframes rubberBand {
+  0% { transform: scale(1); }
+  30% { transform: scaleX(1.25) scaleY(0.75); }
+  40% { transform: scaleX(0.75) scaleY(1.25); }
+  50% { transform: scaleX(1.15) scaleY(0.85); }
+  65% { transform: scaleX(0.95) scaleY(1.05); }
+  75% { transform: scaleX(1.05) scaleY(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes jello {
+  0%, 11.1%, 100% { transform: none; }
+  22.2% { transform: skewX(-12.5deg) skewY(-12.5deg); }
+  33.3% { transform: skewX(6.25deg) skewY(6.25deg); }
+  44.4% { transform: skewX(-3.125deg) skewY(-3.125deg); }
+  55.5% { transform: skewX(1.5625deg) skewY(1.5625deg); }
+  66.6% { transform: skewX(-0.78125deg) skewY(-0.78125deg); }
+  77.7% { transform: skewX(0.390625deg) skewY(0.390625deg); }
+  88.8% { transform: skewX(-0.1953125deg) skewY(-0.1953125deg); }
+}
+
+.animate-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.animate-ripple:active::after {
+  transform: scale(4);
+  opacity: 1;
+  transition: 0s;
+}
+
+.animate-shake:hover {
+  animation: shake 0.5s ease-in-out;
+}
+
+.animate-wiggle:hover {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.animate-heartbeat:hover {
+  animation: heartbeat 1s ease-in-out;
+}
+
+.animate-rubber-band:hover {
+  animation: rubberBand 1s ease-in-out;
+}
+
+.animate-jello:hover {
+  animation: jello 1s ease-in-out;
+}
+
+/* ============================================================
+   22. 光效增强 / Light Effect Enhancement
+   ============================================================ */
+
+@keyframes lightSweep {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2);
+  }
+}
+
+@keyframes aurora {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(60deg);
+  }
+}
+
+.light-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.light-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.light-sweep:hover::before {
+  animation: lightSweep 0.8s ease-in-out;
+  opacity: 1;
+}
+
+.aurora-bg {
+  background: linear-gradient(
+    45deg,
+    var(--coral-400),
+    var(--amber-400),
+    var(--rose-400),
+    var(--coral-500),
+    var(--amber-300)
+  );
+  background-size: 400% 400%;
+  animation: aurora 8s ease infinite;
+}
+
+/* ============================================================
+   23. 粒子系统增强 / Particle System Enhancement
+   ============================================================ */
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) translateX(50px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes particleRise {
+  0% {
+    transform: translateY(100%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes particleExplode {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translate(var(--tx, 50px), var(--ty, 50px));
+    opacity: 0;
+  }
+}
+
+@keyframes particleSpiral {
+  0% {
+    transform: rotate(0deg) translateX(0) scale(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(720deg) translateX(100px) scale(1);
+    opacity: 0;
+  }
+}
+
+.particle-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--coral-400);
+  animation: particleFloat 4s ease-in-out infinite;
+}
+
+.particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+.particle:nth-child(2) { left: 20%; animation-delay: 0.5s; }
+.particle:nth-child(3) { left: 30%; animation-delay: 1s; }
+.particle:nth-child(4) { left: 40%; animation-delay: 1.5s; }
+.particle:nth-child(5) { left: 50%; animation-delay: 2s; }
+.particle:nth-child(6) { left: 60%; animation-delay: 2.5s; }
+.particle:nth-child(7) { left: 70%; animation-delay: 3s; }
+.particle:nth-child(8) { left: 80%; animation-delay: 3.5s; }
+.particle:nth-child(9) { left: 90%; animation-delay: 4s; }
+.particle:nth-child(10) { left: 95%; animation-delay: 4.5s; }
+
+/* ============================================================
+   24. 3D 效果增强 / 3D Effect Enhancement
+   ============================================================ */
+
+.perspective-container {
+  perspective: 1000px;
+  perspective-origin: center;
+}
+
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-3d:hover {
+  transform: rotateY(10deg) rotateX(5deg) translateZ(20px);
+}
+
+.card-3d-flip {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card-3d-flip:hover {
+  transform: rotateY(180deg);
+}
+
+.card-3d-flip-front,
+.card-3d-flip-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.card-3d-flip-back {
+  transform: rotateY(180deg);
+}
+
+.tilt-effect {
+  transform-style: preserve-3d;
+  transform: perspective(1000px);
+}
+
+.tilt-effect:hover {
+  transform: perspective(1000px) rotateX(var(--rotateX, 0deg)) rotateY(var(--rotateY, 0deg));
+}
+
+/* ============================================================
+   25. 文字效果增强 / Text Effect Enhancement
+   ============================================================ */
+
+@keyframes textGlow {
+  0%, 100% {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  }
+  50% {
+    text-shadow: 0 0 20px currentColor, 0 0 40px currentColor, 0 0 60px currentColor;
+  }
+}
+
+@keyframes textShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes textBlur {
+  0%, 100% {
+    filter: blur(0);
+  }
+  50% {
+    filter: blur(2px);
+  }
+}
+
+@keyframes textWave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.text-glow-animate {
+  animation: textGlow 2s ease-in-out infinite;
+}
+
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--text-primary) 0%,
+    var(--coral-400) 25%,
+    var(--amber-400) 50%,
+    var(--coral-400) 75%,
+    var(--text-primary) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: textShimmer 3s linear infinite;
+}
+
+.text-blur-animate {
+  animation: textBlur 3s ease-in-out infinite;
+}
+
+.text-wave-animate {
+  display: inline-block;
+  animation: textWave 2s ease-in-out infinite;
+}
+
+/* Letter by letter animation */
+.text-letter-animate span {
+  display: inline-block;
+  opacity: 0;
+  animation: heroFloatIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.text-letter-animate span:nth-child(1) { animation-delay: 0.05s; }
+.text-letter-animate span:nth-child(2) { animation-delay: 0.1s; }
+.text-letter-animate span:nth-child(3) { animation-delay: 0.15s; }
+.text-letter-animate span:nth-child(4) { animation-delay: 0.2s; }
+.text-letter-animate span:nth-child(5) { animation-delay: 0.25s; }
+.text-letter-animate span:nth-child(6) { animation-delay: 0.3s; }
+.text-letter-animate span:nth-child(7) { animation-delay: 0.35s; }
+.text-letter-animate span:nth-child(8) { animation-delay: 0.4s; }
+.text-letter-animate span:nth-child(9) { animation-delay: 0.45s; }
+.text-letter-animate span:nth-child(10) { animation-delay: 0.5s; }
+.text-letter-animate span:nth-child(11) { animation-delay: 0.55s; }
+.text-letter-animate span:nth-child(12) { animation-delay: 0.6s; }
+.text-letter-animate span:nth-child(13) { animation-delay: 0.65s; }
+.text-letter-animate span:nth-child(14) { animation-delay: 0.7s; }
+.text-letter-animate span:nth-child(15) { animation-delay: 0.75s; }
+.text-letter-animate span:nth-child(n) { animation-delay: calc(0.05s * n); }

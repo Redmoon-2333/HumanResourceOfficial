@@ -1,6 +1,7 @@
 package com.redmoon2333.controller;
 
 import com.redmoon2333.annotation.RequireMemberRole;
+import com.redmoon2333.config.RedisChatMemory;
 import com.redmoon2333.dto.ApiResponse;
 import com.redmoon2333.dto.ChatRequest;
 import com.redmoon2333.dto.ChatResponse;
@@ -17,6 +18,10 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * AI聊天控制器
  * 提供AI对话和策划案生成功能，支持基于用户的记忆隔离
@@ -25,12 +30,15 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/api/ai")
 public class AIChatController {
     private static final Logger logger = LoggerFactory.getLogger(AIChatController.class);
-    
+
     @Autowired
     private AIChatService aiChatService;
-    
+
     @Autowired
     private PermissionUtil permissionUtil;
+
+    @Autowired
+    private RedisChatMemory chatMemory;
     
     /**
      * AI对话接口（带用户记忆）
@@ -273,6 +281,79 @@ public class AIChatController {
         } catch (Exception e) {
             logger.error("RAG对话请求处理失败: {}", e.getMessage(), e);
             return Flux.just("{\"error\":\"RAG对话失败: " + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * 获取当前用户的对话历史
+     *
+     * @param httpRequest HTTP请求（用于获取当前用户）
+     * @return 对话历史列表
+     */
+    @GetMapping("/chat-history")
+    @RequireMemberRole("查看对话历史")
+    public ApiResponse<Map<String, Object>> getChatHistory(HttpServletRequest httpRequest) {
+        logger.info("收到获取对话历史请求");
+
+        try {
+            // 从JWT token中获取当前用户ID
+            Integer userId = (Integer) httpRequest.getAttribute("userId");
+
+            if (userId == null) {
+                logger.warn("获取对话历史失败：无法获取用户ID");
+                return ApiResponse.error("用户未登录", ErrorCode.TOKEN_REQUIRED.getCode());
+            }
+
+            String conversationId = "user_" + userId;
+
+            // 获取对话历史
+            List<RedisChatMemory.ChatMessageRecord> history = chatMemory.getChatHistory(conversationId);
+
+            // 获取统计信息
+            RedisChatMemory.ChatHistoryStats stats = chatMemory.getStats(conversationId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("history", history);
+            result.put("stats", stats);
+
+            logger.info("获取对话历史成功，用户ID: {}, 消息数: {}", userId, history.size());
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            logger.error("获取对话历史失败: {}", e.getMessage(), e);
+            return ApiResponse.error("获取对话历史失败: " + e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
+        }
+    }
+
+    /**
+     * 删除当前用户的对话历史
+     *
+     * @param httpRequest HTTP请求（用于获取当前用户）
+     * @return 删除结果
+     */
+    @DeleteMapping("/chat-history")
+    @RequireMemberRole("删除对话历史")
+    public ApiResponse<Void> clearChatHistory(HttpServletRequest httpRequest) {
+        logger.info("收到删除对话历史请求");
+
+        try {
+            // 从JWT token中获取当前用户ID
+            Integer userId = (Integer) httpRequest.getAttribute("userId");
+
+            if (userId == null) {
+                logger.warn("删除对话历史失败：无法获取用户ID");
+                return ApiResponse.error("用户未登录", ErrorCode.TOKEN_REQUIRED.getCode());
+            }
+
+            String conversationId = "user_" + userId;
+
+            // 清除对话历史
+            chatMemory.clear(conversationId);
+
+            logger.info("删除对话历史成功，用户ID: {}", userId);
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            logger.error("删除对话历史失败: {}", e.getMessage(), e);
+            return ApiResponse.error("删除对话历史失败: " + e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
         }
     }
 }

@@ -4,7 +4,7 @@ import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
 import FloatingParticles from '@/components/FloatingParticles.vue'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
-import { chatWithRag, chatStream, createStreamController } from '@/api/ai'
+import { chatWithRag, chatStream, createStreamController, getChatHistory, clearChatHistory, type ChatHistoryMessage, type ChatHistoryStats } from '@/api/ai'
 import { initRag } from '@/api/rag'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
@@ -19,7 +19,9 @@ import {
   SetUp,
   ChatLineSquare,
   Delete,
-  Upload
+  Upload,
+  Clock,
+  Warning
 } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
@@ -42,7 +44,7 @@ const hasStartedChat = ref(false)
 const chatMode = ref<ChatMode>('normal')
 
 const modeOptions = [
-  { value: 'normal' as ChatMode, label: '普通对话', icon: ChatLineSquare, color: 'var(--coral-500)', description: '标准AI对话模式' },
+  { value: 'normal' as ChatMode, label: '普通对话', icon: ChatLineSquare, color: '#FF6B4A', description: '标准AI对话模式' },
   { value: 'rag' as ChatMode, label: '知识库增强', icon: Collection, color: 'var(--color-info)', description: '基于知识库检索增强回答' },
   { value: 'tool' as ChatMode, label: '工具调用', icon: SetUp, color: 'var(--emerald-500)', description: '可查询部门成员信息' }
 ]
@@ -53,11 +55,28 @@ const currentModeInfo = computed(() => {
 
 const initializing = ref(false)
 
+// Why: 对话历史管理状态
+const historyStats = ref<ChatHistoryStats | null>(null)
+const showHistoryWarning = computed(() => {
+  if (!historyStats.value) return false
+  // 当达到80%上限时显示警告
+  return historyStats.value.userMessages >= historyStats.value.maxPairs * 0.8
+})
+const historyWarningText = computed(() => {
+  if (!historyStats.value) return ''
+  const { userMessages, maxPairs } = historyStats.value
+  const remaining = maxPairs - userMessages
+  if (remaining <= 0) {
+    return '已达到最大记忆上限，旧对话将被自动清理'
+  }
+  return `记忆空间剩余 ${remaining} 轮对话`
+})
+
 const quickQuestions = [
-  { icon: StarFilled, text: '如何策划一场成功的团建活动？', color: 'var(--amber-500)' },
+  { icon: StarFilled, text: '如何策划一场成功的团建活动？', color: '#FF6B4A' },
   { icon: Document, text: '请帮我写一份活动策划案模板', color: 'var(--emerald-500)' },
   { icon: User, text: '人力资源中心的组织架构是怎样的？', color: 'var(--color-info)' },
-  { icon: MagicStick, text: '有什么创意的破冰游戏推荐？', color: 'var(--rose-500)' }
+  { icon: MagicStick, text: '有什么创意的破冰游戏推荐？', color: '#FF6B4A' }
 ]
 
 const scrollToBottom = async () => {
@@ -191,6 +210,81 @@ const handleClear = () => {
   ElMessage.success('已清空聊天记录')
 }
 
+/**
+ * 加载对话历史
+ * Why: 页面加载时自动恢复之前的对话，提供连续性体验
+ *      有历史 → 显示聊天界面
+ *      无历史 → 显示欢迎页
+ */
+const loadChatHistory = async () => {
+  try {
+    const response = await getChatHistory()
+    const { history, stats } = response.data
+    historyStats.value = stats
+
+    if (history && history.length > 0) {
+      // 有历史记录：加载并显示聊天界面
+      const loadedMessages: Message[] = history.map((msg: ChatHistoryMessage) => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date()
+      }))
+
+      messages.value = loadedMessages
+      hasStartedChat.value = true
+
+      logger.debug('已加载对话历史: {} 条消息', loadedMessages.length)
+    } else {
+      // 无历史记录：显示欢迎页
+      messages.value = []
+      hasStartedChat.value = false
+
+      logger.debug('无对话历史，显示欢迎页')
+    }
+  } catch (error) {
+    logger.error('加载对话历史失败', error)
+    // 加载失败默认显示欢迎页
+    messages.value = []
+    hasStartedChat.value = false
+  }
+}
+
+/**
+ * 删除对话历史
+ * Why: 用户可以主动清理对话历史，保护隐私
+ */
+const handleClearHistory = async () => {
+  try {
+    const confirmed = await ElMessageBox.confirm(
+      '确定要删除所有对话历史吗？此操作不可恢复。',
+      '确认删除',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    if (confirmed) {
+      await clearChatHistory()
+      messages.value = []
+      hasStartedChat.value = false
+      historyStats.value = null
+      ElMessage.success('对话历史已删除')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+// Why: 使用简单的logger替代，避免引入额外依赖
+const logger = {
+  debug: (...args: any[]) => console.log('[AIChat]', ...args),
+  error: (...args: any[]) => console.error('[AIChat]', ...args)
+}
+
 const handleInitializeKnowledgeBase = async () => {
   try {
     const confirmed = await ElMessageBox.confirm(
@@ -230,6 +324,9 @@ onMounted(() => {
   setTimeout(() => {
     document.querySelector('.welcome-section')?.classList.add('animate-in')
   }, 100)
+
+  // Why: 页面加载时自动恢复对话历史，提供连续性体验
+  loadChatHistory()
 })
 </script>
 
@@ -379,11 +476,19 @@ onMounted(() => {
               </button>
             </div>
             <div class="header-actions">
-              <button class="action-btn" @click="handleInitializeKnowledgeBase" :disabled="initializing">
+              <!-- Why: 记忆空间警告提示 -->
+              <div v-if="showHistoryWarning" class="memory-warning" :title="historyWarningText">
+                <el-icon><Warning /></el-icon>
+                <span class="warning-text">{{ historyWarningText }}</span>
+              </div>
+              <button class="action-btn" @click="handleInitializeKnowledgeBase" :disabled="initializing" title="初始化知识库">
                 <el-icon><Upload /></el-icon>
               </button>
-              <button class="action-btn" @click="handleClear" :disabled="messages.length === 0">
+              <button class="action-btn" @click="handleClear" :disabled="messages.length === 0" title="清空当前显示">
                 <el-icon><Delete /></el-icon>
+              </button>
+              <button class="action-btn danger" @click="handleClearHistory" title="删除对话历史">
+                <el-icon><Clock /></el-icon>
               </button>
             </div>
           </div>
@@ -423,7 +528,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 64px);
-  background: linear-gradient(180deg, var(--bg-warm) 0%, var(--coral-50) 100%);
+  background: linear-gradient(180deg, #FFF5F3 0%, #FFFAF8 100%);
   position: relative;
   overflow: hidden;
 }
@@ -462,29 +567,38 @@ onMounted(() => {
 .orb-1 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, var(--coral-500), var(--rose-400));
+  background: radial-gradient(ellipse 65% 55% at 35% 65%, #FF6B4A 0%, rgba(255, 107, 74, 0.4) 45%, transparent 70%);
   top: -100px;
   right: -100px;
   animation-delay: 0s;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  filter: blur(60px);
+  opacity: 0.35;
 }
 
 .orb-2 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(135deg, var(--amber-500), var(--amber-300));
+  background: radial-gradient(ellipse 55% 65% at 55% 35%, #FF8A70 0%, rgba(255, 138, 112, 0.35) 50%, transparent 65%);
   bottom: -50px;
   left: -50px;
   animation-delay: -3s;
+  border-radius: 40% 60% 70% 30% / 40% 50% 50% 60%;
+  filter: blur(50px);
+  opacity: 0.25;
 }
 
 .orb-3 {
   width: 250px;
   height: 250px;
-  background: linear-gradient(135deg, var(--rose-400), var(--coral-500));
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, #FFB8A8 0%, rgba(255, 184, 168, 0.35) 50%, transparent 60%);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  animation-delay: -5s;
+  animation-delay: -6s;
+  border-radius: 50% 50% 40% 60% / 50% 40% 60% 50%;
+  filter: blur(40px);
+  opacity: 0.2;
 }
 
 .welcome-content {
@@ -504,7 +618,7 @@ onMounted(() => {
 .ai-avatar {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  background: linear-gradient(135deg, #FF6B4A, #FF8A70);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -513,6 +627,15 @@ onMounted(() => {
   z-index: 2;
   box-shadow: 0 20px 60px rgba(255, 107, 74, 0.4);
   animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(255, 107, 74, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 30px rgba(255, 107, 74, 0.5);
+  }
 }
 
 .avatar-ring {
@@ -571,7 +694,7 @@ onMounted(() => {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--coral-500) 0%, var(--amber-500) 50%, var(--rose-400) 100%);
+  background: linear-gradient(135deg, #FF6B4A 0%, #FF6B4A 50%, #FDA4AF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -665,7 +788,7 @@ onMounted(() => {
 }
 
 .quick-title .el-icon {
-  color: var(--amber-500);
+  color: #FF6B4A;
 }
 
 .quick-grid {
@@ -759,7 +882,7 @@ onMounted(() => {
 .ai-avatar-small {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  background: linear-gradient(135deg, #FF6B4A, #E85A3C);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -770,12 +893,12 @@ onMounted(() => {
 .user-avatar-small {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--amber-500), var(--amber-600));
+  background: linear-gradient(135deg, #FF6B4A, #E85A3C);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 107, 74, 0.3);
 }
 
 .message-content {
@@ -799,17 +922,17 @@ onMounted(() => {
 }
 
 .message-bubble.assistant {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 107, 74, 0.15);
   border-top-left-radius: var(--space-1);
   color: var(--text-primary);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(255, 107, 74, 0.08);
 }
 
 .message-bubble.user {
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  background: linear-gradient(135deg, #FF6B4A, #FF8A70);
   color: white;
   border-top-right-radius: var(--space-1);
   box-shadow: 0 8px 24px rgba(255, 107, 74, 0.35);
@@ -833,16 +956,17 @@ onMounted(() => {
 
 .typing-indicator {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-1);
 }
 
 .typing-indicator span {
-  width: 8px;
-  height: 8px;
-  background: var(--gray-300);
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #FF6B4A, #FF8A70);
   border-radius: 50%;
   animation: typing 1.4s ease-in-out infinite;
+  box-shadow: 0 2px 8px rgba(255, 107, 74, 0.3);
 }
 
 .typing-indicator span:nth-child(1) { animation-delay: 0s; }
@@ -850,8 +974,14 @@ onMounted(() => {
 .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
 @keyframes typing {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-10px); }
+  0%, 60%, 100% { 
+    transform: translateY(0) scale(1); 
+    opacity: 0.7;
+  }
+  30% { 
+    transform: translateY(-12px) scale(1.1); 
+    opacity: 1;
+  }
 }
 
 .input-section {
@@ -932,13 +1062,53 @@ onMounted(() => {
 
 .action-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.8);
-  color: var(--coral-500);
+  color: #FF6B4A;
   border-color: var(--coral-300);
 }
 
 .action-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Why: 危险操作按钮样式（删除历史） */
+.action-btn.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Why: 记忆空间警告提示样式 */
+.memory-warning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: var(--radius-md);
+  color: #f59e0b;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  margin-right: var(--space-2);
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.memory-warning .el-icon {
+  font-size: var(--text-sm);
+}
+
+.warning-text {
+  white-space: nowrap;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .input-container {
@@ -950,19 +1120,19 @@ onMounted(() => {
 .input-wrapper {
   flex: 1;
   position: relative;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: var(--radius-xl);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 107, 74, 0.2);
   padding: var(--space-1);
   transition: all var(--transition-normal) var(--ease-out);
 }
 
 .input-wrapper:focus-within {
   background: rgba(255, 255, 255, 0.95);
-  border-color: var(--coral-400);
-  box-shadow: 0 0 0 3px rgba(255, 138, 112, 0.1);
+  border-color: #FF6B4A;
+  box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.15), 0 4px 20px rgba(255, 107, 74, 0.1);
 }
 
 .chat-input {
@@ -999,7 +1169,7 @@ onMounted(() => {
 }
 
 .send-btn.active {
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  background: linear-gradient(135deg, #FF6B4A, #FF8A70);
   color: white;
   box-shadow: 0 8px 24px rgba(255, 107, 74, 0.35);
 }
@@ -1073,6 +1243,375 @@ onMounted(() => {
 
   .switch-btn {
     padding: var(--space-2);
+  }
+}
+
+/* 移动端增强适配 */
+@media (max-width: 768px) {
+  .ai-chat-page {
+    height: calc(100vh - 56px);
+  }
+  
+  .welcome-section {
+    padding: var(--space-6) var(--space-4);
+  }
+  
+  .welcome-content {
+    max-width: 100%;
+    padding: 0 var(--space-2);
+  }
+  
+  .ai-avatar-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: var(--space-6);
+  }
+  
+  .ai-avatar {
+    box-shadow: 0 16px 48px rgba(255, 107, 74, 0.35);
+  }
+  
+  .avatar-ring.ring-1 {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .avatar-ring.ring-2 {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .avatar-ring.ring-3 {
+    width: 160px;
+    height: 160px;
+  }
+  
+  .welcome-title {
+    font-size: var(--text-3xl);
+  }
+  
+  .welcome-subtitle {
+    font-size: var(--text-base);
+    margin-bottom: var(--space-6);
+  }
+  
+  .mode-selector {
+    margin-bottom: var(--space-6);
+  }
+  
+  .mode-buttons {
+    gap: var(--space-2);
+  }
+  
+  .mode-btn {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+  }
+  
+  .quick-questions {
+    width: 100%;
+  }
+  
+  .quick-btn {
+    padding: var(--space-3);
+  }
+  
+  .quick-icon {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .quick-text {
+    font-size: var(--text-sm);
+  }
+  
+  /* 聊天区域适配 */
+  .chat-section {
+    padding: var(--space-4) var(--space-3);
+  }
+  
+  .chat-messages {
+    gap: var(--space-4);
+  }
+  
+  .message-wrapper {
+    gap: var(--space-2);
+  }
+  
+  .ai-avatar-small,
+  .user-avatar-small {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .ai-avatar-small .el-icon,
+  .user-avatar-small .el-icon {
+    font-size: 16px;
+  }
+  
+  .message-bubble {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+  }
+  
+  .message-content {
+    max-width: 80%;
+  }
+  
+  .message-time {
+    font-size: 10px;
+  }
+  
+  /* 输入区域适配 */
+  .input-section {
+    padding: var(--space-3) var(--space-3) var(--space-4);
+  }
+  
+  .input-header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+  
+  .mode-switcher {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .header-actions {
+    order: 1;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .switch-btn {
+    padding: var(--space-1) var(--space-2);
+    font-size: 11px;
+  }
+  
+  .switch-btn span {
+    display: none;
+  }
+  
+  .action-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .input-container {
+    gap: var(--space-2);
+  }
+  
+  .input-wrapper {
+    padding: 2px;
+  }
+  
+  .chat-input {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    min-height: 40px;
+    max-height: 100px;
+  }
+  
+  .send-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .send-btn .el-icon {
+    font-size: 16px;
+  }
+  
+  /* 背景装饰适配 */
+  .gradient-orb {
+    opacity: 0.3;
+  }
+  
+  .orb-1 {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .orb-2 {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .orb-3 {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-section {
+    padding: var(--space-4) var(--space-3);
+  }
+  
+  .ai-avatar-container {
+    width: 80px;
+    height: 80px;
+    margin-bottom: var(--space-4);
+  }
+  
+  .ai-avatar .el-icon {
+    font-size: 32px;
+  }
+  
+  .avatar-ring.ring-1 {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .avatar-ring.ring-2 {
+    width: 115px;
+    height: 115px;
+  }
+  
+  .avatar-ring.ring-3 {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .welcome-title {
+    font-size: var(--text-2xl);
+  }
+  
+  .welcome-subtitle {
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+  }
+  
+  .mode-selector {
+    margin-bottom: var(--space-4);
+  }
+  
+  .mode-label {
+    font-size: var(--text-xs);
+  }
+  
+  .mode-btn {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+  
+  .mode-icon {
+    font-size: var(--text-base);
+  }
+  
+  .quick-title {
+    font-size: var(--text-xs);
+    margin-bottom: var(--space-3);
+  }
+  
+  .quick-btn {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+  
+  .quick-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .quick-icon .el-icon {
+    font-size: 14px;
+  }
+  
+  .quick-text {
+    font-size: var(--text-xs);
+  }
+  
+  /* 聊天区域小屏幕适配 */
+  .chat-section {
+    padding: var(--space-3) var(--space-2);
+  }
+  
+  .chat-messages {
+    gap: var(--space-3);
+  }
+  
+  .message-wrapper {
+    gap: var(--space-1);
+  }
+  
+  .ai-avatar-small,
+  .user-avatar-small {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .message-bubble {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    border-radius: var(--radius-xl);
+  }
+  
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .mode-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  
+  /* 输入区域小屏幕适配 */
+  .input-section {
+    padding: var(--space-2) var(--space-2) var(--space-3);
+  }
+  
+  .switch-btn {
+    padding: var(--space-1);
+  }
+  
+  .switch-btn .el-icon {
+    font-size: 14px;
+  }
+  
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .action-btn .el-icon {
+    font-size: 14px;
+  }
+  
+  .chat-input {
+    padding: var(--space-2);
+    font-size: var(--text-sm);
+    min-height: 36px;
+  }
+  
+  .chat-input::placeholder {
+    font-size: var(--text-sm);
+  }
+  
+  .send-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .send-btn .el-icon {
+    font-size: 14px;
+  }
+  
+  .loading-spinner {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>

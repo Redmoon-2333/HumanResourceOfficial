@@ -11,6 +11,7 @@ import router from './router'
 import './assets/main.css'
 import './styles/design-system.css'
 import './styles/page-layouts.css'
+import './styles/warm-gradient-system.css'
 
 const app = createApp(App)
 

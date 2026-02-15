@@ -8,6 +8,10 @@
             <el-icon :size="32"><PictureRounded /></el-icon>
           </div>
           <div class="header-text">
+            <div class="hero-badge">
+              <el-icon :size="14"><PictureRounded /></el-icon>
+              <span>图片管理</span>
+            </div>
             <h1 class="page-title">日常活动图片管理</h1>
             <p class="page-subtitle">管理"我们的日常"板块轮播图</p>
           </div>
@@ -621,11 +625,67 @@ onMounted(() => {
   box-shadow: 0 8px 24px rgba(255, 107, 74, 0.3);
 }
 
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #ff6b4a, #e35532);
+  color: white;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(255, 107, 74, 0.3);
+  animation: fadeInDown 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .page-title {
   font-size: 24px;
   font-weight: 600;
   color: #1c1917;
   margin: 0 0 4px 0;
+  animation: fadeInUp 0.6s ease 0.1s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-subtitle {

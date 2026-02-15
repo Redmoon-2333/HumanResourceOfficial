@@ -1434,7 +1434,85 @@
 }
 
 /* ============================================================
-   11. 响应式适配
+   11. 区块布局工具类
+   ============================================================ */
+
+.section-spacing {
+  padding: var(--space-12) 0;
+}
+
+.section-spacing-sm {
+  padding: var(--space-8) 0;
+}
+
+.section-spacing-lg {
+  padding: var(--space-16) 0;
+}
+
+.element-spacing {
+  margin-bottom: var(--space-4);
+}
+
+.element-spacing-sm {
+  margin-bottom: var(--space-2);
+}
+
+.element-spacing-lg {
+  margin-bottom: var(--space-6);
+}
+
+.tight-spacing {
+  margin-bottom: var(--space-2);
+}
+
+.relaxed-spacing {
+  margin-bottom: var(--space-6);
+}
+
+/* 区块标题样式 */
+.section-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  line-height: var(--leading-tight);
+}
+
+.section-subtitle {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+  line-height: var(--leading-normal);
+}
+
+/* 卡片网格布局 */
+.card-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+
+.card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+
+.card-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
+}
+
+/* 响应式卡片网格 */
+.card-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+
+/* ============================================================
+   12. 响应式适配
    ============================================================ */
 
 /* 平板适配 */
@@ -1449,6 +1527,14 @@
   }
   
   .alumni-page .stats-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .card-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .card-grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -1473,5 +1559,19 @@
   
   .login-page .login-card {
     padding: var(--space-6);
+  }
+  
+  .card-grid-2,
+  .card-grid-3,
+  .card-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-spacing {
+    padding: var(--space-8) 0;
+  }
+  
+  .section-spacing-lg {
+    padding: var(--space-12) 0;
   }
 }
