@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
+import OrganicBlob from '@/components/OrganicBlob.vue'
+import SparkleEffect from '@/components/SparkleEffect.vue'
 import AnimatedCounter from '@/components/AnimatedCounter.vue'
 import { ref, computed, onMounted } from 'vue'
 import {
@@ -277,98 +279,136 @@ onMounted(() => {
 <template>
   <Layout>
     <div class="past-activities-page">
-      <!-- Hero区域 -->
-      <div class="hero-section">
-        <div class="hero-background">
-          <div class="gradient-orb orb-1"></div>
-          <div class="gradient-orb orb-2"></div>
-          <div class="floating-shapes">
-            <div class="shape shape-1">
-              <el-icon :size="40" color="rgba(245, 158, 11, 0.3)"><Trophy /></el-icon>
-            </div>
-            <div class="shape shape-2">
-              <el-icon :size="32" color="rgba(255, 107, 74, 0.3)"><Star /></el-icon>
-            </div>
-            <div class="shape shape-3">
-              <el-icon :size="36" color="rgba(16, 185, 129, 0.3)"><Calendar /></el-icon>
-            </div>
+      <!-- Hero区域 - 往届活动页 (琥珀金 #F59E0B) -->
+      <section class="hero-section hero-organic page-past">
+        <!-- 有机Blob装饰层 - 左倾布局设计，每个Blob有独特的seed -->
+        <div class="hero-organic__blobs">
+          <!-- Blob 1: 左上大型，主色琥珀金，seed=11 -->
+          <OrganicBlob
+            size="large"
+            color="#F59E0B"
+            color-light="#FBBF24"
+            :position="{ top: '-100px', left: '-60px' }"
+            :delay="0"
+            :opacity="0.55"
+            :seed="11"
+            glow
+          />
+          <!-- Blob 2: 左下中型，次色活力橙，seed=22 -->
+          <OrganicBlob
+            size="medium"
+            color="#F97316"
+            color-light="#FB923C"
+            :position="{ bottom: '-60px', left: '80px' }"
+            :delay="-2"
+            :opacity="0.45"
+            :seed="22"
+            float
+          />
+          <!-- Blob 3: 右侧小型，暖金黄，seed=33 -->
+          <OrganicBlob
+            size="small"
+            color="#FBBF24"
+            color-light="#FCD34D"
+            :position="{ top: '30%', right: '-30px' }"
+            :delay="-4"
+            :opacity="0.4"
+            :seed="33"
+          />
+          <!-- 网格纹理 -->
+          <div class="grid-pattern"></div>
+        </div>
+
+        <!-- Sparkle粒子层 -->
+        <SparkleEffect :count="12" color="rgba(255, 255, 255, 0.95)" />
+
+        <!-- 浮动装饰 -->
+        <div class="floating-shapes">
+          <div class="shape shape-1">
+            <el-icon :size="40" color="rgba(245, 158, 11, 0.4)"><Trophy /></el-icon>
+          </div>
+          <div class="shape shape-2">
+            <el-icon :size="32" color="rgba(251, 191, 36, 0.4)"><Star /></el-icon>
+          </div>
+          <div class="shape shape-3">
+            <el-icon :size="36" color="rgba(249, 115, 22, 0.4)"><Calendar /></el-icon>
           </div>
         </div>
 
-        <div class="hero-content">
+        <!-- 内容层 -->
+        <div class="hero-organic__content hero-organic__content--left">
           <div class="hero-badge">
             <el-icon :size="16"><Trophy /></el-icon>
             <span>往届活动</span>
           </div>
-          <!-- Inline CSS Fix: Prevent FOUC - Hero title should be black (#1C1917), not orange -->
-          <h1 class="hero-title" style="color: #1C1917;">
+          <h1 class="hero-title">
             精彩回顾
-            <span style="color: #000000;">传承创新</span>
+            <span>传承创新</span>
           </h1>
-          <!-- Inline CSS Fix: Prevent FOUC - Subtitle should be gray (#78716C) -->
-          <p class="hero-subtitle" style="color: #78716C;">
+          <p class="hero-subtitle">
             回顾人力资源中心历届精彩活动，见证成长与荣耀
           </p>
-
-          <!-- 管理员操作按钮 -->
-          <div v-if="userStore.isMinister" class="admin-actions">
-            <el-button type="primary" size="large" @click="handleCreate">
-              <el-icon><Plus /></el-icon>
-              添加往届活动
-            </el-button>
-          </div>
-
-          <!-- 统计卡片 -->
-          <div class="stats-row">
-            <div class="stat-item">
-              <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B4A, #E35532);">
-                <el-icon :size="20" color="white"><Trophy /></el-icon>
-              </div>
-              <div class="stat-info">
-                <span class="stat-value">
-                  <AnimatedCounter :value="totalActivities" :duration="1500" />
-                </span>
-                <span class="stat-label">活动总数</span>
-              </div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
-                <el-icon :size="20" color="white"><Calendar /></el-icon>
-              </div>
-              <div class="stat-info">
-                <span class="stat-value">
-                  <AnimatedCounter :value="availableYears.length" :duration="1500" />
-                </span>
-                <span class="stat-label">年份跨度</span>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- 筛选器 -->
-      <div class="filter-section">
-        <div class="filter-container">
-          <div class="filter-group">
-            <el-icon :size="18"><Filter /></el-icon>
-            <span class="filter-label">年份筛选:</span>
-            <div class="filter-options">
-              <button
-                class="filter-btn"
-                :class="{ active: selectedYear === 'all' }"
-                @click="selectedYear = 'all'"
-              >
-                全部
-              </button>
-              <button
-                v-for="year in availableYears"
-                :key="year"
-                class="filter-btn"
-                :class="{ active: selectedYear === year }"
-                @click="selectedYear = year"
-              >
-                {{ year }}
-              </button>
+      <!-- 统计和筛选混合区域 -->
+      <div class="stats-filter-section">
+        <div class="stats-filter-container">
+          <div class="stats-filter-row">
+            <!-- 左侧统计卡片 -->
+            <div class="stats-group">
+              <div class="stat-item">
+                <div class="stat-icon">
+                  <el-icon :size="20" color="white"><Trophy /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">
+                    <AnimatedCounter :value="totalActivities" :duration="1500" />
+                  </span>
+                  <span class="stat-label">活动总数</span>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon stat-icon--secondary">
+                  <el-icon :size="20" color="white"><Calendar /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">
+                    <AnimatedCounter :value="availableYears.length" :duration="1500" />
+                  </span>
+                  <span class="stat-label">年份跨度</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 右侧筛选和操作 -->
+            <div class="filter-group">
+              <div v-if="userStore.isMinister" class="admin-actions">
+                <el-button type="primary" size="large" @click="handleCreate">
+                  <el-icon><Plus /></el-icon>
+                  添加往届活动
+                </el-button>
+              </div>
+              <el-icon :size="18"><Filter /></el-icon>
+              <span class="filter-label">年份筛选:</span>
+              <div class="filter-options">
+                <button
+                  class="filter-btn"
+                  :class="{ active: selectedYear === 'all' }"
+                  @click="selectedYear = 'all'"
+                >
+                  全部
+                </button>
+                <button
+                  v-for="year in availableYears"
+                  :key="year"
+                  class="filter-btn"
+                  :class="{ active: selectedYear === year }"
+                  @click="selectedYear = year"
+                >
+                  {{ year }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -540,48 +580,62 @@ onMounted(() => {
 <style scoped>
 .past-activities-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #FEF9F6 0%, #FFF5F0 100%);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* Hero区域 */
+/* Hero区域 - 往届活动页 (琥珀金 #F59E0B) */
 .hero-section {
   position: relative;
-  padding: 80px 40px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+  padding: var(--space-8) var(--space-8) var(--space-12);
+  margin: var(--space-6);
+  margin-bottom: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 50% at 10% 90%, rgba(249, 115, 22, 0.1) 0%, transparent 35%),
+    linear-gradient(135deg, #FFF8F0 0%, #FFF5E0 50%, #FFF0D5 100%);
+  border-radius: 32px;
   overflow: hidden;
 }
 
-.hero-background {
+.hero-section::before {
+  content: '';
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  background:
+    radial-gradient(ellipse 50% 35% at 75% 15%, rgba(245, 158, 11, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 25% at 25% 85%, rgba(249, 115, 22, 0.15) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.gradient-orb {
+.hero-organic__blobs {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.4;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.orb-1 {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
-  top: -100px;
-  right: 10%;
-}
-
-.orb-2 {
-  width: 300px;
-  height: 300px;
-  background: linear-gradient(135deg, #FB7185, #FF6B4A);
-  bottom: -50px;
-  left: 5%;
+.hero-organic__blobs .grid-pattern {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(245, 158, 11, 0.1) 1px, transparent 0);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 70%);
 }
 
 .floating-shapes {
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
 .shape {
@@ -591,19 +645,19 @@ onMounted(() => {
 
 .shape-1 {
   top: 20%;
-  left: 10%;
+  right: 15%;
   animation-delay: 0s;
 }
 
 .shape-2 {
-  top: 60%;
-  right: 15%;
+  top: 50%;
+  right: 8%;
   animation-delay: 2s;
 }
 
 .shape-3 {
   bottom: 20%;
-  left: 20%;
+  right: 20%;
   animation-delay: 4s;
 }
 
@@ -612,52 +666,161 @@ onMounted(() => {
   50% { transform: translateY(-20px) rotate(5deg); }
 }
 
-.hero-content {
+.hero-organic__content {
   position: relative;
-  z-index: 1;
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
+  z-index: 2;
+  padding: 32px 32px 48px;
+}
+
+.hero-organic__content--left {
+  text-align: left;
+  padding-left: 48px;
+  padding-top: 24px;
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 50px;
-  color: #F59E0B;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 24px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  color: white;
+  border-radius: var(--radius-full, 100px);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium, 500);
+  margin-bottom: var(--space-6);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35), 0 0 20px rgba(245, 158, 11, 0.15);
+  animation: fadeInDown 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
 }
 
 .hero-title {
-  font-size: 48px;
+  font-size: clamp(1.875rem, 4vw, 2.5rem);
   font-weight: 800;
   color: #1F2937;
-  margin-bottom: 16px;
-  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 var(--space-4, 16px) 0;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, #F59E0B, #FF6B4A);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.hero-title span {
+  color: #1F2937;
 }
 
 .hero-subtitle {
-  font-size: 18px;
-  color: #6B7280;
-  max-width: 500px;
-  margin: 0 auto 40px;
-  line-height: 1.6;
+  font-size: var(--text-lg);
+  color: var(--text-secondary, #6B7280);
+  line-height: 1.7;
+  max-width: 600px;
+  margin: 0;
+  animation: fadeInUp 0.6s ease 0.2s both;
 }
 
-/* 统计 */
+/* 统计和筛选混合区域 */
+.stats-filter-section {
+  padding: 0 var(--space-6);
+  margin: var(--space-6) 0 0 0;
+}
+
+.stats-filter-container {
+  max-width: 100%;
+  margin: 0;
+}
+
+.stats-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  padding: 20px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-filter-row > * {
+  flex: 1;
+}
+
+.stats-filter-row .stats-group {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.stats-filter-row .filter-group {
+  flex: 1.5;
+  justify-content: flex-end;
+}
+
+.stats-filter-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #F59E0B, #FBBF24, #FCD34D);
+}
+
+.stats-group {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  position: relative;
+  overflow: visible;
+}
+
+.filter-group::before {
+  display: none;
+}
+
+.admin-actions {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+/* 统计卡片区域 - 增强版 */
+.stats-section {
+  padding: 0 var(--space-8);
+  margin: var(--space-6);
+  margin-bottom: 0;
+}
+
+/* 统计 - 增强版 */
 .stats-row {
   display: flex;
   justify-content: center;
@@ -668,44 +831,63 @@ onMounted(() => {
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 28px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stat-item:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.stat-icon--secondary {
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
 }
 
 .stat-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 2px;
 }
 
 .stat-value {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
-  color: #1F2937;
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 12px;
   color: #6B7280;
+  font-weight: 500;
 }
 
-/* 筛选器 */
+/* 筛选器 - 紧凑布局 */
 .filter-section {
-  padding: 0 40px 40px;
+  padding: 16px 24px;
 }
 
 .filter-container {
@@ -717,14 +899,27 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 24px;
+  padding: 12px 16px;
   background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #F59E0B, #FBBF24, #FCD34D);
 }
 
 .filter-label {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
 }
@@ -736,40 +931,49 @@ onMounted(() => {
 }
 
 .filter-btn {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: 1px solid #E5E7EB;
   background: white;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   color: #6B7280;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .filter-btn:hover {
-  border-color: #FF6B4A;
-  color: #FF6B4A;
+  border-color: #F59E0B;
+  color: #F59E0B;
+  background: rgba(245, 158, 11, 0.03);
 }
 
 .filter-btn.active {
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
   color: white;
   border-color: transparent;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
 }
 
-/* 时间轴 */
+/* 时间轴 - 紧凑布局 */
 .timeline-section {
-  padding: 0 40px 60px;
+  padding: 16px var(--space-6) 40px;
 }
 
 .timeline-container {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
 .year-group {
   margin-bottom: 60px;
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
 }
+
+.year-group:nth-child(1) { animation-delay: 0ms; }
+.year-group:nth-child(2) { animation-delay: 100ms; }
+.year-group:nth-child(3) { animation-delay: 200ms; }
+.year-group:nth-child(4) { animation-delay: 300ms; }
 
 .year-marker {
   display: flex;
@@ -783,29 +987,51 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 16px 28px;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
   border-radius: 16px;
   color: white;
-  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.3);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.year-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
 }
 
 .year-text {
   font-size: 32px;
   font-weight: 800;
+  position: relative;
+  z-index: 1;
 }
 
 .year-count {
   font-size: 13px;
   opacity: 0.9;
+  position: relative;
+  z-index: 1;
 }
 
 .year-line {
   flex: 1;
   height: 2px;
-  background: linear-gradient(90deg, #FF6B4A, transparent);
+  background: linear-gradient(90deg, #F59E0B, #FBBF24, transparent);
 }
 
-/* 活动网格 */
+/* 活动网格 - 增强版 */
 .activities-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -816,14 +1042,41 @@ onMounted(() => {
   background: white;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.08);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
+  position: relative;
+}
+
+.activity-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #F59E0B, #FBBF24, #FCD34D);
+  background-size: 200% 100%;
+  animation: gradientFlow 3s linear infinite;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .activity-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.15);
+}
+
+.activity-card:hover::before {
+  opacity: 1;
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .activity-image {
@@ -902,7 +1155,7 @@ onMounted(() => {
   color: #9CA3AF;
 }
 
-/* 空状态 */
+/* 空状态 - 增强版 */
 .empty-state {
   text-align: center;
   padding: 80px 40px;
@@ -914,40 +1167,51 @@ onMounted(() => {
   font-size: 16px;
 }
 
+/* 动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
 /* ============================================
-   管理员操作按钮 - 毛玻璃悬浮风格
+   管理员操作按钮 - 工具栏风格（增强版）
    ============================================ */
 .admin-actions {
-  margin-bottom: 32px;
   display: flex;
-  justify-content: center;
+  align-items: center;
 }
 
 .admin-actions .el-button {
-  background: linear-gradient(135deg, rgba(255, 107, 74, 0.9), rgba(245, 158, 11, 0.9));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50px;
-  padding: 14px 32px;
-  font-size: 15px;
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
   font-weight: 600;
-  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.25);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .admin-actions .el-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(255, 107, 74, 0.35);
-  background: linear-gradient(135deg, rgba(255, 107, 74, 1), rgba(245, 158, 11, 1));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
 }
 
 .admin-actions .el-button:active {
-  transform: translateY(-1px);
+  transform: translateY(0);
 }
 
 /* ============================================
-   卡片操作按钮 - 毛玻璃图标按钮
+   卡片操作按钮 - 毛玻璃图标按钮（增强版）
    ============================================ */
 .card-actions {
   display: flex;
@@ -963,59 +1227,61 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
   transition: all 0.25s ease;
 }
 
 .card-actions .el-button:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
 }
 
 .card-actions .el-button--primary {
   color: #FFFFFF;
-  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
   border: none;
 }
 
 .card-actions .el-button--primary:hover {
-  background: linear-gradient(135deg, #2563EB, #1D4ED8);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #F97316, #FB923C);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .card-actions .el-button--danger {
   color: #FFFFFF;
-  background: linear-gradient(135deg, #EF4444, #DC2626);
+  background: linear-gradient(135deg, #F97316, #FB923C);
   border: none;
 }
 
 .card-actions .el-button--danger:hover {
-  background: linear-gradient(135deg, #DC2626, #B91C1C);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #E85A3C, #FF6B4A);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
-/* 表单样式 */
+/* 表单样式 - 增强版 */
 .activity-form {
   padding: 20px 0;
 }
 
 .cover-uploader {
-  border: 2px dashed var(--el-border-color);
-  border-radius: 8px;
+  border: 2px dashed rgba(245, 158, 11, 0.3);
+  border-radius: 12px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: var(--el-transition-duration-fast);
+  transition: all 0.3s ease;
   width: 300px;
   height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(245, 158, 11, 0.02);
 }
 
 .cover-uploader:hover {
-  border-color: var(--el-color-primary);
+  border-color: #F59E0B;
+  background: rgba(245, 158, 11, 0.04);
 }
 
 .cover-preview {
@@ -1027,7 +1293,7 @@ onMounted(() => {
 .cover-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(245, 158, 11, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -1050,12 +1316,12 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: var(--el-text-color-secondary);
+  color: #9CA3AF;
 }
 
 .upload-loading {
   margin-top: 8px;
-  color: var(--el-color-primary);
+  color: #F59E0B;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1064,21 +1330,41 @@ onMounted(() => {
 /* 响应式 */
 @media (max-width: 768px) {
   .hero-section {
-    padding: 60px 20px 40px;
+    padding: var(--space-10) var(--space-6);
+    margin: var(--space-4);
+    margin-bottom: 0;
+    border-radius: 24px;
   }
 
   .hero-title {
     font-size: 32px;
   }
 
-  .filter-section,
-  .timeline-section {
-    padding-left: 20px;
-    padding-right: 20px;
+  .stats-filter-section {
+    padding: 0 var(--space-4);
+    margin: var(--space-4) 0 0 0;
+  }
+
+  .stats-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px 20px;
+  }
+
+  .stats-group {
+    justify-content: center;
   }
 
   .filter-group {
     flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .filter-section,
+  .timeline-section {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
   }
 
   .activities-grid {
@@ -1088,6 +1374,225 @@ onMounted(() => {
   .cover-uploader {
     width: 100%;
     height: 160px;
+  }
+  
+  /* 弹窗移动端适配 */
+  :deep(.el-dialog) {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 5vh auto !important;
+    border-radius: 20px !important;
+  }
+  
+  :deep(.el-dialog__header) {
+    padding: var(--space-4) !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: var(--space-4) !important;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  :deep(.el-dialog__footer) {
+    padding: var(--space-4) !important;
+  }
+  
+  .activity-form :deep(.el-form-item) {
+    display: block !important;
+    margin-bottom: var(--space-4) !important;
+  }
+  
+  .activity-form :deep(.el-form-item__label) {
+    display: block !important;
+    float: none !important;
+    text-align: left !important;
+    width: 100% !important;
+    padding-bottom: var(--space-2) !important;
+    line-height: 1.5 !important;
+  }
+  
+  .activity-form :deep(.el-form-item__content) {
+    display: block !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .activity-form :deep(.el-input),
+  .activity-form :deep(.el-textarea) {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: var(--space-8) var(--space-4);
+    margin: var(--space-3);
+    margin-bottom: 0;
+    border-radius: 20px;
+  }
+  
+  .hero-title {
+    font-size: 28px;
+  }
+  
+  .hero-subtitle {
+    font-size: 14px;
+  }
+  
+  .stats-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .stat-item {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .filter-section,
+  .timeline-section {
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+
+  .stats-filter-section {
+    padding: 0 var(--space-3);
+    margin: var(--space-3) 0 0 0;
+  }
+  
+  .filter-group {
+    padding: var(--space-3);
+  }
+  
+  .filter-label {
+    display: none;
+  }
+  
+  .admin-actions {
+    width: 100%;
+    margin-bottom: var(--space-2);
+  }
+  
+  .admin-actions .el-button {
+    width: 100%;
+  }
+  
+  .year-marker {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .year-line {
+    display: none;
+  }
+  
+  .year-badge {
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px 20px;
+  }
+  
+  .year-text {
+    font-size: 24px;
+  }
+  
+  .activity-card {
+    border-radius: 16px;
+  }
+  
+  .activity-image {
+    height: 160px;
+  }
+  
+  .activity-content {
+    padding: var(--space-3);
+  }
+  
+  .activity-title {
+    font-size: 16px;
+  }
+  
+  /* 小屏幕弹窗优化 - 底部弹出式 */
+  :deep(.el-dialog) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  
+  :deep(.el-dialog__header) {
+    border-radius: 20px 20px 0 0 !important;
+    padding: var(--space-3) !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    max-height: 55vh;
+    padding: var(--space-3) !important;
+  }
+  
+  :deep(.el-dialog__footer) {
+    padding: var(--space-3) !important;
+    display: flex;
+    gap: var(--space-2);
+  }
+  
+  :deep(.el-dialog__footer .el-button) {
+    flex: 1;
+  }
+  
+  .cover-uploader {
+    height: 140px;
+  }
+  
+  :deep(.el-input-number) {
+    width: 100%;
+  }
+  
+  /* 小屏幕表单强制垂直布局 */
+  .activity-form :deep(.el-form-item) {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .activity-form :deep(.el-form-item__label) {
+    display: block !important;
+    float: none !important;
+    text-align: left !important;
+    width: 100% !important;
+    padding: 0 0 8px 0 !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+  }
+  
+  .activity-form :deep(.el-form-item__content) {
+    display: block !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+  
+  .activity-form :deep(.el-input__wrapper),
+  .activity-form :deep(.el-textarea__inner) {
+    width: 100% !important;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>

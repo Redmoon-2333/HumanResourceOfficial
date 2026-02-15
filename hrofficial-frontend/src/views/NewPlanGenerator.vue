@@ -166,6 +166,10 @@ const handleStop = () => {
             </div>
             <div class="icon-glow"></div>
           </div>
+          <div class="hero-badge">
+            <el-icon :size="14"><MagicStick /></el-icon>
+            <span>AI 智能助手</span>
+          </div>
           <h1 class="page-title">AI策划案生成</h1>
           <p class="page-subtitle">填写活动信息，AI将为您生成专业的活动策划案</p>
         </div>
@@ -466,6 +470,9 @@ const handleStop = () => {
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  background: #FFFFFF;
+  min-height: calc(100vh - 64px);
+  position: relative;
 }
 
 /* ============================================================
@@ -475,22 +482,35 @@ const handleStop = () => {
 .page-header {
   position: relative;
   border-radius: var(--radius-3xl);
-  padding: var(--space-10) var(--space-8) var(--space-6);
+  padding: var(--space-8) var(--space-8) var(--space-6);
   margin-bottom: var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-5);
   overflow: hidden;
-  background: linear-gradient(180deg, 
-    rgba(255, 107, 74, 0.12) 0%, 
-    rgba(245, 158, 11, 0.08) 30%,
-    rgba(255, 255, 255, 0.5) 70%,
-    transparent 100%);
-  border: none;
+  background: linear-gradient(135deg, 
+    rgba(244, 63, 94, 0.08) 0%, 
+    rgba(251, 113, 133, 0.04) 50%,
+    rgba(255, 255, 255, 0.9) 100%);
+  border: 1px solid rgba(244, 63, 94, 0.12);
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.06);
 }
 
-/* 背景装饰 - 有机Blob - 加深颜色 */
+/* 页面头部顶部装饰线 */
+.page-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 3px;
+  right: 3px;
+  height: 4px;
+  background: linear-gradient(90deg, #F43F5E, #FB7185, #FDA4AF, #FB7185, #F43F5E);
+  border-radius: 29px 29px 0 0;
+  z-index: 5;
+}
+
+/* 背景装饰 - 有机Blob - 玫瑰橙 */
 .page-header::before {
   content: '';
   position: absolute;
@@ -498,9 +518,11 @@ const handleStop = () => {
   right: -10%;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(255, 107, 74, 0.15) 0%, transparent 70%);
+  background: radial-gradient(ellipse 60% 50% at 40% 60%, #F43F5E 0%, rgba(244, 63, 94, 0.4) 45%, transparent 70%);
   border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-  animation: blobFloat 20s ease-in-out infinite;
+  animation: blobMorph 10s ease-in-out infinite;
+  filter: blur(60px);
+  opacity: 0.35;
   pointer-events: none;
   z-index: 0;
 }
@@ -512,10 +534,12 @@ const handleStop = () => {
   left: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);
-  border-radius: 40% 60% 70% 30% / 40% 50% 30% 60%;
-  animation: blobFloat 20s ease-in-out infinite;
-  animation-delay: -10s;
+  background: radial-gradient(ellipse 55% 65% at 55% 35%, #FB7185 0%, rgba(251, 113, 133, 0.35) 50%, transparent 65%);
+  border-radius: 40% 60% 70% 30% / 40% 50% 50% 60%;
+  animation: blobMorph 12s ease-in-out infinite;
+  animation-delay: -3s;
+  filter: blur(50px);
+  opacity: 0.25;
   pointer-events: none;
   z-index: 0;
 }
@@ -533,20 +557,22 @@ const handleStop = () => {
 
 .header-icon-wrapper {
   position: relative;
+  animation: fadeInDown 0.6s ease both;
 }
 
 .header-icon {
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  background: linear-gradient(135deg, #F43F5E, #FB7185);
   border-radius: var(--radius-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  animation: iconFloat 3s ease-in-out infinite;
   position: relative;
   z-index: 2;
-  box-shadow: var(--shadow-coral);
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35);
   animation: iconFloat 3s ease-in-out infinite;
 }
 
@@ -558,27 +584,57 @@ const handleStop = () => {
   transform: translate(-50%, -50%);
   width: 90px;
   height: 90px;
-  background: radial-gradient(circle, rgba(255, 107, 74, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.3) 0%, transparent 70%);
   border-radius: 50%;
   z-index: 1;
   animation: glowPulse 2s ease-in-out infinite;
 }
 
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #F43F5E, #FB7185);
+  color: white;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+  animation: fadeInDown 0.6s ease both;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
+}
+
 .page-title {
-  font-size: var(--text-4xl);
-  font-weight: var(--font-bold);
-  color: var(--text-primary);
+  font-size: 36px;
+  font-weight: 700;
+  color: #1F2937;
   margin: 0;
-  letter-spacing: -0.03em;
-  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
 .page-subtitle {
-  font-size: var(--text-lg);
-  color: var(--text-secondary);
+  font-size: 16px;
+  color: #6B7280;
   margin: 0;
-  line-height: var(--leading-relaxed);
+  line-height: 1.6;
   max-width: 500px;
+  animation: fadeInUp 0.6s ease 0.2s both;
 }
 
 /* 进度条区域 - 放在标题下方 */
@@ -614,13 +670,13 @@ const handleStop = () => {
 
 :deep(.custom-progress .el-progress-bar__outer) {
   border-radius: var(--radius-full);
-  background-color: rgba(255, 107, 74, 0.1);
+  background-color: rgba(244, 63, 94, 0.1);
 }
 
 :deep(.custom-progress .el-progress-bar__inner) {
   border-radius: var(--radius-full);
   transition: all var(--transition-slow) var(--ease-out);
-  background: linear-gradient(90deg, var(--coral-400), var(--coral-500));
+  background: linear-gradient(90deg, #F43F5E, #FB7185);
 }
 
 /* ============================================================
@@ -639,19 +695,33 @@ const handleStop = () => {
    纯净圆角无边框风格
    ============================================================ */
 .form-section {
-  background: var(--bg-primary);
-  border-radius: var(--radius-3xl);
+  position: relative;
+  background: #FFFFFF;
+  border-radius: var(--radius-2xl);
   padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
-  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
   transition: all var(--transition-normal) var(--ease-out);
 }
 
+/* 表单区域顶部装饰线 */
+.form-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #F43F5E, #FB7185, #FDA4AF);
+  border-radius: 18px 18px 0 0;
+}
+
 .form-section:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-color: rgba(244, 63, 94, 0.15);
 }
 
 .plan-form {
@@ -662,49 +732,35 @@ const handleStop = () => {
 
 /* 表单区块 */
 .form-block {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-5);
-  border: none;
-  transition: all var(--transition-normal) var(--ease-out);
   position: relative;
+  background: #FAFAFA;
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all var(--transition-normal) var(--ease-out);
   overflow: hidden;
 }
 
-/* 区块背景装饰 - 柔和渐变光晕 */
+/* 区块顶部装饰线 */
 .form-block::before {
   content: '';
   position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 300px;
-  height: 200px;
-  pointer-events: none;
-  transition: all var(--transition-slow) var(--ease-out);
-}
-
-/* 基本信息区块 - 珊瑚橙光晕 */
-.form-block-primary::before {
-  background: radial-gradient(ellipse, rgba(255, 107, 74, 0.08) 0%, transparent 70%);
-}
-
-/* 人员信息区块 - 琥珀色光晕 */
-.form-block-secondary::before {
-  background: radial-gradient(ellipse, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
-}
-
-/* 活动目的区块 - 翡翠绿光晕 */
-.form-block-accent::before {
-  background: radial-gradient(ellipse, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
-}
-
-/* 悬停时光晕增强 */
-.form-block:hover::before {
-  transform: scale(1.15);
+  top: 0;
+  left: 3px;
+  right: 3px;
+  height: 2px;
+  background: linear-gradient(90deg, #F43F5E, #FB7185);
+  border-radius: 17px 17px 0 0;
+  opacity: 0.6;
 }
 
 .form-block:hover {
-  background: var(--bg-tertiary);
+  background: #F5F5F5;
+  border-color: rgba(244, 63, 94, 0.1);
+}
+
+.form-block:hover::before {
+  opacity: 1;
 }
 
 /* 区块头部 */
@@ -731,33 +787,35 @@ const handleStop = () => {
 }
 
 .block-icon.primary {
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  background: linear-gradient(135deg, #F43F5E, #FB7185);
 }
 
 .block-icon.secondary {
-  background: linear-gradient(135deg, var(--amber-500), var(--amber-600));
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
 }
 
 .block-icon.accent {
-  background: linear-gradient(135deg, var(--emerald-500), var(--emerald-600));
+  background: linear-gradient(135deg, #10B981, #34D399);
 }
 
 .block-title-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .block-title {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
-  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .block-subtitle {
-  font-size: var(--text-sm);
-  color: var(--text-tertiary);
+  font-size: 13px;
+  color: #6B7280;
+  line-height: 1.4;
 }
 
 /* 表单网格 */
@@ -836,36 +894,37 @@ const handleStop = () => {
 .submit-btn {
   flex: 1;
   height: 52px;
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #F43F5E, #FB7185);
   border: none;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-coral);
+  box-shadow: 0 8px 24px rgba(244, 63, 94, 0.35);
   transition: all var(--transition-normal) var(--ease-spring);
+  color: white;
 }
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-coral-lg);
+  box-shadow: 0 12px 32px rgba(244, 63, 94, 0.45);
 }
 
 .reset-btn {
   height: 52px;
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
+  font-size: 16px;
+  font-weight: 500;
   border-radius: var(--radius-xl);
-  border: 2px solid var(--border-medium);
-  color: var(--text-secondary);
+  border: 2px solid rgba(244, 63, 94, 0.2);
+  color: #6B7280;
   background: transparent;
   transition: all var(--transition-normal) var(--ease-out);
   padding: 0 var(--space-6);
 }
 
 .reset-btn:hover {
-  border-color: var(--coral-400);
-  color: var(--coral-500);
-  background: rgba(255, 107, 74, 0.05);
+  border-color: #F43F5E;
+  color: #F43F5E;
+  background: rgba(244, 63, 94, 0.05);
 }
 
 /* ============================================================
@@ -873,10 +932,11 @@ const handleStop = () => {
    纯净圆角风格 + 柔和光晕
    ============================================================ */
 .preview-section {
-  background: var(--bg-primary);
-  border-radius: var(--radius-3xl);
-  box-shadow: var(--shadow-sm);
-  border: none;
+  position: relative;
+  background: #FFFFFF;
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -885,23 +945,24 @@ const handleStop = () => {
   width: 100%;
   box-sizing: border-box;
   transition: all var(--transition-normal) var(--ease-out);
-  position: relative;
 }
 
-/* 预览区域背景装饰 - 柔和光晕 */
+/* 预览区域顶部装饰线 */
 .preview-section::before {
   content: '';
   position: absolute;
-  top: -30%;
-  left: -15%;
-  width: 350px;
-  height: 300px;
-  background: radial-gradient(ellipse, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
-  pointer-events: none;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #FDA4AF, #FB7185, #F43F5E);
+  border-radius: 18px 18px 0 0;
+  z-index: 10;
 }
 
 .preview-section:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-color: rgba(244, 63, 94, 0.15);
 }
 
 .preview-header {
@@ -909,8 +970,8 @@ const handleStop = () => {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-5) var(--space-6);
-  border-bottom: 1px solid var(--border-light);
-  background: var(--bg-secondary);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #FAFAFA;
 }
 
 .preview-title-wrapper {
@@ -922,31 +983,32 @@ const handleStop = () => {
 .preview-icon {
   width: 40px;
   height: 40px;
-  background: var(--bg-tertiary);
+  background: rgba(244, 63, 94, 0.1);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--coral-500);
+  color: #F43F5E;
   font-size: var(--text-xl);
 }
 
 .preview-title-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .preview-title {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
-  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  color: #1F2937;
+  letter-spacing: -0.01em;
 }
 
 .preview-status {
-  font-size: var(--text-xs);
-  color: var(--coral-500);
-  font-weight: var(--font-medium);
+  font-size: 13px;
+  color: #F43F5E;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -956,7 +1018,7 @@ const handleStop = () => {
   content: '';
   width: 6px;
   height: 6px;
-  background: var(--coral-500);
+  background: #F43F5E;
   border-radius: 50%;
   animation: dotPulse 1.5s ease-in-out infinite;
 }
@@ -1127,12 +1189,12 @@ const handleStop = () => {
 .empty-icon {
   width: 100px;
   height: 100px;
-  background: var(--bg-tertiary);
+  background: #F3F4F6;
   border-radius: var(--radius-3xl);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--coral-500);
+  color: #F43F5E;
   position: relative;
   z-index: 2;
 }
@@ -1144,22 +1206,23 @@ const handleStop = () => {
   transform: translate(-50%, -50%);
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle, rgba(255, 107, 74, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.08) 0%, transparent 70%);
   border-radius: 50%;
   z-index: 1;
 }
 
 .empty-title {
-  font-size: var(--text-xl);
-  font-weight: var(--font-semibold);
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F2937;
   margin: 0 0 var(--space-2) 0;
+  letter-spacing: -0.01em;
 }
 
 .empty-desc {
-  font-size: var(--text-base);
-  line-height: var(--leading-relaxed);
-  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+  color: #6B7280;
   margin: 0 0 var(--space-5) 0;
 }
 
@@ -1168,15 +1231,47 @@ const handleStop = () => {
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  background: var(--bg-tertiary);
+  background: #F9FAFB;
   border-radius: var(--radius-lg);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+  font-size: 13px;
+  color: #6B7280;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 /* ============================================================
    动画关键帧 / Animation Keyframes
    ============================================================ */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

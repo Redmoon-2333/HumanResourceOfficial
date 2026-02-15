@@ -3,6 +3,15 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  OfficeBuilding,
+  Expand,
+  Fold,
+  Menu,
+  ArrowDown,
+  User,
+  SwitchButton
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -133,10 +142,8 @@ const toggleMobileMenu = () => {
             <el-icon :size="28" color="white"><OfficeBuilding /></el-icon>
           </div>
           <div v-show="!isCollapsed || isMobile" class="logo-text">
-            <!-- Inline CSS Fix: Prevent FOUC - Logo title should be black (#1C1917), not orange -->
-            <h1 style="color: #1C1917;">人力资源中心</h1>
-            <!-- Inline CSS Fix: Prevent FOUC - Subtitle should be gray (#78716C) -->
-            <span style="color: #78716C;">Human Resources</span>
+            <h1>人力资源中心</h1>
+            <span>Human Resources</span>
           </div>
         </div>
         <button
@@ -252,10 +259,8 @@ const toggleMobileMenu = () => {
 
           <!-- 面包屑/页面标题 -->
           <div class="page-info">
-            <!-- Inline CSS Fix: Prevent FOUC - Page title should be black (#1C1917), not orange -->
-            <h2 class="page-title" style="color: #1C1917;">{{ route.meta.title || '首页' }}</h2>
-            <!-- Inline CSS Fix: Prevent FOUC - Page subtitle should be gray (#78716C) -->
-            <p class="page-subtitle" style="color: #78716C;">{{ new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}</p>
+            <h2 class="page-title">{{ route.meta.title || '首页' }}</h2>
+            <p class="page-subtitle">{{ new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' }) }}</p>
           </div>
         </div>
 
@@ -313,7 +318,7 @@ const toggleMobileMenu = () => {
 }
 
 /* ============================================
-   侧边栏样式 - 暖色调
+   侧边栏样式 - 暖色调 + 流动导航
    ============================================ */
 .sidebar {
   width: 280px;
@@ -327,6 +332,49 @@ const toggleMobileMenu = () => {
   height: 100vh;
   z-index: var(--z-fixed);
   transition: all var(--transition-slow);
+  overflow: hidden;
+}
+
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 107, 74, 0.03) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(245, 158, 11, 0.03) 100%
+  );
+  pointer-events: none;
+}
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    rgba(255, 107, 74, 0.05) 0%,
+    transparent 50%
+  );
+  animation: sidebarGlow 15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sidebarGlow {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(5%, 5%);
+  }
 }
 
 .sidebar-collapsed {
@@ -348,9 +396,10 @@ const toggleMobileMenu = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: var(--z-modal-backdrop);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.4);
+  z-index: calc(var(--z-fixed) - 1);
+  backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
 }
 
 /* 侧边栏头部 */
@@ -371,14 +420,13 @@ const toggleMobileMenu = () => {
 .logo-icon {
   width: 48px;
   height: 48px;
-  /* 暖色调渐变 */
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: var(--gradient-warm);
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.35);
+  box-shadow: var(--shadow-coral);
 }
 
 .logo-text {
@@ -416,8 +464,8 @@ const toggleMobileMenu = () => {
 }
 
 .collapse-btn:hover {
-  background: #FFEDD5;
-  color: #EA580C;
+  background: var(--coral-100);
+  color: var(--coral-600);
 }
 
 /* 导航菜单 */
@@ -451,18 +499,57 @@ const toggleMobileMenu = () => {
   text-decoration: none;
   transition: all var(--transition-fast);
   margin-bottom: var(--space-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: linear-gradient(180deg, var(--coral-500), var(--amber-500));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  transition: height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 107, 74, 0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
 }
 
 .nav-item:hover {
-  background: #FFFBEB;
-  color: #D97706;
+  background: var(--coral-50);
+  color: var(--coral-600);
+}
+
+.nav-item:hover::before {
+  height: 60%;
+}
+
+.nav-item:hover::after {
+  transform: translateX(0);
 }
 
 .nav-item.active {
-  /* 暖色调渐变 */
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: var(--gradient-warm);
   color: white;
-  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.35);
+  box-shadow: var(--shadow-coral);
+}
+
+.nav-item.active::before {
+  height: 0;
+}
+
+.nav-item.active::after {
+  display: none;
 }
 
 .nav-icon {
@@ -508,8 +595,7 @@ const toggleMobileMenu = () => {
 }
 
 .user-avatar {
-  /* 暖色调渐变 */
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: var(--gradient-warm);
   color: white;
   font-weight: var(--font-bold);
 }
@@ -594,8 +680,8 @@ const toggleMobileMenu = () => {
 }
 
 .mobile-menu-btn:hover {
-  background: #FFEDD5;
-  color: #EA580C;
+  background: var(--coral-100);
+  color: var(--coral-600);
 }
 
 .page-info {
@@ -642,8 +728,7 @@ const toggleMobileMenu = () => {
 }
 
 .user-avatar-gradient {
-  /* 暖色调渐变 */
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: var(--gradient-warm);
   color: white;
   font-weight: var(--font-bold);
 }
@@ -701,8 +786,8 @@ const toggleMobileMenu = () => {
 }
 
 :deep(.user-dropdown-menu .el-dropdown-menu__item:hover) {
-  background: #FFFBEB;
-  color: #D97706;
+  background: var(--coral-50);
+  color: var(--coral-600);
 }
 
 .text-danger {

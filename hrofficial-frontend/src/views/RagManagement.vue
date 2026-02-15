@@ -91,12 +91,12 @@ onMounted(() => {
             <svg viewBox="0 0 400 400" class="network-svg">
               <defs>
                 <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#FF6B4A;stop-opacity:0.3" />
-                  <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:0.3" />
+                  <stop offset="0%" style="stop-color:#BE123C;stop-opacity:0.3" />
+                  <stop offset="100%" style="stop-color:#E11D48;stop-opacity:0.3" />
                 </linearGradient>
               </defs>
               <!-- 网络节点和连线 -->
-              <circle cx="100" cy="100" r="4" fill="#FF6B4A" opacity="0.6">
+              <circle cx="100" cy="100" r="4" fill="#BE123C" opacity="0.6">
                 <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" />
               </circle>
               <circle cx="300" cy="150" r="4" fill="#F59E0B" opacity="0.6">
@@ -134,7 +134,7 @@ onMounted(() => {
           <!-- 文档统计 -->
           <div class="dashboard-card stat-card">
             <div class="card-header">
-              <el-icon :size="20" color="#FF6B4A"><Document /></el-icon>
+              <el-icon :size="20" color="#BE123C"><Document /></el-icon>
               <span>文档数量</span>
             </div>
             <div class="stat-content">
@@ -310,7 +310,7 @@ onMounted(() => {
         <div class="info-grid">
           <GlassPanel :blur="15" :opacity="0.9" :border-radius="20">
             <div class="info-card">
-              <div class="info-icon" style="background: linear-gradient(135deg, #FF6B4A, #E35532);">
+              <div class="info-icon" style="background: linear-gradient(135deg, #BE123C, #E11D48);">
                 <el-icon :size="24" color="white"><InfoFilled /></el-icon>
               </div>
               <h3 class="info-title">什么是知识库？</h3>
@@ -352,15 +352,24 @@ onMounted(() => {
 <style scoped>
 .rag-management-page {
   min-height: calc(100vh - 64px);
-  background: linear-gradient(180deg, #FFFBF7 0%, #FFF5F0 100%);
+  background: #FFFFFF;
+  padding: 32px;
   padding-bottom: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Hero区域 */
 .hero-section {
   position: relative;
-  padding: 50px 24px 30px;
+  padding: var(--space-10) var(--space-8);
+  margin: var(--space-8);
+  margin-bottom: 0;
+  border-radius: 32px;
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(190, 18, 60, 0.06) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 1px solid rgba(190, 18, 60, 0.1);
 }
 
 .hero-background {
@@ -379,19 +388,56 @@ onMounted(() => {
 .orb-1 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #FF6B4A, #FB7185);
+  background: radial-gradient(ellipse 60% 50% at 40% 60%, #BE123C 0%, rgba(190, 18, 60, 0.4) 45%, transparent 70%);
   top: -100px;
   right: -100px;
   animation: float-orb 8s ease-in-out infinite;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  filter: blur(60px);
+  opacity: 0.35;
 }
 
 .orb-2 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  background: radial-gradient(ellipse 55% 65% at 55% 35%, #E11D48 0%, rgba(225, 29, 72, 0.35) 50%, transparent 65%);
   bottom: -50px;
   left: -50px;
-  animation: float-orb 8s ease-in-out infinite -4s;
+  animation: float-orb 10s ease-in-out infinite -3s;
+  border-radius: 40% 60% 70% 30% / 40% 50% 50% 60%;
+  filter: blur(50px);
+  opacity: 0.25;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
 }
 
 @keyframes float-orb {
@@ -427,13 +473,28 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(255, 107, 74, 0.1);
-  border: 1px solid rgba(255, 107, 74, 0.2);
+  background: linear-gradient(135deg, #BE123C, #E11D48);
+  border: none;
   border-radius: 20px;
-  color: #FF6B4A;
+  color: white;
   font-size: 14px;
   font-weight: 500;
   margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(190, 18, 60, 0.3);
+  animation: fadeInDown 0.6s ease both;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
 }
 
 .hero-title {
@@ -442,10 +503,11 @@ onMounted(() => {
   color: #1C1917;
   margin-bottom: 10px;
   letter-spacing: -0.02em;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #FF6B4A 0%, #3B82F6 100%);
+  background: linear-gradient(135deg, #BE123C 0%, #E11D48 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -454,13 +516,31 @@ onMounted(() => {
 .hero-subtitle {
   font-size: 15px;
   color: #78716C;
+  animation: fadeInUp 0.6s ease 0.2s both;
 }
 
 /* 仪表板 */
 .dashboard-section {
+  position: relative;
   max-width: 1200px;
-  margin: 0 auto 24px;
-  padding: 0 24px;
+  margin: var(--space-8);
+  margin-top: var(--space-6);
+  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid rgba(190, 18, 60, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #BE123C, #E11D48);
+  border-radius: 18px 18px 0 0;
 }
 
 .dashboard-grid {
@@ -470,10 +550,18 @@ onMounted(() => {
 }
 
 .dashboard-card {
-  background: white;
-  border-radius: 20px;
+  background: #FAFAFA;
+  border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(190, 18, 60, 0.1);
+  border-color: rgba(190, 18, 60, 0.15);
 }
 
 .card-header {
@@ -533,9 +621,26 @@ onMounted(() => {
 
 /* 初始化区域 */
 .init-section {
+  position: relative;
   max-width: 1200px;
-  margin: 0 auto 24px;
-  padding: 0 24px;
+  margin: var(--space-8);
+  margin-top: var(--space-6);
+  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid rgba(190, 18, 60, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.init-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #E11D48, #BE123C);
+  border-radius: 18px 18px 0 0;
 }
 
 .init-content {
@@ -554,12 +659,12 @@ onMounted(() => {
 .init-icon {
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, #BE123C, #E11D48);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 32px rgba(255, 107, 74, 0.35);
+  box-shadow: 0 12px 32px rgba(190, 18, 60, 0.35);
   transition: all 0.3s ease;
 }
 
@@ -568,8 +673,8 @@ onMounted(() => {
 }
 
 @keyframes pulse-icon {
-  0%, 100% { transform: scale(1); box-shadow: 0 12px 32px rgba(255, 107, 74, 0.35); }
-  50% { transform: scale(1.05); box-shadow: 0 16px 40px rgba(255, 107, 74, 0.5); }
+  0%, 100% { transform: scale(1); box-shadow: 0 12px 32px rgba(190, 18, 60, 0.35); }
+  50% { transform: scale(1.05); box-shadow: 0 16px 40px rgba(190, 18, 60, 0.5); }
 }
 
 .init-title-group {
@@ -622,19 +727,19 @@ onMounted(() => {
 }
 
 .progress-step.active .step-icon {
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, #BE123C, #E11D48);
   color: white;
-  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.35);
+  box-shadow: 0 8px 24px rgba(190, 18, 60, 0.35);
+}
+
+.progress-step.active span {
+  color: #BE123C;
 }
 
 .progress-step span {
   font-size: 13px;
   color: #A8A29E;
   font-weight: 500;
-}
-
-.progress-step.active span {
-  color: #FF6B4A;
 }
 
 .progress-line {
@@ -648,7 +753,7 @@ onMounted(() => {
 .line-fill {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(90deg, #BE123C, #E11D48);
   border-radius: 2px;
   animation: fill-line 1.5s ease-in-out infinite;
 }
@@ -670,7 +775,7 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   padding: 16px 40px;
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, #BE123C, #E11D48);
   color: white;
   border: none;
   border-radius: 14px;
@@ -678,13 +783,13 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 8px 24px rgba(255, 107, 74, 0.35);
+  box-shadow: 0 8px 24px rgba(190, 18, 60, 0.35);
   margin-bottom: 16px;
 }
 
 .init-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(255, 107, 74, 0.45);
+  box-shadow: 0 12px 32px rgba(190, 18, 60, 0.45);
 }
 
 .init-hint {
@@ -821,9 +926,26 @@ onMounted(() => {
 
 /* 信息区域 */
 .info-section {
+  position: relative;
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
+  margin: var(--space-8);
+  margin-top: var(--space-6);
+  padding: 24px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid rgba(190, 18, 60, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.info-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #BE123C, #E11D48);
+  border-radius: 18px 18px 0 0;
 }
 
 .info-grid {

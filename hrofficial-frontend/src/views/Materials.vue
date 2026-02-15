@@ -2,7 +2,7 @@
 import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
 import AnimatedCounter from '@/components/AnimatedCounter.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   getCategories,
   getSubcategories,
@@ -70,6 +70,8 @@ const currentSubcategory = ref<number | null>(null)
 const loading = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
 const searchQuery = ref('')
+const currentPage = ref(1)
+const pageSize = ref(4)
 
 const showUploadDialog = ref(false)
 const showEditDialog = ref(false)
@@ -133,8 +135,8 @@ const fileTypeColors: Record<string, string> = {
   'docx': '#3B82F6',
   'xls': '#10B981',
   'xlsx': '#10B981',
-  'ppt': '#F59E0B',
-  'pptx': '#F59E0B',
+  'ppt': '#F472B6',
+  'pptx': '#F472B6',
   'jpg': '#8B5CF6',
   'jpeg': '#8B5CF6',
   'png': '#8B5CF6',
@@ -142,12 +144,12 @@ const fileTypeColors: Record<string, string> = {
 }
 
 const categoryColors = [
-  { bg: 'linear-gradient(135deg, #FF6B4A, #E35532)', icon: '#FF6B4A' },
+  { bg: 'linear-gradient(135deg, #FB923C, #F59E0B)', icon: '#FB923C' },
   { bg: 'linear-gradient(135deg, #F59E0B, #D97706)', icon: '#F59E0B' },
-  { bg: 'linear-gradient(135deg, #10B981, #059669)', icon: '#10B981' },
-  { bg: 'linear-gradient(135deg, #3B82F6, #2563EB)', icon: '#3B82F6' },
-  { bg: 'linear-gradient(135deg, #8B5CF6, #7C3AED)', icon: '#8B5CF6' },
-  { bg: 'linear-gradient(135deg, #EC4899, #DB2777)', icon: '#EC4899' }
+  { bg: 'linear-gradient(135deg, #FDBA74, #FB923C)', icon: '#FDBA74' },
+  { bg: 'linear-gradient(135deg, #F97316, #EA580C)', icon: '#F97316' },
+  { bg: 'linear-gradient(135deg, #FB923C, #F97316)', icon: '#FB923C' },
+  { bg: 'linear-gradient(135deg, #FBBF24, #F59E0B)', icon: '#FBBF24' }
 ]
 
 const fetchCategories = async () => {
@@ -173,7 +175,7 @@ const fetchSubcategories = async (categoryId: number) => {
       subcategories.value = data.map((sub, index) => ({
         ...sub,
         icon: Files,
-        color: categoryColors[index % categoryColors.length]?.icon || '#FF6B4A'
+        color: categoryColors[index % categoryColors.length]?.icon || '#FB923C'
       }))
     }
   } catch (error: any) {
@@ -276,12 +278,26 @@ const filteredMaterials = computed(() => {
   )
 })
 
+const paginatedMaterials = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredMaterials.value.slice(start, end)
+})
+
+const totalPages = computed(() => 
+  Math.ceil(filteredMaterials.value.length / pageSize.value)
+)
+
 const totalMaterials = computed(() => 
   materials.value.length
 )
 
 const totalDownloads = computed(() =>
   materials.value.reduce((sum, m) => sum + (m.downloadCount || 0), 0)
+)
+
+const totalCategories = computed(() =>
+  categories.value.length
 )
 
 const handleFileChange = (event: Event) => {
@@ -516,6 +532,10 @@ onMounted(() => {
   fetchCategories()
   fetchMaterials()
 })
+
+watch([currentCategory, currentSubcategory, searchQuery], () => {
+  currentPage.value = 1
+})
 </script>
 
 <template>
@@ -528,13 +548,13 @@ onMounted(() => {
           <div class="gradient-orb orb-2"></div>
           <div class="floating-shapes">
             <div class="shape shape-1">
-              <el-icon :size="40" color="rgba(255, 107, 74, 0.3)"><Folder /></el-icon>
+              <el-icon :size="40" color="rgba(251, 146, 60, 0.3)"><Folder /></el-icon>
             </div>
             <div class="shape shape-2">
               <el-icon :size="32" color="rgba(245, 158, 11, 0.3)"><Document /></el-icon>
             </div>
             <div class="shape shape-3">
-              <el-icon :size="36" color="rgba(16, 185, 129, 0.3)"><Collection /></el-icon>
+              <el-icon :size="36" color="rgba(253, 186, 116, 0.3)"><Collection /></el-icon>
             </div>
           </div>
         </div>
@@ -553,49 +573,12 @@ onMounted(() => {
           <p class="hero-subtitle" style="color: #78716C;">
             汇集人力资源中心各类文档资料，助力成员成长与协作
           </p>
-
-          <!-- 统计卡片 -->
-          <div class="stats-row">
-            <div class="stat-item">
-              <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B4A, #E35532);">
-                <el-icon :size="20" color="white"><Folder /></el-icon>
-              </div>
-              <div class="stat-info">
-                <span class="stat-value">
-                  <AnimatedCounter :value="totalMaterials" :duration="1500" />
-                </span>
-                <span class="stat-label">资料总数</span>
-              </div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
-                <el-icon :size="20" color="white"><Grid /></el-icon>
-              </div>
-              <div class="stat-info">
-                <span class="stat-value">
-                  <AnimatedCounter :value="categories.length" :duration="1500" />
-                </span>
-                <span class="stat-label">分类数量</span>
-              </div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-icon" style="background: linear-gradient(135deg, #10B981, #059669);">
-                <el-icon :size="20" color="white"><Download /></el-icon>
-              </div>
-              <div class="stat-info">
-                <span class="stat-value">
-                  <AnimatedCounter :value="totalDownloads" :duration="1500" />
-                </span>
-                <span class="stat-label">下载次数</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
       <!-- 主内容区 -->
       <div class="main-content">
-        <!-- 分类侧边栏 -->
+        <!-- 左侧：分类栏 -->
         <div class="category-sidebar">
           <GlassPanel :blur="15" :opacity="0.95" :border-radius="20">
             <div class="sidebar-header">
@@ -688,107 +671,168 @@ onMounted(() => {
           </GlassPanel>
         </div>
 
-        <!-- 资料列表区 -->
-        <div class="materials-content">
-          <!-- 工具栏 -->
-          <div class="toolbar">
-            <div class="search-box">
-              <el-icon :size="18" class="search-icon"><Search /></el-icon>
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="搜索资料..."
-                class="search-input"
-                @keyup.enter="handleSearch"
-              />
-            </div>
-
-            <div class="toolbar-actions">
-              <button
-                v-if="isMinister"
-                class="upload-btn"
-                @click="showUploadDialog = true"
-              >
-                <el-icon :size="18"><Upload /></el-icon>
-                <span>上传资料</span>
-              </button>
-
-              <div class="view-toggle">
-                <button
-                  class="toggle-btn"
-                  :class="{ active: viewMode === 'grid' }"
-                  @click="viewMode = 'grid'"
-                >
-                  <el-icon :size="18"><Grid /></el-icon>
-                </button>
-                <button
-                  class="toggle-btn"
-                  :class="{ active: viewMode === 'list' }"
-                  @click="viewMode = 'list'"
-                >
-                  <el-icon :size="18"><List /></el-icon>
-                </button>
+        <!-- 右侧：统计和资料 -->
+        <div class="right-content">
+          <!-- 右上：统计卡片（横向排列） -->
+          <div class="stats-container">
+            <div class="stats-row">
+              <div class="stat-item">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #FB923C, #F59E0B);">
+                  <el-icon :size="20" color="white"><Folder /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">
+                    <AnimatedCounter :value="totalMaterials" :duration="1500" />
+                  </span>
+                  <span class="stat-label">资料总数</span>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #FB923C, #F59E0B);">
+                  <el-icon :size="20" color="white"><Grid /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">
+                    <AnimatedCounter :value="totalCategories" :duration="1500" />
+                  </span>
+                  <span class="stat-label">分类总数</span>
+                </div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
+                  <el-icon :size="20" color="white"><Download /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">
+                    <AnimatedCounter :value="totalDownloads" :duration="1500" />
+                  </span>
+                  <span class="stat-label">下载次数</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- 资料列表 -->
-          <div v-loading="loading" class="materials-list" :class="viewMode">
-            <div
-              v-for="material in filteredMaterials"
-              :key="material.materialId"
-              class="material-card"
-            >
-              <div class="material-icon" :style="{ background: getFileColor(material.fileType) + '20' }">
-                <el-icon :size="32" :color="getFileColor(material.fileType)">
-                  <component :is="getFileIcon(material.fileType)" />
-                </el-icon>
+          <!-- 右下：资料列表区 -->
+          <div class="materials-content">
+            <!-- 工具栏 -->
+            <div class="toolbar">
+              <div class="search-box">
+                <el-icon :size="18" class="search-icon"><Search /></el-icon>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="搜索资料..."
+                  class="search-input"
+                  @keyup.enter="handleSearch"
+                />
               </div>
 
-              <div class="material-info">
-                <h4 class="material-name">{{ material.materialName }}</h4>
-                <p v-if="material.description" class="material-desc">{{ material.description }}</p>
-                <div class="material-meta">
-                  <span class="meta-item">
-                    <el-icon :size="14"><Clock /></el-icon>
-                    {{ new Date(material.uploadTime).toLocaleDateString() }}
-                  </span>
-                  <span class="meta-item">
-                    <el-icon :size="14"><Download /></el-icon>
-                    {{ material.downloadCount }} 次下载
-                  </span>
-                  <span v-if="material.categoryName" class="meta-item category-tag">
-                    {{ material.categoryName }}
-                  </span>
-                  <span v-if="material.subcategoryName" class="meta-item subcategory-tag">
-                    {{ material.subcategoryName }}
-                  </span>
-                </div>
-              </div>
+              <div class="toolbar-actions">
+                <button
+                  v-if="isMinister"
+                  class="upload-btn"
+                  @click="showUploadDialog = true"
+                >
+                  <el-icon :size="18"><Upload /></el-icon>
+                  <span>上传资料</span>
+                </button>
 
-              <div class="material-actions">
-                <span class="file-size">{{ formatFileSize(material.fileSize) }}</span>
-                <div class="action-buttons">
-                  <button class="download-btn" @click="handleDownload(material)">
-                    <el-icon :size="18"><Download /></el-icon>
-                    <span>下载</span>
+                <div class="view-toggle">
+                  <button
+                    class="toggle-btn"
+                    :class="{ active: viewMode === 'grid' }"
+                    @click="viewMode = 'grid'"
+                  >
+                    <el-icon :size="18"><Grid /></el-icon>
                   </button>
-                  <template v-if="isMinister">
-                    <button class="edit-btn" @click="openEditDialog(material)" title="编辑">
-                      <el-icon :size="16"><Edit /></el-icon>
-                    </button>
-                    <button class="delete-btn" @click="handleDelete(material)" title="删除">
-                      <el-icon :size="16"><Delete /></el-icon>
-                    </button>
-                  </template>
+                  <button
+                    class="toggle-btn"
+                    :class="{ active: viewMode === 'list' }"
+                    @click="viewMode = 'list'"
+                  >
+                    <el-icon :size="18"><List /></el-icon>
+                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- 空状态 -->
-            <div v-if="filteredMaterials.length === 0 && !loading" class="empty-state">
-              <el-icon :size="64" color="#D1D5DB"><Folder /></el-icon>
-              <p>暂无资料</p>
+            <!-- 资料列表 -->
+            <div v-loading="loading" class="materials-list" :class="viewMode">
+              <div
+                v-for="material in paginatedMaterials"
+                :key="material.materialId"
+                class="material-card"
+              >
+                <div class="material-icon" :style="{ background: getFileColor(material.fileType) + '20' }">
+                  <el-icon :size="32" :color="getFileColor(material.fileType)">
+                    <component :is="getFileIcon(material.fileType)" />
+                  </el-icon>
+                </div>
+
+                <div class="material-info">
+                  <h4 class="material-name">{{ material.materialName }}</h4>
+                  <p v-if="material.description" class="material-desc">{{ material.description }}</p>
+                  <div class="material-meta">
+                    <span class="meta-item">
+                      <el-icon :size="14"><Clock /></el-icon>
+                      {{ new Date(material.uploadTime).toLocaleDateString() }}
+                    </span>
+                    <span class="meta-item">
+                      <el-icon :size="14"><Download /></el-icon>
+                      {{ material.downloadCount }} 次下载
+                    </span>
+                    <span v-if="material.categoryName" class="meta-item category-tag">
+                      {{ material.categoryName }}
+                    </span>
+                    <span v-if="material.subcategoryName" class="meta-item subcategory-tag">
+                      {{ material.subcategoryName }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="material-actions">
+                  <span class="file-size">{{ formatFileSize(material.fileSize) }}</span>
+                  <div class="action-buttons">
+                    <button class="download-btn" @click="handleDownload(material)">
+                      <el-icon :size="18"><Download /></el-icon>
+                      <span>下载</span>
+                    </button>
+                    <template v-if="isMinister">
+                      <button class="edit-btn" @click="openEditDialog(material)" title="编辑">
+                        <el-icon :size="16"><Edit /></el-icon>
+                      </button>
+                      <button class="delete-btn" @click="handleDelete(material)" title="删除">
+                        <el-icon :size="16"><Delete /></el-icon>
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div v-if="filteredMaterials.length === 0 && !loading" class="empty-state">
+                <el-icon :size="64" color="#D1D5DB"><Folder /></el-icon>
+                <p>暂无资料</p>
+              </div>
+
+              <!-- 分页 -->
+              <div v-if="totalPages > 1" class="pagination">
+                <button 
+                  class="pagination-btn" 
+                  :disabled="currentPage === 1"
+                  @click="currentPage--"
+                >
+                  上一页
+                </button>
+                <span class="pagination-info">{{ currentPage }} / {{ totalPages }}</span>
+                <button 
+                  class="pagination-btn" 
+                  :disabled="currentPage === totalPages"
+                  @click="currentPage++"
+                >
+                  下一页
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1000,13 +1044,18 @@ onMounted(() => {
 <style scoped>
 .materials-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #FEF9F6 0%, #FFF5F0 100%);
+  background: #FFFFFF;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* Hero区域 */
 .hero-section {
   position: relative;
-  padding: 80px 40px 60px;
+  padding: var(--space-12) var(--space-8);
+  margin: var(--space-6);
+  margin-bottom: var(--space-6);
+  border-radius: 32px;
   overflow: hidden;
 }
 
@@ -1026,7 +1075,7 @@ onMounted(() => {
 .orb-1 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: radial-gradient(circle, #FB923C 0%, #FDBA74 50%, transparent 70%);
   top: -100px;
   right: 10%;
 }
@@ -1034,7 +1083,7 @@ onMounted(() => {
 .orb-2 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(135deg, #FB7185, #FF6B4A);
+  background: radial-gradient(circle, #F59E0B 0%, #FBBF24 50%, transparent 70%);
   bottom: -50px;
   left: 5%;
 }
@@ -1083,27 +1132,69 @@ onMounted(() => {
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  background: rgba(255, 107, 74, 0.1);
-  border: 1px solid rgba(255, 107, 74, 0.2);
-  border-radius: 50px;
-  color: #FF6B4A;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 24px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
+  color: white;
+  border-radius: var(--radius-full, 100px);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium, 500);
+  margin-bottom: var(--space-6);
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.35), 0 0 20px rgba(251, 146, 60, 0.15);
+  animation: fadeInDown 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: badgeShine 3s ease-in-out infinite;
+}
+
+@keyframes badgeShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-title {
-  font-size: 48px;
+  font-size: clamp(1.875rem, 4vw, 2.5rem);
   font-weight: 800;
+  line-height: 1.2;
   color: #1F2937;
-  margin-bottom: 16px;
-  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-4, 16px) 0;
+  animation: fadeInUp 0.6s ease 0.1s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1123,6 +1214,8 @@ onMounted(() => {
   justify-content: center;
   gap: 32px;
   flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 0 20px;
 }
 
 .stat-item {
@@ -1130,11 +1223,20 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 20px 28px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(251, 146, 60, 0.2);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(251, 146, 60, 0.08);
+  flex: 1;
+  min-width: 200px;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.stat-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(251, 146, 60, 0.15);
+  border-color: rgba(251, 146, 60, 0.3);
 }
 
 .stat-icon {
@@ -1173,6 +1275,29 @@ onMounted(() => {
   gap: 32px;
 }
 
+/* 右侧内容区域 */
+.right-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 600px;
+}
+
+/* 统计容器 */
+.stats-container {
+  width: 100%;
+}
+
+/* 统计 */
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+  padding: 0;
+}
+
 /* 侧边栏 */
 .category-sidebar {
   position: sticky;
@@ -1202,7 +1327,7 @@ onMounted(() => {
   width: 32px;
   height: 32px;
   border: none;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   color: white;
   border-radius: 8px;
   cursor: pointer;
@@ -1214,6 +1339,7 @@ onMounted(() => {
 
 .add-category-btn:hover {
   transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3);
 }
 
 /* 一级分类 */
@@ -1233,12 +1359,12 @@ onMounted(() => {
 }
 
 .category-item:hover {
-  background: rgba(255, 107, 74, 0.05);
+  background: rgba(251, 146, 60, 0.05);
 }
 
 .category-item.active {
-  background: linear-gradient(135deg, rgba(255, 107, 74, 0.1), rgba(245, 158, 11, 0.1));
-  border: 1px solid rgba(255, 107, 74, 0.2);
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.1), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(251, 146, 60, 0.2);
 }
 
 .category-icon {
@@ -1283,8 +1409,8 @@ onMounted(() => {
 }
 
 .action-btn:hover {
-  background: rgba(255, 107, 74, 0.1);
-  color: #FF6B4A;
+  background: rgba(251, 146, 60, 0.1);
+  color: #FB923C;
 }
 
 .action-btn.small {
@@ -1299,7 +1425,7 @@ onMounted(() => {
 
 .category-item:hover .arrow-icon,
 .category-item.active .arrow-icon {
-  color: #FF6B4A;
+  color: #FB923C;
   transform: translateX(4px);
 }
 
@@ -1343,12 +1469,12 @@ onMounted(() => {
 }
 
 .subcategory-item:hover {
-  background: rgba(255, 107, 74, 0.05);
-  color: #FF6B4A;
+  background: rgba(251, 146, 60, 0.05);
+  color: #FB923C;
 }
 
 .subcategory-item.active {
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   color: white;
 }
 
@@ -1373,7 +1499,7 @@ onMounted(() => {
 .search-box {
   position: relative;
   flex: 1;
-  max-width: 400px;
+  max-width: none;
 }
 
 .search-icon {
@@ -1396,8 +1522,8 @@ onMounted(() => {
 
 .search-input:focus {
   outline: none;
-  border-color: #FF6B4A;
-  box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.1);
+  border-color: #FB923C;
+  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.1);
 }
 
 .toolbar-actions {
@@ -1411,10 +1537,10 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1423,7 +1549,7 @@ onMounted(() => {
 
 .upload-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.4);
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.4);
 }
 
 .view-toggle {
@@ -1446,11 +1572,11 @@ onMounted(() => {
 }
 
 .toggle-btn:hover {
-  color: #FF6B4A;
+  color: #FB923C;
 }
 
 .toggle-btn.active {
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   color: white;
 }
 
@@ -1461,7 +1587,7 @@ onMounted(() => {
 }
 
 .materials-list.grid {
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .materials-list.list {
@@ -1482,7 +1608,7 @@ onMounted(() => {
 .material-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-  border-color: rgba(255, 107, 74, 0.2);
+  border-color: rgba(251, 146, 60, 0.2);
 }
 
 .material-icon {
@@ -1536,19 +1662,23 @@ onMounted(() => {
 }
 
 .meta-item.category-tag {
-  padding: 2px 8px;
-  background: rgba(255, 107, 74, 0.1);
-  color: #FF6B4A;
-  border-radius: 4px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
+  color: white;
+  border-radius: 8px;
   font-weight: 500;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.2);
 }
 
 .meta-item.subcategory-tag {
-  padding: 2px 8px;
-  background: rgba(59, 130, 246, 0.1);
-  color: #3B82F6;
-  border-radius: 4px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: white;
+  border-radius: 8px;
   font-weight: 500;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
 }
 
 .material-actions {
@@ -1574,7 +1704,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   color: white;
   border: none;
   border-radius: 10px;
@@ -1586,7 +1716,7 @@ onMounted(() => {
 
 .download-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(255, 107, 74, 0.4);
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.4);
 }
 
 .edit-btn,
@@ -1635,6 +1765,43 @@ onMounted(() => {
   font-size: 16px;
 }
 
+/* 分页 */
+.pagination {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-top: 8px;
+}
+
+.pagination-btn {
+  padding: 8px 16px;
+  border: 1px solid #E5E7EB;
+  background: white;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: #FB923C;
+  color: #FB923C;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #6B7280;
+}
+
 /* 对话框样式 */
 .upload-form {
   display: flex;
@@ -1672,8 +1839,8 @@ onMounted(() => {
 .select-input:focus,
 .textarea-input:focus {
   outline: none;
-  border-color: #FF6B4A;
-  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.1);
+  border-color: #FB923C;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.1);
 }
 
 .file-input {
@@ -1685,7 +1852,7 @@ onMounted(() => {
 }
 
 .file-input:hover {
-  border-color: #FF6B4A;
+  border-color: #FB923C;
 }
 
 .file-name {
@@ -1704,7 +1871,7 @@ onMounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   transition: width 0.3s ease;
 }
 
@@ -1735,7 +1902,7 @@ onMounted(() => {
 
 .submit-btn {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #FF6B4A, #F59E0B);
+  background: linear-gradient(135deg, #FB923C, #F59E0B);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1747,7 +1914,7 @@ onMounted(() => {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 74, 0.4);
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.4);
 }
 
 .submit-btn:disabled {
@@ -1776,11 +1943,17 @@ onMounted(() => {
     min-width: 200px;
     margin-bottom: 0;
   }
+
+  .stats-row {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 768px) {
   .hero-section {
-    padding: 60px 20px 40px;
+    padding: var(--space-8) var(--space-4);
+    margin: var(--space-4);
+    margin-bottom: 0;
   }
 
   .hero-title {
@@ -1820,6 +1993,148 @@ onMounted(() => {
 
   .toolbar-actions {
     justify-content: space-between;
+  }
+  
+  /* 弹窗移动端适配 */
+  :deep(.el-dialog) {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 5vh auto !important;
+    border-radius: 20px !important;
+  }
+  
+  :deep(.el-dialog__header) {
+    padding: var(--space-4) !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    padding: var(--space-4) !important;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  :deep(.el-dialog__footer) {
+    padding: var(--space-4) !important;
+    display: flex;
+    gap: var(--space-2);
+  }
+  
+  :deep(.el-dialog__footer .el-button) {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: var(--space-6) var(--space-3);
+    margin: var(--space-3);
+    margin-bottom: 0;
+    border-radius: 20px;
+  }
+  
+  .hero-title {
+    font-size: 24px;
+  }
+  
+  .hero-subtitle {
+    font-size: 14px;
+  }
+  
+  .stats-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .stat-item {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .main-content {
+    padding: 0 12px 30px;
+  }
+  
+  .category-list {
+    flex-direction: column;
+  }
+  
+  .category-item {
+    min-width: auto;
+  }
+  
+  .materials-list.grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .material-card {
+    padding: 16px;
+  }
+  
+  .material-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .material-name {
+    font-size: 14px;
+  }
+  
+  .download-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  /* 小屏幕弹窗优化 - 底部弹出式 */
+  :deep(.el-dialog) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  
+  :deep(.el-dialog__header) {
+    border-radius: 20px 20px 0 0 !important;
+    padding: var(--space-3) !important;
+  }
+  
+  :deep(.el-dialog__body) {
+    max-height: 55vh;
+    padding: var(--space-3) !important;
+  }
+  
+  :deep(.el-dialog__footer) {
+    padding: var(--space-3) !important;
+  }
+  
+  .upload-form {
+    gap: 16px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+  }
+  
+  .text-input,
+  .select-input,
+  .textarea-input {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>

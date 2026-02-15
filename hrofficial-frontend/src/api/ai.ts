@@ -188,3 +188,59 @@ export const createStreamController = (): {
  * @deprecated 请使用 chat
  */
 export const chatWithAI = chat
+
+// ============================================
+// 对话历史管理
+// ============================================
+
+/**
+ * 对话历史消息记录
+ */
+export interface ChatHistoryMessage {
+  index: number
+  role: 'user' | 'assistant'
+  content: string
+  rawType: string
+}
+
+/**
+ * 对话历史统计信息
+ */
+export interface ChatHistoryStats {
+  totalMessages: number
+  userMessages: number
+  assistantMessages: number
+  systemMessages: number
+  maxMessages: number
+  maxPairs: number
+}
+
+/**
+ * 获取当前用户的对话历史
+ * @returns 对话历史和统计信息
+ *
+ * @example
+ * ```typescript
+ * const { history, stats } = await getChatHistory()
+ * console.log(`当前有${stats.userMessages}条用户消息`)
+ * ```
+ */
+export const getChatHistory = (): Promise<
+  ApiResponse<{ history: ChatHistoryMessage[]; stats: ChatHistoryStats }>
+> => {
+  return http.get('/api/ai/chat-history')
+}
+
+/**
+ * 删除当前用户的对话历史
+ * @returns 删除结果
+ *
+ * @example
+ * ```typescript
+ * await clearChatHistory()
+ * console.log('对话历史已清除')
+ * ```
+ */
+export const clearChatHistory = (): Promise<ApiResponse<void>> => {
+  return http.delete('/api/ai/chat-history')
+}

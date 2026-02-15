@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class EmbeddingConfig {
 
-    @Value("${aliyun.dashscope.api-key}")
+    @Value("${spring.ai.dashscope.api-key}")
     private String apiKey;
 
     @Value("${rag.embedding-model:text-embedding-v3}")

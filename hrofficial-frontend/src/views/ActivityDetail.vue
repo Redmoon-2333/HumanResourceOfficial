@@ -464,6 +464,18 @@ onMounted(() => {
   font-size: var(--text-xl);
   font-weight: var(--font-bold);
   color: white;
+  animation: fadeInUp 0.6s ease both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .header-decoration {

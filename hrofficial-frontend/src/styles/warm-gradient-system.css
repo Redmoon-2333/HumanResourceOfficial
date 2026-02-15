@@ -1,0 +1,447 @@
+/**
+ * ============================================================
+ * 人力资源中心官网 - 暖色调渐变视觉系统 v3.0
+ * Human Resource Official - Warm Gradient Visual System
+ * ============================================================
+ * 
+ * 设计理念：流动的温暖 - 从日出到黄昏的暖色旅程
+ * Design Philosophy: Flowing Warmth - A Warm Color Journey from Sunrise to Sunset
+ * 
+ * 核心特征：
+ * - 连贯的暖色调渐变序列（色相环7-25°差异）
+ * - 无序自由的有机渐变（拒绝规则线性渐变）
+ * - 有机blob形状与随机分布
+ * - 玻璃态效果与动态动画
+ * 
+ * 页面色彩序列：
+ * 首页(暖橙红#E85A3C) → 活动介绍(活力橙#F97316) → 往届活动(琥珀金#F59E0B) 
+ * → 往届成员(暖金黄#FBBF24) → 资料管理(暖粉金#FB923C) → AI对话(珊瑚粉#FF6B4A)
+ * → 策划案生成(玫瑰橙#F43F5E) → 激活码管理(暖玫瑰#E11D48) → 知识库管理(深暖红#BE123C)
+ * ============================================================
+ */
+
+/* ============================================================
+   1. 页面特定色彩系统 / Page-Specific Color System
+   ============================================================ */
+:root {
+  /* 首页 - 暖橙红 */
+  --home-primary: #E85A3C;
+  --home-primary-light: #FF8A70;
+  --home-primary-dark: #C4472E;
+  --home-secondary: #F97316;
+  --home-accent: #F59E0B;
+  --home-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF5F3 100%);
+  --home-blob-1: radial-gradient(ellipse 65% 55% at 35% 65%, #E85A3C 0%, rgba(232, 90, 60, 0.4) 45%, transparent 70%);
+  --home-blob-2: radial-gradient(ellipse 55% 65% at 55% 35%, #F97316 0%, rgba(249, 115, 22, 0.35) 50%, transparent 65%);
+  --home-blob-3: radial-gradient(ellipse 50% 50% at 50% 50%, #F59E0B 0%, rgba(245, 158, 11, 0.3) 50%, transparent 60%);
+  
+  /* 活动介绍 - 活力橙 */
+  --activities-primary: #F97316;
+  --activities-primary-light: #FB923C;
+  --activities-primary-dark: #EA580C;
+  --activities-secondary: #F59E0B;
+  --activities-accent: #FBBF24;
+  --activities-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF7ED 100%);
+  --activities-blob-1: radial-gradient(ellipse 60% 50% at 40% 60%, #F97316 0%, rgba(249, 115, 22, 0.4) 45%, transparent 70%);
+  --activities-blob-2: radial-gradient(ellipse 55% 60% at 50% 40%, #F59E0B 0%, rgba(245, 158, 11, 0.35) 50%, transparent 65%);
+  
+  /* 往届活动 - 琥珀金 */
+  --past-primary: #F59E0B;
+  --past-primary-light: #FCD34D;
+  --past-primary-dark: #D97706;
+  --past-secondary: #FBBF24;
+  --past-accent: #FDE68A;
+  --past-bg: linear-gradient(180deg, #FFFBF7 0%, #FFFBEB 100%);
+  --past-blob-1: radial-gradient(ellipse 70% 60% at 30% 70%, #F59E0B 0%, rgba(245, 158, 11, 0.4) 40%, transparent 70%);
+  --past-blob-2: radial-gradient(ellipse 50% 70% at 60% 30%, #FBBF24 0%, rgba(251, 191, 36, 0.35) 50%, transparent 65%);
+  
+  /* 往届成员 - 暖金黄 */
+  --alumni-primary: #FBBF24;
+  --alumni-primary-light: #FCD34D;
+  --alumni-primary-dark: #D97706;
+  --alumni-secondary: #FDE68A;
+  --alumni-accent: #FEF3C7;
+  --alumni-bg: linear-gradient(180deg, #FFFBF7 0%, #FFFBEB 100%);
+  --alumni-blob-1: radial-gradient(ellipse 65% 55% at 35% 65%, #FBBF24 0%, rgba(251, 191, 36, 0.4) 45%, transparent 70%);
+  --alumni-blob-2: radial-gradient(ellipse 55% 65% at 55% 35%, #FCD34D 0%, rgba(252, 211, 77, 0.35) 50%, transparent 65%);
+  
+  /* 资料管理 - 暖粉金 */
+  --materials-primary: #FB923C;
+  --materials-primary-light: #FDBA74;
+  --materials-primary-dark: #EA580C;
+  --materials-secondary: #FED7AA;
+  --materials-accent: #FFEDD5;
+  --materials-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF7ED 100%);
+  --materials-blob-1: radial-gradient(ellipse 60% 50% at 40% 60%, #FB923C 0%, rgba(251, 146, 60, 0.4) 45%, transparent 70%);
+  --materials-blob-2: radial-gradient(ellipse 55% 60% at 50% 40%, #FDBA74 0%, rgba(253, 186, 116, 0.35) 50%, transparent 65%);
+  
+  /* AI对话 - 珊瑚粉 */
+  --ai-primary: #FF6B4A;
+  --ai-primary-light: #FF8A70;
+  --ai-primary-dark: #E85A3C;
+  --ai-secondary: #FFB8A8;
+  --ai-accent: #FFE8E4;
+  --ai-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF5F3 100%);
+  --ai-blob-1: radial-gradient(ellipse 65% 55% at 35% 65%, #FF6B4A 0%, rgba(255, 107, 74, 0.4) 45%, transparent 70%);
+  --ai-blob-2: radial-gradient(ellipse 55% 65% at 55% 35%, #FF8A70 0%, rgba(255, 138, 112, 0.35) 50%, transparent 65%);
+  
+  /* 策划案生成 - 玫瑰橙 */
+  --plan-primary: #F43F5E;
+  --plan-primary-light: #FB7185;
+  --plan-primary-dark: #E11D48;
+  --plan-secondary: #FDA4AF;
+  --plan-accent: #FFE4E6;
+  --plan-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF1F2 100%);
+  --plan-blob-1: radial-gradient(ellipse 60% 50% at 40% 60%, #F43F5E 0%, rgba(244, 63, 94, 0.4) 45%, transparent 70%);
+  --plan-blob-2: radial-gradient(ellipse 55% 60% at 50% 40%, #FB7185 0%, rgba(251, 113, 133, 0.35) 50%, transparent 65%);
+  
+  /* 激活码管理 - 暖玫瑰 */
+  --activation-primary: #E11D48;
+  --activation-primary-light: #F43F5E;
+  --activation-primary-dark: #BE123C;
+  --activation-secondary: #FB7185;
+  --activation-accent: #FFE4E6;
+  --activation-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF1F2 100%);
+  --activation-blob-1: radial-gradient(ellipse 65% 55% at 35% 65%, #E11D48 0%, rgba(225, 29, 72, 0.4) 45%, transparent 70%);
+  --activation-blob-2: radial-gradient(ellipse 55% 65% at 55% 35%, #F43F5E 0%, rgba(244, 63, 94, 0.35) 50%, transparent 65%);
+  
+  /* 知识库管理 - 深暖红 */
+  --rag-primary: #BE123C;
+  --rag-primary-light: #E11D48;
+  --rag-primary-dark: #9F1239;
+  --rag-secondary: #F43F5E;
+  --rag-accent: #FFE4E6;
+  --rag-bg: linear-gradient(180deg, #FFFBF7 0%, #FFF1F2 100%);
+  --rag-blob-1: radial-gradient(ellipse 60% 50% at 40% 60%, #BE123C 0%, rgba(190, 18, 60, 0.4) 45%, transparent 70%);
+  --rag-blob-2: radial-gradient(ellipse 55% 60% at 50% 40%, #E11D48 0%, rgba(225, 29, 72, 0.35) 50%, transparent 65%);
+}
+
+/* ============================================================
+   2. 有机Blob动画 / Organic Blob Animations
+   ============================================================ */
+
+/* Blob形态变化 - 有机流动 */
+@keyframes blobMorph {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  25% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    transform: translate(15px, -25px) scale(1.05) rotate(5deg);
+  }
+  50% {
+    border-radius: 50% 60% 30% 60% / 30% 40% 70% 60%;
+    transform: translate(-10px, 15px) scale(0.95) rotate(-3deg);
+  }
+  75% {
+    border-radius: 40% 60% 60% 40% / 60% 50% 40% 60%;
+    transform: translate(20px, 10px) scale(1.02) rotate(2deg);
+  }
+}
+
+/* Blob发光呼吸 */
+@keyframes blobGlow {
+  0%, 100% {
+    filter: blur(60px) brightness(1);
+    opacity: 0.35;
+  }
+  50% {
+    filter: blur(70px) brightness(1.1);
+    opacity: 0.45;
+  }
+}
+
+/* 浮动动画 - 随机轨迹 */
+@keyframes floatOrganic {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate(8px, -12px) rotate(3deg);
+  }
+  40% {
+    transform: translate(-5px, 8px) rotate(-2deg);
+  }
+  60% {
+    transform: translate(12px, 5px) rotate(4deg);
+  }
+  80% {
+    transform: translate(-8px, -8px) rotate(-3deg);
+  }
+}
+
+/* Sparkle闪烁 */
+@keyframes sparkleTwinkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+/* 呼吸光晕 */
+@keyframes breatheOrganic {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(232, 90, 60, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(232, 90, 60, 0.5);
+  }
+}
+
+/* 标签跃动 */
+@keyframes gentleBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ============================================================
+   3. 有机Blob组件样式 / Organic Blob Component Styles
+   ============================================================ */
+
+/* 基础Blob */
+.organic-blob {
+  position: absolute;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: blobMorph 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Blob尺寸 */
+.organic-blob--small {
+  width: 200px;
+  height: 200px;
+  filter: blur(40px);
+  opacity: 0.25;
+}
+
+.organic-blob--medium {
+  width: 300px;
+  height: 300px;
+  filter: blur(50px);
+  opacity: 0.3;
+}
+
+.organic-blob--large {
+  width: 400px;
+  height: 400px;
+  filter: blur(60px);
+  opacity: 0.35;
+}
+
+/* Blob发光 */
+.organic-blob--glow {
+  animation: blobMorph 8s ease-in-out infinite, blobGlow 4s ease-in-out infinite;
+}
+
+/* Blob浮动 */
+.organic-blob--float {
+  animation: blobMorph 8s ease-in-out infinite, floatOrganic 6s ease-in-out infinite;
+}
+
+/* ============================================================
+   4. Sparkle粒子系统 / Sparkle Particle System
+   ============================================================ */
+
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 200, 150, 0.6) 50%, transparent 70%);
+  border-radius: 50%;
+  animation: sparkleTwinkle 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Sparkle错落延迟 */
+.sparkle:nth-child(1) { animation-delay: 0s; }
+.sparkle:nth-child(2) { animation-delay: 0.3s; }
+.sparkle:nth-child(3) { animation-delay: 0.7s; }
+.sparkle:nth-child(4) { animation-delay: 1.1s; }
+.sparkle:nth-child(5) { animation-delay: 0.5s; }
+.sparkle:nth-child(6) { animation-delay: 0.9s; }
+.sparkle:nth-child(7) { animation-delay: 0.2s; }
+.sparkle:nth-child(8) { animation-delay: 1.3s; }
+.sparkle:nth-child(9) { animation-delay: 0.6s; }
+.sparkle:nth-child(10) { animation-delay: 1.0s; }
+.sparkle:nth-child(11) { animation-delay: 0.4s; }
+.sparkle:nth-child(12) { animation-delay: 0.8s; }
+
+/* ============================================================
+   5. HeroSection有机渐变 / HeroSection Organic Gradient
+   ============================================================ */
+
+.hero-organic {
+  position: relative;
+  min-height: 280px;
+  max-height: 320px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 251, 247, 0.95) 0%, rgba(255, 251, 247, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.hero-organic__content {
+  position: relative;
+  z-index: 2;
+  padding: 48px 32px;
+}
+
+.hero-organic__blobs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.hero-organic__sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============================================================
+   6. 玻璃态卡片增强 / Glass Card Enhancement
+   ============================================================ */
+
+.glass-card-warm {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(255, 255, 255, 0.5) inset;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-warm:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* 强调玻璃卡片 - 带彩色边框 */
+.glass-card-accent {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(232, 90, 60, 0.2);
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 32px rgba(232, 90, 60, 0.1),
+    0 1px 2px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* ============================================================
+   7. 响应式适配 / Responsive Adaptation
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .hero-organic {
+    min-height: 200px;
+    max-height: 240px;
+  }
+  
+  .hero-organic__content {
+    padding: 32px 24px;
+  }
+  
+  /* 移动端简化blob */
+  .organic-blob--large {
+    width: 250px;
+    height: 250px;
+    filter: blur(40px);
+    opacity: 0.25;
+  }
+  
+  .organic-blob--medium {
+    width: 180px;
+    height: 180px;
+    filter: blur(35px);
+    opacity: 0.2;
+  }
+  
+  /* 移动端减少sparkle */
+  .sparkle:nth-child(n+7) {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hero-organic {
+    min-height: 240px;
+    max-height: 280px;
+  }
+}
+
+/* ============================================================
+   8. 减少动画偏好 / Reduced Motion Support
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .organic-blob,
+  .sparkle,
+  .organic-blob--glow,
+  .organic-blob--float {
+    animation: none !important;
+  }
+  
+  .glass-card-warm,
+  .glass-card-accent {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   9. 页面特定工具类 / Page-Specific Utility Classes
+   ============================================================ */
+
+/* 首页 */
+.page-home .hero-blob-1 { background: var(--home-blob-1); }
+.page-home .hero-blob-2 { background: var(--home-blob-2); }
+.page-home .hero-blob-3 { background: var(--home-blob-3); }
+
+/* 活动介绍 */
+.page-activities .hero-blob-1 { background: var(--activities-blob-1); }
+.page-activities .hero-blob-2 { background: var(--activities-blob-2); }
+
+/* 往届活动 */
+.page-past .hero-blob-1 { background: var(--past-blob-1); }
+.page-past .hero-blob-2 { background: var(--past-blob-2); }
+
+/* 往届成员 */
+.page-alumni .hero-blob-1 { background: var(--alumni-blob-1); }
+.page-alumni .hero-blob-2 { background: var(--alumni-blob-2); }
+
+/* 资料管理 */
+.page-materials .hero-blob-1 { background: var(--materials-blob-1); }
+.page-materials .hero-blob-2 { background: var(--materials-blob-2); }
+
+/* AI对话 */
+.page-ai .hero-blob-1 { background: var(--ai-blob-1); }
+.page-ai .hero-blob-2 { background: var(--ai-blob-2); }
+
+/* 策划案生成 */
+.page-plan .hero-blob-1 { background: var(--plan-blob-1); }
+.page-plan .hero-blob-2 { background: var(--plan-blob-2); }
+
+/* 激活码管理 */
+.page-activation .hero-blob-1 { background: var(--activation-blob-1); }
+.page-activation .hero-blob-2 { background: var(--activation-blob-2); }
+
+/* 知识库管理 */
+.page-rag .hero-blob-1 { background: var(--rag-blob-1); }
+.page-rag .hero-blob-2 { background: var(--rag-blob-2); }

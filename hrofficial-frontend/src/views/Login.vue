@@ -221,7 +221,7 @@ const goToRegister = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FFF8F5 0%, #FFFBF5 25%, #FFF5F0 50%, #FDF2F0 75%, #FFF0ED 100%);
+  background: linear-gradient(135deg, var(--bg-warm) 0%, #FFFBF5 25%, var(--coral-50) 50%, #FDF2F0 75%, #FFF0ED 100%);
   position: relative;
   overflow: hidden;
   padding: var(--space-6);
@@ -400,7 +400,7 @@ const goToRegister = () => {
 .welcome-section {
   position: relative;
   width: 45%;
-  background: linear-gradient(135deg, #FF6B4A 0%, #E35532 50%, #F59E0B 100%);
+  background: var(--gradient-warm);
   display: flex;
   align-items: center;
   justify-content: center;
