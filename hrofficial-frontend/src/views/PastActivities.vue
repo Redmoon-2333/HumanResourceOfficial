@@ -114,7 +114,10 @@ const fetchActivities = async () => {
   }
 }
 
-// 按年份分组
+// 每页显示的活动数量
+const ACTIVITIES_PER_PAGE = 6
+
+// 按年份分组并分页
 const groupedActivities = computed(() => {
   const groups: Record<number, Activity[]> = {}
   
@@ -126,14 +129,39 @@ const groupedActivities = computed(() => {
     groups[year]!.push(activity)
   })
   
-  // 按年份降序排列
+  // 按年份降序排列，并为每年添加分页信息
   return Object.entries(groups)
     .sort(([a], [b]) => Number(b) - Number(a))
     .map(([year, items]) => ({
       year: Number(year),
-      activities: items
+      activities: items,
+      total: items.length,
+      currentPage: 1,
+      totalPages: Math.ceil(items.length / ACTIVITIES_PER_PAGE)
     }))
 })
+
+// 获取某年份当前页的活动
+const getYearActivities = (year: number, page: number) => {
+  const group = groupedActivities.value.find(g => g.year === year)
+  if (!group) return []
+  const start = (page - 1) * ACTIVITIES_PER_PAGE
+  const end = start + ACTIVITIES_PER_PAGE
+  return group.activities.slice(start, end)
+}
+
+// 年份分页状态管理
+const yearPagination = ref<Record<number, number>>({})
+
+// 切换年份页码
+const handleYearPageChange = (year: number, page: number) => {
+  yearPagination.value[year] = page
+}
+
+// 获取某年份当前页码
+const getYearPage = (year: number) => {
+  return yearPagination.value[year] || 1
+}
 
 // 过滤后的活动
 const filteredActivities = computed(() => {
@@ -426,7 +454,7 @@ onMounted(() => {
             <div class="year-marker">
               <div class="year-badge">
                 <span class="year-text">{{ group.year }}</span>
-                <span class="year-count">{{ group.activities.length }} 个活动</span>
+                <span class="year-count">{{ group.total }} 个活动</span>
               </div>
               <div class="year-line"></div>
             </div>
@@ -434,7 +462,7 @@ onMounted(() => {
             <!-- 活动卡片网格 -->
             <div class="activities-grid">
               <div
-                v-for="activity in group.activities"
+                v-for="activity in getYearActivities(group.year, getYearPage(group.year))"
                 :key="activity.id"
                 class="activity-card"
                 @click="activity.pushUrl && openUrl(activity.pushUrl)"
@@ -484,6 +512,42 @@ onMounted(() => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+            
+            <!-- 年份内分页 - 仅当该年活动超过6个时显示 -->
+            <div v-if="group.totalPages > 1" class="year-pagination">
+              <div class="pagination-info">
+                共 {{ group.total }} 个活动，第 {{ getYearPage(group.year) }} / {{ group.totalPages }} 页
+              </div>
+              <div class="pagination-buttons">
+                <button
+                  class="pagination-btn"
+                  :disabled="getYearPage(group.year) <= 1"
+                  @click="handleYearPageChange(group.year, getYearPage(group.year) - 1)"
+                >
+                  <el-icon><ArrowLeft /></el-icon>
+                  上一页
+                </button>
+                <div class="page-numbers">
+                  <button
+                    v-for="page in group.totalPages"
+                    :key="page"
+                    class="page-number"
+                    :class="{ active: getYearPage(group.year) === page }"
+                    @click="handleYearPageChange(group.year, page)"
+                  >
+                    {{ page }}
+                  </button>
+                </div>
+                <button
+                  class="pagination-btn"
+                  :disabled="getYearPage(group.year) >= group.totalPages"
+                  @click="handleYearPageChange(group.year, getYearPage(group.year) + 1)"
+                >
+                  下一页
+                  <el-icon><ArrowRight /></el-icon>
+                </button>
               </div>
             </div>
           </div>
@@ -1582,6 +1646,139 @@ onMounted(() => {
   .activity-form :deep(.el-input__wrapper),
   .activity-form :deep(.el-textarea__inner) {
     width: 100% !important;
+  }
+}
+
+/* 年份内分页样式 */
+.year-pagination {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: #F59E0B;
+  color: #F59E0B;
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 6px;
+}
+
+.page-number {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.page-number:hover {
+  border-color: #F59E0B;
+  color: #F59E0B;
+}
+
+.page-number.active {
+  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+/* 移动端分页适配 */
+@media (max-width: 768px) {
+  .year-pagination {
+    padding: 12px 16px;
+    margin-top: 20px;
+  }
+  
+  .pagination-buttons {
+    gap: 8px;
+  }
+  
+  .pagination-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .pagination-btn span {
+    display: none;
+  }
+  
+  .page-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .year-pagination {
+    padding: 10px 12px;
+  }
+  
+  .pagination-info {
+    font-size: 12px;
+  }
+  
+  .page-numbers {
+    gap: 4px;
+  }
+  
+  .page-number {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
   }
 }
 

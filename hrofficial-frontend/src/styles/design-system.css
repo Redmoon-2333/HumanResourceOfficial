@@ -482,6 +482,7 @@
    ============================================================ */
 :root {
   /* 容器宽度 */
+  --container-xs: 320px;
   --container-sm: 640px;
   --container-md: 768px;
   --container-lg: 1024px;
@@ -491,6 +492,45 @@
   /* 页面内边距 */
   --page-padding: var(--space-6);
   --page-padding-mobile: var(--space-4);
+  
+  /* 触摸目标尺寸 - WCAG 2.1 44x44px 标准 */
+  --touch-target-min: 44px;
+  --touch-target-sm: 44px;
+  --touch-target-md: 48px;
+  --touch-target-lg: 56px;
+  
+  /* 移动端专用变量 */
+  --mobile-header-height: 56px;
+  --mobile-tab-bar-height: 60px;
+  --mobile-safe-area-top: env(safe-area-inset-top, 0);
+  --mobile-safe-area-bottom: env(safe-area-inset-bottom, 0);
+  --mobile-safe-area-left: env(safe-area-inset-left, 0);
+  --mobile-safe-area-right: env(safe-area-inset-right, 0);
+  
+  /* 移动端字体缩放系数 */
+  --mobile-scale: 1;
+  --mobile-text-scale: 0.95;
+  
+  /* 移动端间距 */
+  --mobile-spacing-xs: var(--space-1);
+  --mobile-spacing-sm: var(--space-2);
+  --mobile-spacing-md: var(--space-3);
+  --mobile-spacing-lg: var(--space-4);
+  --mobile-spacing-xl: var(--space-5);
+  
+  /* 移动端容器内边距 */
+  --mobile-container-padding: var(--space-4);
+  
+  /* 移动端边界 */
+  --breakpoint-xs: 320px;
+  --breakpoint-sm: 375px;
+  --breakpoint-md: 414px;
+  --breakpoint-lg: 480px;
+  --breakpoint-xl: 640px;
+  --breakpoint-2xl: 768px;
+  --breakpoint-3xl: 1024px;
+  --breakpoint-4xl: 1200px;
+  --breakpoint-5xl: 1400px;
 }
 
 /* ============================================================
@@ -829,29 +869,208 @@
 
 /* ============================================================
    11. 响应式断点 / Responsive Breakpoints
+   ============================================================
+   
+   移动优先设计原则：
+   - 基础样式默认适用于极小屏幕
+   - 使用 min-width 逐步向上适配
+   - 覆盖主流移动设备尺寸
+   
+   断点参考：
+   - 320px: iPhone SE、小屏手机
+   - 375px: iPhone X、iPhone 12/13/14
+   - 414px: iPhone 12/13/14 Pro Max
+   - 480px: 大屏手机、小平板
+   - 640px: 小平板横屏
+   - 768px: iPad、标准平板
+   - 1024px: iPad Pro、小笔记本
    ============================================================ */
 
-/* 小型设备 (手机) */
-@media (max-width: 640px) {
+/* ============================================================
+   极小屏幕 (<= 320px) - iPhone SE、小屏手机
+   ============================================================ */
+@media (max-width: 320px) {
+  :root {
+    --page-padding: var(--space-3);
+    --mobile-container-padding: var(--space-3);
+    --mobile-scale: 0.9;
+    --mobile-text-scale: 0.9;
+    
+    /* 字体缩放 */
+    --text-xs: 0.6875rem;   /* 11px */
+    --text-sm: 0.8125rem;   /* 13px */
+    --text-base: 0.9375rem; /* 15px */
+    --text-lg: 1rem;         /* 16px */
+    --text-xl: 1.125rem;     /* 18px */
+    --text-2xl: 1.25rem;     /* 20px */
+    --text-3xl: 1.5rem;       /* 24px */
+    --text-4xl: 1.75rem;      /* 28px */
+    --text-5xl: 2rem;         /* 32px */
+    
+    /* 间距缩放 */
+    --space-6: 1.25rem;       /* 20px */
+    --space-8: 1.5rem;        /* 24px */
+    --space-12: 2rem;         /* 32px */
+    --space-16: 2.5rem;       /* 40px */
+  }
+}
+
+/* ============================================================
+   小屏手机 (>= 320px) - iPhone SE 基准
+   ============================================================ */
+@media (min-width: 320px) {
   :root {
     --page-padding: var(--space-4);
-    --text-4xl: 1.875rem;
-    --text-3xl: 1.5rem;
-    --text-2xl: 1.25rem;
+    --mobile-container-padding: var(--space-4);
+    --mobile-scale: 0.95;
+    --mobile-text-scale: 0.92;
   }
 }
 
-/* 中型设备 (平板) */
-@media (min-width: 641px) and (max-width: 1024px) {
+/* ============================================================
+   标准手机 (>= 375px) - iPhone X、iPhone 12/13/14
+   ============================================================ */
+@media (min-width: 375px) {
+  :root {
+    --page-padding: var(--space-4);
+    --mobile-container-padding: var(--space-4);
+    --mobile-scale: 1;
+    --mobile-text-scale: 0.95;
+    
+    /* 字体调整 */
+    --text-5xl: 2.25rem;      /* 36px */
+  }
+}
+
+/* ============================================================
+   大屏手机 (>= 414px) - iPhone 12/13/14 Pro Max
+   ============================================================ */
+@media (min-width: 414px) {
   :root {
     --page-padding: var(--space-5);
+    --mobile-container-padding: var(--space-5);
+    --mobile-text-scale: 1;
+    
+    /* 字体恢复完整尺寸 */
+    --text-4xl: 2.25rem;      /* 36px */
+    --text-5xl: 2.5rem;       /* 40px */
   }
 }
 
-/* 大型设备 (桌面) */
-@media (min-width: 1025px) {
+/* ============================================================
+   超大屏手机 / 小平板 (>= 480px)
+   ============================================================ */
+@media (min-width: 480px) {
+  :root {
+    --page-padding: var(--space-5);
+    --mobile-container-padding: var(--space-6);
+    
+    /* 字体完整尺寸 */
+    --text-3xl: 1.875rem;     /* 30px */
+    --text-4xl: 2.25rem;      /* 36px */
+    --text-5xl: 3rem;          /* 48px */
+  }
+}
+
+/* ============================================================
+   小平板横屏 (>= 640px)
+   ============================================================ */
+@media (min-width: 640px) {
   :root {
     --page-padding: var(--space-6);
+    --mobile-container-padding: var(--space-8);
+  }
+}
+
+/* ============================================================
+   平板 (>= 768px) - iPad、标准平板
+   ============================================================ */
+@media (min-width: 768px) {
+  :root {
+    --page-padding: var(--space-8);
+    --container-sm: 640px;
+    --container-md: 768px;
+  }
+}
+
+/* ============================================================
+   小笔记本 / 桌面 (>= 1024px)
+   ============================================================ */
+@media (min-width: 1024px) {
+  :root {
+    --page-padding: var(--space-12);
+    --container-lg: 1024px;
+    --container-xl: 1200px;
+  }
+}
+
+/* ============================================================
+   标准桌面 (>= 1200px)
+   ============================================================ */
+@media (min-width: 1200px) {
+  :root {
+    --page-padding: var(--space-16);
+    --container-xl: 1200px;
+    --container-2xl: 1400px;
+  }
+}
+
+/* ============================================================
+   超大屏桌面 (>= 1400px)
+   ============================================================ */
+@media (min-width: 1400px) {
+  :root {
+    --page-padding: var(--space-20);
+    --container-2xl: 1400px;
+  }
+}
+
+/* ============================================================
+   横屏模式优化
+   ============================================================ */
+@media (orientation: landscape) and (max-width: 768px) {
+  :root {
+    --mobile-header-height: 48px;
+    --mobile-tab-bar-height: 48px;
+  }
+}
+
+/* ============================================================
+   高DPI/Retina屏幕优化
+   ============================================================ */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  :root {
+    /* Retina屏幕可以保持原样，或微调提升清晰度 */
+  }
+}
+
+/* ============================================================
+   触摸设备检测
+   ============================================================ */
+@media (pointer: coarse) {
+  :root {
+    /* 触摸设备确保触摸目标足够大 */
+  }
+}
+
+/* ============================================================
+   辅助功能：高对比度模式
+   ============================================================ */
+@media (prefers-contrast: high) {
+  :root {
+    /* 高对比度模式适配 */
+  }
+}
+
+/* ============================================================
+   辅助功能：减少透明度
+   ============================================================ */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-opacity-sm: 1;
+    --glass-opacity-md: 1;
+    --glass-opacity-lg: 1;
+    --glass-opacity-xl: 1;
   }
 }
 

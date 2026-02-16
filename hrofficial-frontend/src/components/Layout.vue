@@ -331,8 +331,9 @@ const toggleMobileMenu = () => {
   left: 0;
   height: 100vh;
   z-index: var(--z-fixed);
-  transition: all var(--transition-slow);
+  transition: transform var(--transition-normal) var(--ease-out), width var(--transition-normal) var(--ease-out);
   overflow: hidden;
+  will-change: transform, width;
 }
 
 .sidebar::before {
@@ -396,10 +397,23 @@ const toggleMobileMenu = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--bg-overlay);
   z-index: calc(var(--z-fixed) - 1);
-  backdrop-filter: blur(2px);
-  transition: opacity 0.3s ease;
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  transition: opacity var(--transition-normal) var(--ease-out);
+  animation: fadeIn 0.2s ease-out;
+  padding-top: var(--mobile-safe-area-top);
+  padding-bottom: var(--mobile-safe-area-bottom);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 侧边栏头部 */
@@ -409,6 +423,7 @@ const toggleMobileMenu = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-top: calc(var(--space-6) + var(--mobile-safe-area-top));
 }
 
 .logo {
@@ -450,11 +465,11 @@ const toggleMobileMenu = () => {
 }
 
 .collapse-btn {
-  width: 32px;
-  height: 32px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   border: none;
   background: var(--bg-secondary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -473,6 +488,7 @@ const toggleMobileMenu = () => {
   flex: 1;
   padding: var(--space-4);
   overflow-y: auto;
+  padding-bottom: calc(var(--space-4) + var(--mobile-safe-area-bottom));
 }
 
 .nav-section {
@@ -493,7 +509,8 @@ const toggleMobileMenu = () => {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  min-height: var(--touch-target-min);
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
   text-decoration: none;
@@ -553,8 +570,8 @@ const toggleMobileMenu = () => {
 }
 
 .nav-icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -583,6 +600,7 @@ const toggleMobileMenu = () => {
 .sidebar-footer {
   padding: var(--space-4);
   border-top: 1px solid var(--border-light);
+  padding-bottom: calc(var(--space-4) + var(--mobile-safe-area-bottom));
 }
 
 .user-mini {
@@ -592,6 +610,7 @@ const toggleMobileMenu = () => {
   padding: var(--space-2);
   border-radius: var(--radius-lg);
   background: var(--bg-secondary);
+  min-height: var(--touch-target-min);
 }
 
 .user-avatar {
@@ -628,9 +647,9 @@ const toggleMobileMenu = () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-width: 0; /* 重要：防止flex子元素内容溢出导致布局问题 */
-  width: calc(100% - 280px); /* 确保宽度计算正确 */
-  transition: margin-left var(--transition-slow), width var(--transition-slow);
+  min-width: 0;
+  width: calc(100% - 280px);
+  transition: margin-left var(--transition-normal) var(--ease-out), width var(--transition-normal) var(--ease-out);
 }
 
 .sidebar-collapsed + .main-content {
@@ -657,6 +676,8 @@ const toggleMobileMenu = () => {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+  padding-top: calc(var(--space-0) + var(--mobile-safe-area-top));
+  height: calc(72px + var(--mobile-safe-area-top));
 }
 
 .header-left {
@@ -666,8 +687,8 @@ const toggleMobileMenu = () => {
 }
 
 .mobile-menu-btn {
-  width: 40px;
-  height: 40px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   border: none;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
@@ -718,6 +739,7 @@ const toggleMobileMenu = () => {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
+  min-height: var(--touch-target-min);
   border-radius: var(--radius-xl);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -748,7 +770,7 @@ const toggleMobileMenu = () => {
 /* 页面内容 */
 .page-content {
   flex: 1;
-  padding: var(--space-6);
+  padding: var(--page-padding);
   overflow-x: hidden;
   min-width: 0;
   width: 100%;
@@ -757,15 +779,35 @@ const toggleMobileMenu = () => {
 
 @media (max-width: 768px) {
   .page-content {
-    padding: var(--space-4);
+    padding: var(--mobile-container-padding);
   }
 
   .top-header {
-    padding: 0 var(--space-4);
+    padding: 0 var(--mobile-container-padding);
+    padding-top: calc(var(--space-0) + var(--mobile-safe-area-top));
   }
 
   .user-meta {
     display: none;
+  }
+
+  .page-subtitle {
+    display: none;
+  }
+
+  .page-title {
+    font-size: var(--text-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content {
+    padding: var(--space-3);
+  }
+
+  .top-header {
+    padding: 0 var(--space-3);
+    padding-top: calc(var(--space-0) + var(--mobile-safe-area-top));
   }
 }
 
@@ -779,6 +821,7 @@ const toggleMobileMenu = () => {
 
 :deep(.user-dropdown-menu .el-dropdown-menu__item) {
   padding: var(--space-3) var(--space-4);
+  min-height: var(--touch-target-min);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
