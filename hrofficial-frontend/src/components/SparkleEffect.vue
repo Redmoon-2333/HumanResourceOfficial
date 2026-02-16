@@ -42,7 +42,7 @@ const containerStyle = computed(() => ({
 }))
 
 // 预定义的错落位置
-const defaultPositions = [
+const defaultPositions: { top: string; left: string }[] = [
   { top: '15%', left: '10%' },
   { top: '25%', left: '85%' },
   { top: '35%', left: '5%' },
@@ -70,20 +70,16 @@ const generateRandomPosition = (index: number): { top: string; left: string } =>
 }
 
 const getSparkleStyle = (index: number): Record<string, string> => {
-  let position: { top: string; left: string }
+  let position: { top: string; left: string } = { top: '0%', left: '0%' }
 
   if (props.positions && props.positions[index]) {
-    // 使用自定义位置
     position = props.positions[index]
   } else if (props.random) {
-    // 随机位置
     position = generateRandomPosition(index)
   } else {
-    // 使用默认位置
-    position = defaultPositions[index % defaultPositions.length]
+    position = defaultPositions[index % defaultPositions.length] ?? { top: '50%', left: '50%' }
   }
 
-  // 错落延迟计算
   const delays = [0, 0.3, 0.7, 1.1, 0.5, 0.9, 0.2, 1.3, 0.6, 1.0, 0.4, 0.8]
   const delay = delays[index % delays.length]
 

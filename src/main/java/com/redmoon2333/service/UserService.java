@@ -340,6 +340,21 @@ public class UserService {
             List<com.redmoon2333.entity.ActivationCode> codes = activationCodeMapper.findByCreatorId(user.getUserId());
             logger.info("成功获取用户 {} 的 {} 个激活码", user.getUsername(), codes.size());
 
+            // 批量查询使用者信息，避免 N+1 查询
+            Set<Integer> userIds = codes.stream()
+                .filter(code -> code.getUserId() != null)
+                .map(com.redmoon2333.entity.ActivationCode::getUserId)
+                .collect(Collectors.toSet());
+            
+            final Map<Integer, String> userNameMap;
+            if (!userIds.isEmpty()) {
+                List<User> users = userMapper.findByIds(new ArrayList<>(userIds));
+                userNameMap = users.stream()
+                    .collect(Collectors.toMap(User::getUserId, User::getUsername));
+            } else {
+                userNameMap = new HashMap<>();
+            }
+
             // 转换为DTO
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             return codes.stream().map(code -> {
@@ -352,11 +367,7 @@ public class UserService {
                 dto.setExpireTime(code.getExpireTime() != null ? code.getExpireTime().format(formatter) : null);
                 dto.setUsed(code.getStatus() == com.redmoon2333.enums.ActivationStatus.已使用);
                 dto.setUsedBy(code.getUserId());
-                // 获取使用者名称
-                if (code.getUserId() != null) {
-                    User usedByUser = userMapper.findById(code.getUserId());
-                    dto.setUsedByName(usedByUser != null ? usedByUser.getUsername() : null);
-                }
+                dto.setUsedByName(userNameMap.get(code.getUserId()));
                 dto.setUsedTime(code.getUseTime() != null ? code.getUseTime().format(formatter) : null);
                 return dto;
             }).collect(Collectors.toList());

@@ -9,6 +9,8 @@ import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.service.AuthService;
 import com.redmoon2333.util.JwtUtil;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +25,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
     
     @Autowired
     private AuthService authService;
@@ -50,11 +54,10 @@ public class AuthController {
             return ApiResponse.success("登录成功", loginResult);
             
         } catch (BusinessException e) {
-            System.err.println("Business exception: " + e.getMessage());
+            logger.warn("Business exception: {}", e.getMessage());
             return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
         } catch (Exception e) {
-            System.err.println("System exception: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("System exception: {}", e.getMessage(), e);
             return ApiResponse.error("系统内部错误", 500);
         }
     }

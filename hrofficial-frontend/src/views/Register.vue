@@ -776,7 +776,7 @@ const goToLogin = () => {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-6);
+  padding: var(--space-4) var(--space-6);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: #E35532;
@@ -785,6 +785,7 @@ const goToLogin = () => {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: var(--touch-target-md);
 }
 
 .add-identity-btn:hover {
@@ -798,8 +799,8 @@ const goToLogin = () => {
   position: absolute;
   top: 8px;
   right: 8px;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -809,6 +810,8 @@ const goToLogin = () => {
   color: #EF4444;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
 }
 
 .remove-identity-btn:hover {
@@ -838,6 +841,7 @@ const goToLogin = () => {
   box-shadow: 0 8px 24px rgba(255, 107, 74, 0.35);
   position: relative;
   overflow: hidden;
+  min-height: var(--touch-target-md);
 }
 
 .btn-content {
@@ -1044,6 +1048,97 @@ const goToLogin = () => {
 /* ============================================
    响应式设计
    ============================================ */
+/* 极小屏幕 (<= 320px) - iPhone SE、小屏手机 */
+@media (max-width: 320px) {
+  .auth-page {
+    padding: var(--space-3);
+  }
+
+  .auth-container {
+    border-radius: 24px;
+  }
+
+  .form-section {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .form-title {
+    font-size: var(--text-xl);
+  }
+
+  .welcome-title {
+    font-size: var(--text-2xl);
+  }
+
+  .form-section-block {
+    padding: var(--space-4);
+  }
+
+  .blob-1 { width: 240px; height: 240px; }
+  .blob-2 { width: 200px; height: 200px; }
+  .blob-3 { width: 160px; height: 160px; }
+  .blob-4 { width: 140px; height: 140px; }
+}
+
+/* 小屏手机 (>= 320px) - iPhone SE 基准 */
+@media (max-width: 480px) {
+  .auth-page {
+    padding: var(--space-4);
+  }
+
+  .auth-container {
+    flex-direction: column;
+    max-width: 400px;
+    min-height: auto;
+    border-radius: 28px;
+  }
+
+  .welcome-section {
+    display: none;
+  }
+
+  .form-section {
+    padding: var(--space-8) var(--space-6);
+    max-height: none;
+  }
+
+  .mobile-switch {
+    display: block;
+  }
+
+  .blob {
+    opacity: 0.3;
+    filter: blur(60px);
+  }
+
+  .blob-1 { width: 300px; height: 300px; }
+  .blob-2 { width: 250px; height: 250px; }
+  .blob-3 { width: 200px; height: 200px; }
+  .blob-4 { width: 180px; height: 180px; }
+
+  .floating-shape {
+    display: none;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-section-block {
+    padding: var(--space-4);
+  }
+
+  .add-identity-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 平板 (<= 900px) */
 @media (max-width: 900px) {
   .auth-container {
     flex-direction: column;
@@ -1076,6 +1171,22 @@ const goToLogin = () => {
 
   .floating-shape {
     display: none;
+  }
+}
+
+/* 横屏模式优化 */
+@media (orientation: landscape) and (max-width: 900px) {
+  .auth-page {
+    padding: var(--space-3);
+  }
+
+  .auth-container {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .form-section {
+    padding: var(--space-6) var(--space-4);
   }
 }
 

@@ -4,8 +4,9 @@
     :class="[
       `organic-blob--${size}`,
       {
-        'organic-blob--glow': glow,
-        'organic-blob--float': float
+        'organic-blob--glow': glow && !isMobile,
+        'organic-blob--float': float && !isMobile,
+        'organic-blob--mobile': isMobile
       }
     ]"
     :style="blobStyle"
@@ -13,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 interface Props {
   /** Blob尺寸: small(180-250px), medium(280-380px), large(380-480px) */
@@ -41,6 +42,8 @@ interface Props {
   seed?: number
   /** 自定义样式 */
   customStyle?: Record<string, string>
+  /** 是否强制禁用动画 */
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,7 +55,19 @@ const props = withDefaults(defineProps<Props>(), {
   glow: false,
   float: false,
   seed: () => Math.floor(Math.random() * 1000),
-  customStyle: () => ({})
+  customStyle: () => ({}),
+  disabled: false
+})
+
+const isMobile = ref(false)
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
 })
 
 // 基于种子生成伪随机数
@@ -62,37 +77,45 @@ const seededRandom = (seed: number) => {
 }
 
 // 生成随机border-radius值（有机形状）
-const generateOrganicShape = (seed: number) => {
-  const r = (offset: number) => 30 + Math.floor(seededRandom(seed + offset) * 50)
+const generateOrganicShape = (seed: number, mobile: boolean = false) => {
+  const range = mobile ? 30 : 50
+  const base = mobile ? 40 : 30
+  const r = (offset: number) => base + Math.floor(seededRandom(seed + offset) * range)
   return `${r(1)}% ${r(2)}% ${r(3)}% ${r(4)}% / ${r(5)}% ${r(6)}% ${r(7)}% ${r(8)}%`
 }
 
 // 生成随机动画关键帧
-const generateRandomKeyframes = (seed: number) => {
+const generateRandomKeyframes = (seed: number, mobile: boolean = false) => {
   const rand = (min: number, max: number, offset: number) => 
     min + seededRandom(seed + offset) * (max - min)
   
+  const txRange = mobile ? 15 : 30
+  const tyRange = mobile ? 20 : 40
+  const scaleMin = mobile ? 0.95 : 0.9
+  const scaleMax = mobile ? 1.05 : 1.15
+  const rotateRange = mobile ? 8 : 15
+  
   return {
     phase1: {
-      radius: generateOrganicShape(seed + 10),
-      translateX: rand(-30, 30, 20),
-      translateY: rand(-40, 40, 30),
-      scale: rand(0.9, 1.15, 40),
-      rotate: rand(-15, 15, 50)
+      radius: generateOrganicShape(seed + 10, mobile),
+      translateX: rand(-txRange, txRange, 20),
+      translateY: rand(-tyRange, tyRange, 30),
+      scale: rand(scaleMin, scaleMax, 40),
+      rotate: rand(-rotateRange, rotateRange, 50)
     },
     phase2: {
-      radius: generateOrganicShape(seed + 60),
-      translateX: rand(-25, 25, 70),
-      translateY: rand(-35, 35, 80),
-      scale: rand(0.85, 1.1, 90),
-      rotate: rand(-12, 12, 100)
+      radius: generateOrganicShape(seed + 60, mobile),
+      translateX: rand(-txRange * 0.8, txRange * 0.8, 70),
+      translateY: rand(-tyRange * 0.8, tyRange * 0.8, 80),
+      scale: rand(scaleMin + 0.05, scaleMax - 0.05, 90),
+      rotate: rand(-rotateRange * 0.8, rotateRange * 0.8, 100)
     },
     phase3: {
-      radius: generateOrganicShape(seed + 110),
-      translateX: rand(-20, 20, 120),
-      translateY: rand(-30, 30, 130),
-      scale: rand(0.95, 1.08, 140),
-      rotate: rand(-8, 8, 150)
+      radius: generateOrganicShape(seed + 110, mobile),
+      translateX: rand(-txRange * 0.6, txRange * 0.6, 120),
+      translateY: rand(-tyRange * 0.6, tyRange * 0.6, 130),
+      scale: rand(scaleMin + 0.1, scaleMax - 0.1, 140),
+      rotate: rand(-rotateRange * 0.5, rotateRange * 0.5, 150)
     }
   }
 }
@@ -100,27 +123,28 @@ const generateRandomKeyframes = (seed: number) => {
 // 生成动态CSS变量
 const dynamicStyles = computed(() => {
   const seed = props.seed
-  const keyframes = generateRandomKeyframes(seed)
+  const keyframes = generateRandomKeyframes(seed, isMobile.value)
+  const duration = isMobile.value ? 12 : 8
   
   return {
-    '--blob-radius-initial': generateOrganicShape(seed),
+    '--blob-radius-initial': generateOrganicShape(seed, isMobile.value),
     '--blob-radius-phase1': keyframes.phase1.radius,
     '--blob-radius-phase2': keyframes.phase2.radius,
     '--blob-radius-phase3': keyframes.phase3.radius,
     '--blob-tx-1': `${keyframes.phase1.translateX}px`,
     '--blob-ty-1': `${keyframes.phase1.translateY}px`,
-    '--blob-scale-1': keyframes.phase1.scale,
+    '--blob-scale-1': String(keyframes.phase1.scale),
     '--blob-rotate-1': `${keyframes.phase1.rotate}deg`,
     '--blob-tx-2': `${keyframes.phase2.translateX}px`,
     '--blob-ty-2': `${keyframes.phase2.translateY}px`,
-    '--blob-scale-2': keyframes.phase2.scale,
+    '--blob-scale-2': String(keyframes.phase2.scale),
     '--blob-rotate-2': `${keyframes.phase2.rotate}deg`,
     '--blob-tx-3': `${keyframes.phase3.translateX}px`,
     '--blob-ty-3': `${keyframes.phase3.translateY}px`,
-    '--blob-scale-3': keyframes.phase3.scale,
+    '--blob-scale-3': String(keyframes.phase3.scale),
     '--blob-rotate-3': `${keyframes.phase3.rotate}deg`,
-    '--blob-anim-duration': `${6 + seededRandom(seed + 200) * 4}s`,
-    '--blob-anim-delay': `${props.delay + seededRandom(seed + 300) * 2}s`
+    '--blob-anim-duration': `${duration + seededRandom(seed + 200) * (isMobile.value ? 4 : 4)}s`,
+    '--blob-anim-delay': `${props.delay + seededRandom(seed + 300) * (isMobile.value ? 1 : 2)}s`
   }
 })
 
@@ -161,7 +185,15 @@ const blobStyle = computed(() => {
   animation: blobMorph var(--blob-anim-duration, 8s) ease-in-out infinite;
   animation-delay: var(--blob-anim-delay, 0s);
   pointer-events: none;
-  will-change: transform, border-radius;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translateZ(0);
+}
+
+/* 移动端优化 */
+.organic-blob--mobile {
+  animation-duration: var(--blob-anim-duration, 12s);
 }
 
 /* Blob尺寸 - 增加随机范围 */
@@ -192,6 +224,7 @@ const blobStyle = computed(() => {
     blobMorph var(--blob-anim-duration, 8s) ease-in-out infinite,
     blobGlow calc(var(--blob-anim-duration, 8s) * 0.6) ease-in-out infinite;
   animation-delay: var(--blob-anim-delay, 0s);
+  will-change: transform, opacity, filter;
 }
 
 /* Blob浮动 - 随机轨迹 */
@@ -205,19 +238,15 @@ const blobStyle = computed(() => {
 /* Blob形态变化 - 使用CSS变量实现随机性 */
 @keyframes blobMorph {
   0%, 100% {
-    border-radius: var(--blob-radius-initial);
     transform: translate(0, 0) scale(1) rotate(0deg);
   }
   25% {
-    border-radius: var(--blob-radius-phase1);
     transform: translate(var(--blob-tx-1), var(--blob-ty-1)) scale(var(--blob-scale-1)) rotate(var(--blob-rotate-1));
   }
   50% {
-    border-radius: var(--blob-radius-phase2);
     transform: translate(var(--blob-tx-2), var(--blob-ty-2)) scale(var(--blob-scale-2)) rotate(var(--blob-rotate-2));
   }
   75% {
-    border-radius: var(--blob-radius-phase3);
     transform: translate(var(--blob-tx-3), var(--blob-ty-3)) scale(var(--blob-scale-3)) rotate(var(--blob-rotate-3));
   }
 }
@@ -225,10 +254,10 @@ const blobStyle = computed(() => {
 /* Blob发光呼吸 - 随机幅度 */
 @keyframes blobGlow {
   0%, 100% {
-    filter: blur(var(--blob-blur, 60px)) brightness(1);
+    opacity: 1;
   }
   50% {
-    filter: blur(calc(var(--blob-blur, 60px) + 10px)) brightness(1.15);
+    opacity: 0.85;
   }
 }
 
@@ -258,6 +287,32 @@ const blobStyle = computed(() => {
 @media (prefers-reduced-motion: reduce) {
   .organic-blob {
     animation: none !important;
+    will-change: auto;
+  }
+}
+
+/* 移动端特定优化 */
+@media (max-width: 767px) {
+  .organic-blob {
+    animation-duration: var(--blob-anim-duration, 12s);
+  }
+  
+  .organic-blob--small {
+    width: var(--blob-width, 160px);
+    height: var(--blob-height, 160px);
+    filter: blur(var(--blob-blur, 35px));
+  }
+  
+  .organic-blob--medium {
+    width: var(--blob-width, 220px);
+    height: var(--blob-height, 220px);
+    filter: blur(var(--blob-blur, 45px));
+  }
+  
+  .organic-blob--large {
+    width: var(--blob-width, 280px);
+    height: var(--blob-height, 280px);
+    filter: blur(var(--blob-blur, 55px));
   }
 }
 </style>

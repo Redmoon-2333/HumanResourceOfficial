@@ -35,6 +35,10 @@ const isAutoPlaying = ref(true)
 const isTransitioning = ref(false)
 let autoPlayTimer: ReturnType<typeof setInterval> | null = null
 
+// 触摸滑动状态
+const touchStartX = ref(0)
+const touchEndX = ref(0)
+
 // 图片加载状态
 const imagesLoading = ref(false)
 const imagesError = ref(false)
@@ -194,6 +198,37 @@ const getItemScale = (index: number) => {
   // 主图片明显放大，其他图片统一较小尺寸
   if (normalizedAngle <= 30 || normalizedAngle >= 330) return 1.2
   return 0.7
+}
+
+// 触摸滑动处理
+const handleTouchStart = (e: TouchEvent) => {
+  if (e.touches[0]) {
+    touchStartX.value = e.touches[0].clientX
+  }
+  stopAutoPlay()
+}
+
+const handleTouchMove = (e: TouchEvent) => {
+  if (e.touches[0]) {
+    touchEndX.value = e.touches[0].clientX
+  }
+}
+
+const handleTouchEnd = () => {
+  const touchDiff = touchStartX.value - touchEndX.value
+  // 滑动距离阈值（像素）
+  const swipeThreshold = 50
+  
+  if (Math.abs(touchDiff) > swipeThreshold) {
+    if (touchDiff > 0) {
+      // 向左滑动 -> 下一张
+      nextSlide()
+    } else {
+      // 向右滑动 -> 上一张
+      prevSlide()
+    }
+  }
+  resumeAutoPlay()
 }
 
 // 处理图片加载错误 - 防止无限循环
@@ -381,6 +416,9 @@ const goToImageManagement = () => {
           class="carousel-container"
           @mouseenter="stopAutoPlay"
           @mouseleave="resumeAutoPlay"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
         >
           <!-- 管理入口 - 仅部长/副部长可见 -->
           <transition name="management-fade">
@@ -1396,13 +1434,15 @@ section {
   opacity: 0.9;
 }
 
-/* 轮播控制按钮 - 增强版 */
+/* 轮播控制按钮 - 增强版 + 触摸优化 */
 .carousel-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   width: 48px;
   height: 48px;
+  min-width: 48px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1418,6 +1458,8 @@ section {
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 10;
   backdrop-filter: blur(8px);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .carousel-btn:hover {
@@ -1441,7 +1483,7 @@ section {
   right: 24px;
 }
 
-/* 指示器 - 增强版 */
+/* 指示器 - 增强版 + 移动端触摸优化 */
 .carousel-indicators {
   position: absolute;
   bottom: 16px;
@@ -1457,38 +1499,40 @@ section {
 }
 
 .indicator-dot {
-  width: 10px;
-  height: 10px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   border: none;
-  background: var(--border-medium);
+  background: transparent;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .indicator-dot::before {
   content: '';
   position: absolute;
-  inset: -3px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  border: 2px solid transparent;
-  transition: border-color 0.3s ease;
+  background: var(--border-medium);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.indicator-dot:hover {
+.indicator-dot:hover::before {
   background: var(--coral-300);
   transform: scale(1.3);
 }
 
-.indicator-dot:hover::before {
-  border-color: rgba(255, 107, 74, 0.3);
-}
-
-.indicator-dot.active {
+.indicator-dot.active::before {
   background: var(--gradient-primary);
   width: 28px;
-  border-radius: 5px;
+  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(255, 107, 74, 0.3);
 }
 
@@ -1606,7 +1650,7 @@ section {
 }
 
 /* ============================================
-   Responsive Design - 增强版
+   Responsive Design - 增强版移动端优化
    ============================================ */
 @media (max-width: 1024px) {
   .carousel-container {
@@ -1614,15 +1658,15 @@ section {
   }
 
   .carousel-3d {
-    width: 160px;
-    height: 160px;
+    width: 180px;
+    height: 180px;
   }
 
   .carousel-item {
-    width: 140px;
-    height: 140px;
-    margin-left: -70px;
-    margin-top: -70px;
+    width: 160px;
+    height: 160px;
+    margin-left: -80px;
+    margin-top: -80px;
   }
   
   .hero-section .blob-1 {
@@ -1639,6 +1683,11 @@ section {
     width: 150px;
     height: 150px;
   }
+
+  .hero-organic__content--left {
+    padding-left: var(--space-4);
+    padding-top: var(--space-4);
+  }
 }
 
 @media (max-width: 768px) {
@@ -1647,7 +1696,7 @@ section {
   }
 
   .hero-section {
-    padding: var(--space-8) var(--space-4);
+    padding: var(--space-6) var(--space-4) var(--space-8);
     border-radius: 24px;
     margin: var(--space-4);
     margin-bottom: 0;
@@ -1657,54 +1706,123 @@ section {
     background: 
       radial-gradient(ellipse 100% 40% at 50% -10%, rgba(255, 107, 74, 0.12) 0%, transparent 50%);
   }
-  
-  .hero-title {
-    font-size: clamp(1.5rem, 5vw, 2rem);
+
+  .hero-organic__content--left {
+    padding-left: 0;
+    padding-top: var(--space-2);
+    text-align: center;
+  }
+
+  .hero-organic__content--left .welcome-badge {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-organic__content--left .hero-title {
+    text-align: center;
+  }
+
+  .hero-organic__content--left .hero-subtitle {
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
   }
   
+  .hero-title {
+    font-size: clamp(1.375rem, 6vw, 1.75rem);
+    line-height: 1.3;
+  }
+
   .hero-subtitle {
     font-size: var(--text-base);
+    line-height: 1.8;
+  }
+
+  .welcome-badge {
+    font-size: var(--text-sm);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .section-icon {
+    width: 44px;
+    height: 44px;
+    font-size: var(--text-lg);
   }
 
   .intro-card {
-    padding: var(--space-6);
+    padding: var(--space-5);
   }
 
   .intro-text {
     font-size: var(--text-base);
+    line-height: 2;
   }
   
   .intro-decoration {
-    width: 150px;
-    height: 150px;
+    width: 120px;
+    height: 120px;
   }
   
   .circle-1 {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
   }
   
   .circle-2 {
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .intro-features {
+    gap: var(--space-2);
+  }
+
+  .feature-tag {
+    padding: var(--space-3) var(--space-4);
+    min-height: 44px;
   }
 
   .daily-text-card {
-    padding: var(--space-6);
+    padding: var(--space-5);
+  }
+
+  .daily-text-content p {
+    font-size: var(--text-base);
+    line-height: 2;
   }
 
   .daily-highlights {
     grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .highlight-item {
+    padding: var(--space-3) var(--space-4);
+    min-height: 56px;
+  }
+
+  .highlight-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
   }
 
   .carousel-container {
-    height: 280px;
+    height: 320px;
+    margin-top: var(--space-8);
   }
 
   .management-entry {
-    padding: 8px 14px;
+    padding: 10px 16px;
     top: 12px;
     right: 12px;
+    min-height: 44px;
   }
 
   .entry-text {
@@ -1712,7 +1830,101 @@ section {
   }
 
   .entry-icon {
-    font-size: 16px;
+    font-size: 18px;
+  }
+
+  .carousel-3d {
+    width: 180px;
+    height: 180px;
+  }
+
+  .carousel-item {
+    width: 160px;
+    height: 160px;
+    margin-left: -80px;
+    margin-top: -80px;
+  }
+
+  .carousel-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+  
+  .prev-btn {
+    left: 8px;
+  }
+  
+  .next-btn {
+    right: 8px;
+  }
+
+  .carousel-indicators {
+    padding: var(--space-2) var(--space-4);
+    bottom: 20px;
+  }
+
+  .indicator-dot {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .indicator-dot::before {
+    inset: 0;
+  }
+
+  .floating-elements {
+    display: none;
+  }
+  
+  .section-header::after {
+    width: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-page {
+    padding: 0 var(--space-3) var(--space-6);
+  }
+
+  .hero-section {
+    padding: var(--space-5) var(--space-4) var(--space-7);
+    margin: var(--space-3);
+    border-radius: 20px;
+  }
+
+  .hero-title {
+    font-size: clamp(1.25rem, 7vw, 1.5rem);
+  }
+
+  .hero-subtitle {
+    font-size: var(--text-sm);
+  }
+
+  .intro-card {
+    padding: var(--space-4);
+    border-radius: 20px;
+  }
+
+  .intro-features {
+    flex-direction: column;
+  }
+
+  .feature-tag {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .daily-text-card {
+    padding: var(--space-4);
+    border-radius: 20px;
+  }
+
+  .carousel-container {
+    height: 300px;
+    border-radius: 20px;
   }
 
   .carousel-3d {
@@ -1728,58 +1940,25 @@ section {
   }
 
   .carousel-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
+    width: 48px;
+    height: 48px;
   }
-  
+
   .prev-btn {
-    left: 12px;
+    left: 4px;
   }
-  
+
   .next-btn {
-    right: 12px;
+    right: 4px;
   }
 
-  .floating-elements {
-    display: none;
-  }
-  
-  .section-header::after {
-    width: 40px;
-  }
-}
-
-@media (max-width: 480px) {
-  .intro-features {
-    flex-direction: column;
-  }
-
-  .feature-tag {
-    justify-content: center;
-  }
-  
-  .highlight-item {
-    padding: var(--space-2) var(--space-3);
-  }
-  
-  .highlight-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-  }
-  
-  .carousel-indicators {
-    padding: var(--space-1) var(--space-2);
-  }
-  
   .indicator-dot {
-    width: 8px;
-    height: 8px;
+    width: 44px;
+    height: 44px;
   }
   
-  .indicator-dot.active {
-    width: 20px;
+  .section-title {
+    font-size: var(--text-xl);
   }
 }
 

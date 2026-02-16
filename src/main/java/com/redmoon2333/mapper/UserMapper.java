@@ -71,6 +71,13 @@ public interface UserMapper {
     int deleteById(@Param("userId") Integer userId);
     
     /**
+     * 批量根据用户ID查找用户
+     * @param userIds 用户ID列表
+     * @return 用户实体列表
+     */
+    List<User> findByIds(@Param("userIds") List<Integer> userIds);
+    
+    /**
      * 获取所有用户
      * @return 所有用户列表
      */

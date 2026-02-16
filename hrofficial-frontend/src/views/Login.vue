@@ -655,10 +655,12 @@ const goToRegister = () => {
   border: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  padding: var(--space-1);
+  padding: var(--space-2);
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   transition: all 0.3s ease;
   border-radius: 8px;
 }
@@ -684,6 +686,7 @@ const goToRegister = () => {
   color: var(--text-secondary);
   cursor: pointer;
   position: relative;
+  padding: var(--space-2) 0;
 }
 
 .remember-me input[type="checkbox"] {
@@ -695,8 +698,8 @@ const goToRegister = () => {
 }
 
 .checkmark {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border: 2px solid var(--border-medium);
   border-radius: 6px;
   display: flex;
@@ -704,12 +707,13 @@ const goToRegister = () => {
   justify-content: center;
   transition: all 0.3s ease;
   background: white;
+  flex-shrink: 0;
 }
 
 .checkmark::after {
   content: '';
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   background: linear-gradient(135deg, #FF6B4A, #E35532);
   border-radius: 3px;
   transform: scale(0);
@@ -730,6 +734,10 @@ const goToRegister = () => {
   font-weight: var(--font-medium);
   transition: all 0.3s ease;
   position: relative;
+  padding: var(--space-2) 0;
+  min-height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
 }
 
 .forgot-link::after {
@@ -771,6 +779,7 @@ const goToRegister = () => {
   position: relative;
   overflow: hidden;
   margin-top: var(--space-2);
+  min-height: var(--touch-target-md);
 }
 
 .btn-content {
@@ -861,7 +870,36 @@ const goToRegister = () => {
 /* ============================================
    响应式设计
    ============================================ */
-@media (max-width: 768px) {
+/* 极小屏幕 (<= 320px) - iPhone SE、小屏手机 */
+@media (max-width: 320px) {
+  .auth-page {
+    padding: var(--space-3);
+  }
+
+  .auth-container {
+    border-radius: 24px;
+  }
+
+  .form-section {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .form-title {
+    font-size: var(--text-xl);
+  }
+
+  .welcome-title {
+    font-size: var(--text-2xl);
+  }
+
+  .blob-1 { width: 240px; height: 240px; }
+  .blob-2 { width: 200px; height: 200px; }
+  .blob-3 { width: 160px; height: 160px; }
+  .blob-4 { width: 140px; height: 140px; }
+}
+
+/* 小屏手机 (>= 320px) - iPhone SE 基准 */
+@media (max-width: 480px) {
   .auth-page {
     padding: var(--space-4);
   }
@@ -869,6 +907,58 @@ const goToRegister = () => {
   .auth-container {
     flex-direction: column;
     max-width: 400px;
+    min-height: auto;
+    border-radius: 28px;
+  }
+
+  .welcome-section {
+    display: none;
+  }
+
+  .form-section {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .mobile-switch {
+    display: block;
+  }
+
+  .blob {
+    opacity: 0.3;
+    filter: blur(60px);
+  }
+
+  .blob-1 { width: 300px; height: 300px; }
+  .blob-2 { width: 250px; height: 250px; }
+  .blob-3 { width: 200px; height: 200px; }
+  .blob-4 { width: 180px; height: 180px; }
+
+  .floating-shape {
+    display: none;
+  }
+
+  .form-input {
+    font-size: 16px;
+  }
+
+  .form-group {
+    gap: var(--space-3);
+  }
+
+  .submit-btn {
+    padding: var(--space-4) var(--space-6);
+  }
+}
+
+/* 平板 (<= 768px) */
+@media (max-width: 768px) {
+  .auth-page {
+    padding: var(--space-4);
+  }
+
+  .auth-container {
+    flex-direction: column;
+    max-width: 500px;
     min-height: auto;
   }
 
@@ -896,6 +986,22 @@ const goToRegister = () => {
 
   .floating-shape {
     display: none;
+  }
+}
+
+/* 横屏模式优化 */
+@media (orientation: landscape) and (max-width: 768px) {
+  .auth-page {
+    padding: var(--space-3);
+  }
+
+  .auth-container {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .form-section {
+    padding: var(--space-6) var(--space-4);
   }
 }
 

@@ -137,12 +137,12 @@ const initOrbitNodes = () => {
       member,
       angle: startAngle,
       speed: 0.0003,
-      orbitA: 200 * scaleFactor,
-      orbitB: 70 * scaleFactor,
+      orbitA: 210 * scaleFactor,
+      orbitB: 75 * scaleFactor,
       reverse: false
     })
   })
-  
+
   viceList.forEach((member, index) => {
     const total = viceList.length || 1
     const startAngle = (index / total) * Math.PI * 2
@@ -150,12 +150,12 @@ const initOrbitNodes = () => {
       member,
       angle: startAngle,
       speed: 0.0002,
-      orbitA: 310 * scaleFactor,
-      orbitB: 105 * scaleFactor,
+      orbitA: 325 * scaleFactor,
+      orbitB: 112 * scaleFactor,
       reverse: true
     })
   })
-  
+
   memberList.forEach((member, index) => {
     const total = memberList.length || 1
     const startAngle = (index / total) * Math.PI * 2
@@ -163,8 +163,8 @@ const initOrbitNodes = () => {
       member,
       angle: startAngle,
       speed: 0.0001,
-      orbitA: 420 * scaleFactor,
-      orbitB: 140 * scaleFactor,
+      orbitA: 440 * scaleFactor,
+      orbitB: 150 * scaleFactor,
       reverse: false
     })
   })
@@ -1366,29 +1366,29 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 内圈轨道 - 部长（长方形） */
 .ring-1 {
-  width: 400px;
-  height: 140px;
+  width: 420px;
+  height: 150px;
   border: 1.5px dashed rgba(245, 158, 11, 0.35);
   background: radial-gradient(ellipse at center, transparent 60%, rgba(245, 158, 11, 0.03) 100%);
-  border-radius: 70px;
+  border-radius: 75px;
 }
 
 /* 中圈轨道 - 副部长（长方形） */
 .ring-2 {
-  width: 620px;
-  height: 210px;
+  width: 650px;
+  height: 225px;
   border: 1px dashed rgba(249, 115, 22, 0.28);
   background: radial-gradient(ellipse at center, transparent 55%, rgba(249, 115, 22, 0.02) 100%);
-  border-radius: 105px;
+  border-radius: 112px;
 }
 
 /* 外圈轨道 - 部员（长方形） */
 .ring-3 {
-  width: 840px;
-  height: 280px;
+  width: 880px;
+  height: 300px;
   border: 1px dashed rgba(99, 102, 241, 0.2);
   background: radial-gradient(ellipse at center, transparent 50%, rgba(99, 102, 241, 0.02) 100%);
-  border-radius: 140px;
+  border-radius: 150px;
 }
 
 /* 中心核心 - 暖金黄 */
@@ -1401,8 +1401,8 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .center-core {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   background: linear-gradient(135deg, #FBBF24, #F59E0B);
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
@@ -1423,7 +1423,7 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .core-text {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 900;
   color: white;
   letter-spacing: 1px;
@@ -1498,27 +1498,27 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 姓名标签样式 */
 .node-name {
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
-  line-height: 1.15;
+  line-height: 1.1;
   text-shadow: 
     0 1px 2px rgba(0, 0, 0, 0.3),
     0 0 8px rgba(0, 0, 0, 0.15);
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
   position: relative;
   z-index: 1;
-  padding: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 0 2px;
+  overflow: visible;
   white-space: nowrap;
-  max-width: 100%;
+  max-width: none;
+  font-size: 11px;
 }
 
-/* 不同角色的节点尺寸与样式 - 动态暖色主题 */
+/* 不同角色的节点尺寸与样式 - 动态暖色主题 - 从大到小排列 */
 /* 部长 - 最大尺寸 */
 .minister-node .node-content {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   box-shadow: 
     0 4px 16px rgba(251, 191, 36, 0.4),
     0 0 0 2px rgba(255, 220, 150, 0.3),
@@ -1527,7 +1527,7 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .minister-node .node-name {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .minister-node:hover .node-content {
@@ -1540,8 +1540,8 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 副部长 - 中等尺寸 */
 .vice-node .node-content {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   box-shadow: 
     0 4px 12px rgba(252, 211, 77, 0.35),
     0 0 0 2px rgba(255, 235, 150, 0.25),
@@ -1550,7 +1550,7 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .vice-node .node-name {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .vice-node:hover .node-content {
@@ -1563,8 +1563,8 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 部员 - 最小尺寸 */
 .member-circle .node-content {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   box-shadow: 
     0 3px 10px rgba(249, 115, 22, 0.3),
     0 0 0 1px rgba(255, 200, 150, 0.2),
@@ -1573,7 +1573,9 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .member-circle .node-name {
-  font-size: 9px;
+  font-size: 10px;
+  max-width: none;
+  overflow: visible;
 }
 
 .member-circle:hover .node-content {
@@ -1716,54 +1718,56 @@ watch([ministers, viceMinisters, members], () => {
   }
 
   .orbit-ring.ring-1 {
-    width: 320px;
-    height: 110px;
+    width: 340px;
+    height: 120px;
   }
 
   .orbit-ring.ring-2 {
-    width: 480px;
-    height: 165px;
+    width: 520px;
+    height: 180px;
   }
 
   .orbit-ring.ring-3 {
-    width: 640px;
-    height: 220px;
+    width: 680px;
+    height: 240px;
   }
 
   .center-core {
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
   }
 
   .core-text {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   .minister-node .node-content {
+    width: 56px;
+    height: 56px;
+  }
+
+  .minister-node .node-name {
+    font-size: 13px;
+  }
+
+  .vice-node .node-content {
     width: 48px;
     height: 48px;
   }
 
-  .minister-node .node-name {
+  .vice-node .node-name {
     font-size: 11px;
   }
 
-  .vice-node .node-content {
-    width: 38px;
-    height: 38px;
-  }
-
-  .vice-node .node-name {
-    font-size: 10px;
-  }
-
   .member-circle .node-content {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
   }
 
   .member-circle .node-name {
-    font-size: 9px;
+    font-size: 10px;
+    max-width: none;
+    overflow: visible;
   }
 }
 
@@ -1814,54 +1818,56 @@ watch([ministers, viceMinisters, members], () => {
   }
 
   .orbit-ring.ring-1 {
-    width: 200px;
-    height: 70px;
+    width: 220px;
+    height: 80px;
   }
 
   .orbit-ring.ring-2 {
-    width: 300px;
-    height: 100px;
+    width: 340px;
+    height: 120px;
   }
 
   .orbit-ring.ring-3 {
-    width: 400px;
-    height: 130px;
+    width: 460px;
+    height: 160px;
   }
 
   .center-core {
+    width: 45px;
+    height: 45px;
+  }
+
+  .core-text {
+    font-size: 16px;
+  }
+
+  .minister-node .node-content {
     width: 40px;
     height: 40px;
   }
 
-  .core-text {
-    font-size: 14px;
-  }
-
-  .minister-node .node-content {
-    width: 32px;
-    height: 32px;
-  }
-
   .minister-node .node-name {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .vice-node .node-content {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
   }
 
   .vice-node .node-name {
-    font-size: 8px;
+    font-size: 10px;
   }
 
   .member-circle .node-content {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
   }
 
   .member-circle .node-name {
-    font-size: 7px;
+    font-size: 9px;
+    max-width: none;
+    overflow: visible;
   }
 
   .year-display {

@@ -1246,8 +1246,8 @@ onMounted(() => {
 }
 
 .action-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1258,6 +1258,8 @@ onMounted(() => {
   cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
 }
 
 .action-btn:hover {
@@ -1430,6 +1432,7 @@ onMounted(() => {
   font-size: var(--text-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  min-height: var(--touch-target-md);
 }
 
 .expand-btn:hover {
@@ -1852,8 +1855,8 @@ onMounted(() => {
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1865,6 +1868,8 @@ onMounted(() => {
   opacity: 0;
   transition: all var(--transition-fast);
   box-shadow: 0 2px 8px rgba(252, 211, 77, 0.3);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
 }
 
 .delete-image-btn:hover {
@@ -1893,40 +1898,192 @@ onMounted(() => {
 /* ============================================
    Responsive Design - 增强版
    ============================================ */
-@media (max-width: 1024px) {
+/* 极小屏幕 (<= 320px) - iPhone SE、小屏手机 */
+@media (max-width: 320px) {
+  .activities-page {
+    padding: 0 var(--space-3) var(--space-6);
+  }
+
   .hero-section {
-    padding: var(--space-8);
+    padding: var(--space-6);
+    margin: var(--space-3);
+    margin-bottom: 0;
   }
 
-  .hero-section::before {
-    width: 400px;
-    height: 400px;
-  }
-
-  .hero-section::after {
-    width: 300px;
-    height: 300px;
+  .hero-title {
+    font-size: var(--text-2xl);
   }
 
   .hero-description {
-    margin-left: auto;
-    margin-right: auto;
+    font-size: var(--text-sm);
+  }
+
+  .toolbar-section {
+    padding: var(--space-3);
+    margin: var(--space-3);
+  }
+
+  .stat-item {
+    min-width: 60px;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .stat-number {
+    font-size: 16px;
+  }
+
+  .card-header-section {
+    padding: var(--space-4);
+  }
+
+  .card-content-section {
+    padding: var(--space-4);
+  }
+
+  .activities-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
+/* 小屏手机 (>= 320px) - iPhone SE 基准 */
+@media (max-width: 480px) {
+  .activities-page {
+    padding: 0 var(--space-4) var(--space-8);
+  }
+
+  .hero-section {
+    padding: var(--space-6);
+    margin: var(--space-4);
+    margin-bottom: 0;
+  }
+
+  .hero-title {
+    font-size: var(--text-2xl);
   }
 
   .hero-stats {
-    justify-content: center;
+    gap: var(--space-2);
+  }
+
+  .stat-item {
+    min-width: 70px;
+    padding: var(--space-1) var(--space-3);
+  }
+
+  .stat-number {
+    font-size: 18px;
+  }
+
+  .block-text,
+  .process-flow {
+    padding-left: 0;
+  }
+
+  .images-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .images-list {
+    grid-template-columns: 1fr;
   }
 
   .activities-grid {
     grid-template-columns: 1fr;
   }
 
-  .upload-body {
+  .toolbar-section {
     flex-direction: column;
-    align-items: stretch;
+    gap: var(--space-3);
+    margin: var(--space-4);
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .create-btn {
+    width: 100%;
+  }
+
+  .card-header-section {
+    flex-wrap: wrap;
+  }
+
+  .card-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: var(--space-3);
+  }
+  
+  /* 小屏幕弹窗优化 */
+  .activity-dialog :deep(.el-dialog),
+  .image-dialog :deep(.el-dialog) {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 2vh auto !important;
+    border-radius: 16px 16px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+  
+  .activity-dialog :deep(.el-dialog__header),
+  .image-dialog :deep(.el-dialog__header) {
+    border-radius: 16px 16px 0 0 !important;
+  }
+  
+  .activity-dialog :deep(.el-dialog__body),
+  .image-dialog :deep(.el-dialog__body) {
+    max-height: 55vh;
+    padding: var(--space-3) !important;
+  }
+  
+  .activity-dialog :deep(.el-dialog__footer),
+  .image-dialog :deep(.el-dialog__footer) {
+    padding: var(--space-3) !important;
+    display: flex;
+    gap: var(--space-2);
+  }
+  
+  .activity-dialog :deep(.el-dialog__footer .el-button),
+  .image-dialog :deep(.el-dialog__footer .el-button) {
+    flex: 1;
+  }
+  
+  /* 小屏幕表单强制垂直布局 */
+  .activity-form :deep(.el-form-item) {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .activity-form :deep(.el-form-item__label) {
+    display: block !important;
+    float: none !important;
+    text-align: left !important;
+    width: 100% !important;
+    padding: 0 0 8px 0 !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+  }
+  
+  .activity-form :deep(.el-form-item__content) {
+    display: block !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+  
+  .activity-form :deep(.el-input__wrapper),
+  .activity-form :deep(.el-textarea__inner) {
+    width: 100% !important;
   }
 }
 
+/* 平板 (<= 768px) */
 @media (max-width: 768px) {
   .activities-page {
     padding: 0 var(--space-4) var(--space-8);
@@ -1981,6 +2138,10 @@ onMounted(() => {
 
   .images-list {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .activities-grid {
+    grid-template-columns: 1fr;
   }
   
   /* 弹窗移动端适配 */
@@ -2055,101 +2216,53 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: var(--text-2xl);
+/* 平板横屏 (<= 1024px) */
+@media (max-width: 1024px) {
+  .hero-section {
+    padding: var(--space-8);
+  }
+
+  .hero-section::before {
+    width: 400px;
+    height: 400px;
+  }
+
+  .hero-section::after {
+    width: 300px;
+    height: 300px;
+  }
+
+  .hero-description {
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .hero-stats {
-    gap: var(--space-2);
+    justify-content: center;
   }
 
-  .stat-item {
-    min-width: 70px;
-    padding: var(--space-1) var(--space-3);
+  .activities-grid {
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   }
 
-  .stat-number {
-    font-size: 18px;
+  .upload-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* 横屏模式优化 */
+@media (orientation: landscape) and (max-width: 768px) {
+  .activities-page {
+    padding: 0 var(--space-4) var(--space-6);
   }
 
-  .block-text,
-  .process-flow {
-    padding-left: 0;
+  .hero-section {
+    padding: var(--space-6);
   }
 
-  .images-gallery {
-    grid-template-columns: 1fr;
-  }
-
-  .images-list {
-    grid-template-columns: 1fr;
-  }
-  
-  /* 小屏幕弹窗优化 */
-  .activity-dialog :deep(.el-dialog),
-  .image-dialog :deep(.el-dialog) {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 2vh auto !important;
-    border-radius: 16px 16px 0 0 !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    top: auto !important;
-    left: 0 !important;
-    right: 0 !important;
-  }
-  
-  .activity-dialog :deep(.el-dialog__header),
-  .image-dialog :deep(.el-dialog__header) {
-    border-radius: 16px 16px 0 0 !important;
-  }
-  
-  .activity-dialog :deep(.el-dialog__body),
-  .image-dialog :deep(.el-dialog__body) {
-    max-height: 55vh;
-    padding: var(--space-3) !important;
-  }
-  
-  .activity-dialog :deep(.el-dialog__footer),
-  .image-dialog :deep(.el-dialog__footer) {
-    padding: var(--space-3) !important;
-    display: flex;
-    gap: var(--space-2);
-  }
-  
-  .activity-dialog :deep(.el-dialog__footer .el-button),
-  .image-dialog :deep(.el-dialog__footer .el-button) {
-    flex: 1;
-  }
-  
-  /* 小屏幕表单强制垂直布局 */
-  .activity-form :deep(.el-form-item) {
-    display: flex !important;
-    flex-direction: column !important;
-    margin-bottom: 16px !important;
-  }
-  
-  .activity-form :deep(.el-form-item__label) {
-    display: block !important;
-    float: none !important;
-    text-align: left !important;
-    width: 100% !important;
-    padding: 0 0 8px 0 !important;
-    line-height: 1.5 !important;
-    box-sizing: border-box !important;
-  }
-  
-  .activity-form :deep(.el-form-item__content) {
-    display: block !important;
-    margin-left: 0 !important;
-    width: 100% !important;
-    flex: none !important;
-  }
-  
-  .activity-form :deep(.el-input__wrapper),
-  .activity-form :deep(.el-textarea__inner) {
-    width: 100% !important;
+  .activities-grid {
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   }
 }
 

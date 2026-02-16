@@ -10,6 +10,8 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivationCodeMapper;
 import com.redmoon2333.mapper.UserMapper;
 import com.redmoon2333.util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,8 @@ import java.util.Map;
 @Service
 @Transactional
 public class AuthService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
     
     @Autowired
     private UserMapper userMapper;
@@ -112,8 +116,7 @@ public class AuthService {
         newUser.setName(registerRequest.getName()); // 确保设置了姓名
         newUser.setRoleHistory(registerRequest.getRoleHistory());
         
-        // 打印调试信息
-        System.out.println("Registering user with name: " + registerRequest.getName());
+        logger.info("Registering user with name: {}", registerRequest.getName());
         
         int insertResult = userMapper.insert(newUser);
         if (insertResult <= 0) {
