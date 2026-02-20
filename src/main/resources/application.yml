@@ -48,10 +48,19 @@ spring:
           
   # AI Vector Store配置 - Redis Stack
   ai:
-    # Spring AI Dashscope 配置（统一API Key）
-    # Warning: 必须通过环境变量 ALIQWEN_API 设置，禁止硬编码密钥
-    dashscope:
-      api-key: ${ALIQWEN_API:}
+    # ECNU OpenAI 兼容配置
+    # BaseURL: https://chat.ecnu.edu.cn/open/api/v1
+    # Warning: 必须通过环境变量 CHATECNU_API_KEY 设置，禁止硬编码密钥
+    openai:
+      base-url: ${CHATECNU_BASE_URL:https://chat.ecnu.edu.cn/open/api}
+      api-key: ${CHATECNU_API_KEY:sk-placeholder}
+      chat:
+        options:
+          model: ecnu-plus
+          temperature: 0.7
+      embedding:
+        options:
+          model: ecnu-embedding-small
     vectorstore:
       redis:
         initialize-schema: true
@@ -131,10 +140,9 @@ rag:
   auto-detect-doc-type: true
   
   # Embedding模型配置
-  # text-embedding-v3支持: 1024, 1536(默认), 2048
-  # text-embedding-v2支持: 1536
+  # ECNU提供: ecnu-embedding-small (1024维)
   # Warning: 修改维度后必须清空Redis索引重建
-  embedding-model: text-embedding-v3
+  embedding-model: ecnu-embedding-small
   embedding-dimensions: 1024
   retrieval-top-k: 5
   score-threshold: 0.0

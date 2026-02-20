@@ -47,8 +47,9 @@ public class RagConfig {
     
     /**
      * Embedding模型名称
+     * ECNU提供: ecnu-embedding-small
      */
-    private String embeddingModel = "text-embedding-v3";
+    private String embeddingModel = "ecnu-embedding-small";
     
     /**
      * 检索时返回的最相关文档数量
@@ -58,16 +59,16 @@ public class RagConfig {
     
     /**
      * 相似度阈值(0-1之间)
-     * 通义千问Embedding模型建议设置为0.1-0.2，或设为0不过滤
+     * ECNU Embedding模型建议设置为0.0不过滤
      * Warning: Redis Vector Store的相似度计算方式与Qdrant可能不同
      */
     private double scoreThreshold = 0.0;
     
     /**
-     * 向量维度（通义千问embedding-v3为1536维）
+     * 向量维度（ECNU ecnu-embedding-small为1024维）
      * Warning: 此值必须与Embedding模型输出维度一致
      */
-    private int vectorDimension = 1536;
+    private int vectorDimension = 1024;
     
     /**
      * 是否启用批处理模式
