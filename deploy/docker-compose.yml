@@ -1,16 +1,12 @@
 # ============================================================
-# 人力资源中心官网 - Docker Compose 配置 (2G内存优化版)
-# 包含：后端服务、前端服务、MySQL、Redis Stack
+# 人力资源中心官网 - Docker Compose 配置 (服务器部署版)
+# 使用预构建镜像，不需要源代码
 # ============================================================
 
-version: '3.8'
-
 services:
-  # ===================
   # MySQL 数据库
-  # ===================
   mysql:
-    image: mysql:8.0.40-debian
+    image: mysql:8.0.39
     container_name: hrofficial-mysql
     restart: unless-stopped
     environment:
@@ -19,41 +15,36 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./init/init_database.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./init/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
-      # 内存优化配置（适合2G服务器）
       - --max_connections=50
-      - --innodb_buffer_pool_size=128M
-      - --innodb_log_buffer_size=8M
+      - --innodb_buffer_pool_size=256M
+      - --innodb_log_buffer_size=16M
       - --innodb_flush_log_at_trx_commit=2
-      - --query_cache_size=16M
-      - --tmp_table_size=16M
-      - --max_heap_table_size=16M
-      - --key_buffer_size=16M
+      - --tmp_table_size=32M
+      - --max_heap_table_size=32M
+      - --key_buffer_size=32M
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     networks:
       - hrofficial-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    # 资源限制
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
         reservations:
-          memory: 128M
+          memory: 256M
 
-  # ===================
   # Redis Stack (支持向量存储)
-  # ===================
   redis:
     image: redis/redis-stack-server:7.4.0-v0
     container_name: hrofficial-redis
@@ -71,7 +62,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # 资源限制
     deploy:
       resources:
         limits:
@@ -79,42 +69,49 @@ services:
         reservations:
           memory: 128M
 
-  # ===================
   # 后端服务
-  # ===================
   backend:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.backend
+    image: eclipse-temurin:21-jre-alpine
     container_name: hrofficial-backend
     restart: unless-stopped
+    working_dir: /app
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - TZ=Asia/Shanghai
-      # 数据库配置
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_NAME=${DB_NAME:-hrofficial}
       - DB_USERNAME=${DB_USERNAME:-root}
       - DB_PASSWORD=${DB_PASSWORD}
-      # Redis配置
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-      # JWT配置
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION:-604800000}
-      # 阿里云配置
-      - ALIYUN_DASHSCOPE_API_KEY=${ALIYUN_DASHSCOPE_API_KEY}
+      - CHATECNU_API_KEY=${CHATECNU_API_KEY}
+      - CHATECNU_BASE_URL=${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api}
       - ALIYUN_OSS_ACCESS_KEY_ID=${ALIYUN_OSS_ACCESS_KEY_ID:-}
       - ALIYUN_OSS_ACCESS_KEY_SECRET=${ALIYUN_OSS_ACCESS_KEY_SECRET:-}
       - ALIYUN_OSS_BUCKET_NAME=${ALIYUN_OSS_BUCKET_NAME:-}
+      - RAG_KNOWLEDGE_BASE_PATH=/app/rag-knowledge-base
+      - FILE_ACCESS_URL=${FILE_ACCESS_URL:-http://localhost:8080}
     volumes:
+      - ./app.jar:/app/app.jar
       - backend-logs:/app/logs
-      - backend-uploads:/app/uploads
+      - ./uploads:/app/uploads
       - backend-knowledge:/app/knowledge-base
+      - ./knowledge-base:/app/rag-knowledge-base:ro
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    command: >
+      sh -c "java -server
+      -Xms128m -Xmx512m
+      -XX:MetaspaceSize=64m
+      -XX:MaxMetaspaceSize=128m
+      -XX:+UseG1GC
+      -XX:MaxGCPauseMillis=200
+      -Djava.security.egd=file:/dev/./urandom
+      -jar app.jar"
     depends_on:
       mysql:
         condition: service_healthy
@@ -123,12 +120,11 @@ services:
     networks:
       - hrofficial-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 60s
-    # 资源限制
     deploy:
       resources:
         limits:
@@ -136,17 +132,16 @@ services:
         reservations:
           memory: 512M
 
-  # ===================
   # 前端服务
-  # ===================
   frontend:
-    build:
-      context: ../hrofficial-frontend
-      dockerfile: ../deploy/Dockerfile.frontend
+    image: nginx:alpine
     container_name: hrofficial-frontend
     restart: unless-stopped
     environment:
       - TZ=Asia/Shanghai
+    volumes:
+      - ./dist:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "${FRONTEND_PORT:-80}:80"
     depends_on:
@@ -154,11 +149,11 @@ services:
     networks:
       - hrofficial-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-    # 资源限制
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -166,16 +161,10 @@ services:
         reservations:
           memory: 32M
 
-# ===================
-# 网络配置
-# ===================
 networks:
   hrofficial-network:
     driver: bridge
 
-# ===================
-# 数据卷配置
-# ===================
 volumes:
   mysql-data:
     name: hrofficial-mysql-data
@@ -183,7 +172,5 @@ volumes:
     name: hrofficial-redis-data
   backend-logs:
     name: hrofficial-backend-logs
-  backend-uploads:
-    name: hrofficial-backend-uploads
   backend-knowledge:
     name: hrofficial-backend-knowledge

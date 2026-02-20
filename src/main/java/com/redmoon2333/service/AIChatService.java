@@ -41,10 +41,10 @@ import java.util.Map;
 public class AIChatService {
     private static final Logger logger = LoggerFactory.getLogger(AIChatService.class);
 
-    @Resource(name = "qwenChatClient")
+    @Resource(name = "ecnuChatClient")
     private ChatClient chatClient;
 
-    @Resource(name = "qwenToolChatClient")
+    @Resource(name = "ecnuToolChatClient")
     private ChatClient toolChatClient;
 
     @Resource(name = "planGeneratorChatClient")
@@ -101,16 +101,16 @@ public class AIChatService {
                 .stream()
                 .content()
                 .limitRate(100)
-                // 后处理：清理Markdown格式问题
                 .map(chunk -> MarkdownFormatter.formatStreamChunk(chunk, formatBuffer))
-                .doOnComplete(() -> {
-                    // 刷新缓冲区剩余内容
+                .filter(chunk -> !chunk.isEmpty())
+                .concatWith(Flux.defer(() -> {
                     String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
                     if (!remaining.isEmpty()) {
-                        // 这里无法直接发送，需要通过其他方式处理
-                        logger.debug("流式响应结束，剩余内容: {} 字符", remaining.length());
+                        logger.debug("流式响应结束，发送剩余内容: {} 字符", remaining.length());
+                        return Flux.just(remaining);
                     }
-                })
+                    return Flux.empty();
+                }))
                 .doOnError(e -> logger.error("流式对话错误，用户ID: {}", userId, e))
                 .onErrorResume(e -> isClientDisconnect(e) ? Flux.empty() : Flux.error(e))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(1))
@@ -152,20 +152,34 @@ public class AIChatService {
         return promptSpec.stream()
                 .content()
                 .limitRate(100)
-                // 后处理：清理Markdown格式问题
                 .map(chunk -> MarkdownFormatter.formatStreamChunk(chunk, formatBuffer))
-                .doOnComplete(() -> {
+                .filter(chunk -> !chunk.isEmpty())
+                .concatWith(Flux.defer(() -> {
                     String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
                     if (!remaining.isEmpty()) {
-                        logger.debug("RAG流式响应结束，剩余内容: {} 字符", remaining.length());
+                        logger.debug("RAG流式响应结束，发送剩余内容: {} 字符", remaining.length());
+                        return Flux.just(remaining);
                     }
-                })
+                    return Flux.empty();
+                }))
                 .doOnError(e -> logger.error("RAG对话错误，用户ID: {}", userId, e))
                 .onErrorResume(e -> isClientDisconnect(e) ? Flux.empty() : Flux.error(e))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(this::isRetryableError)
                         .doBeforeRetry(retrySignal ->
                                 logger.warn("RAG对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1)));
+    }
+
+    /**
+     * 检测ChatECNU模型是否支持tool功能
+     *
+     * Why: 不同的ChatECNU模型可能具有不同的能力，需要动态检测
+     */
+    private boolean isToolSupported() {
+        // TODO: 实现更复杂的模型能力检测逻辑
+        // 暂时假设ecnu-max支持tool功能
+        // 后续可通过API调用或配置文件来确定模型能力
+        return true;
     }
 
     /**
@@ -196,14 +210,16 @@ public class AIChatService {
                 .stream()
                 .content()
                 .limitRate(100)
-                // 后处理：清理Markdown格式问题
                 .map(chunk -> MarkdownFormatter.formatStreamChunk(chunk, formatBuffer))
-                .doOnComplete(() -> {
+                .filter(chunk -> !chunk.isEmpty())
+                .concatWith(Flux.defer(() -> {
                     String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
                     if (!remaining.isEmpty()) {
-                        logger.debug("策划案流式响应结束，剩余内容: {} 字符", remaining.length());
+                        logger.debug("策划案流式响应结束，发送剩余内容: {} 字符", remaining.length());
+                        return Flux.just(remaining);
                     }
-                })
+                    return Flux.empty();
+                }))
                 .doOnError(e -> logger.error("策划案生成错误", e))
                 .onErrorResume(e -> isClientDisconnect(e) ? Flux.empty() : Flux.error(e))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(1))
@@ -234,10 +250,18 @@ public class AIChatService {
      * 处理工具调用
      *
      * Why: 工具调用使用同步模式获取结果，再模拟流式输出，保持接口一致性
+     * Warning: 需要检测ChatECNU模型是否支持tool功能
      */
     private Flux<String> handleToolCalling(String message, Integer userId) {
         return Flux.defer(() -> {
             try {
+                // 检测ChatECNU模型是否支持tool功能
+                if (!isToolSupported()) {
+                    String errorMsg = "当前ChatECNU模型不支持工具调用功能";
+                    logger.warn(errorMsg);
+                    return simulateStream(errorMsg);
+                }
+
                 ToolCallback[] tools = ToolCallbacks.from(toolService);
                 logger.info("调用工具，共 {} 个", tools.length);
 

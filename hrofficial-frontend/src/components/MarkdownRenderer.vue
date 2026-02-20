@@ -3,9 +3,9 @@ import { computed } from 'vue'
 import { markdownService } from '@/utils/markdown-service'
 
 /**
- * Markdown渲染组件（AI对话专用）
- * 
- * Why: 专职渲染Markdown格式内容，使用精简的markdownService
+ * Markdown渲染组件（markdown-it增强版）
+ *
+ * Why: 使用markdown-it渲染，支持任务列表、表情符号、代码高亮等丰富格式
  * Warning: 仅用于AI对话场景，策划案请使用HtmlRenderer
  */
 
@@ -109,7 +109,59 @@ const renderedContent = computed(() => {
   padding-left: 4px;
 }
 
-.markdown-renderer :deep(code) {
+/* 任务列表样式 */
+.markdown-renderer :deep(.task-list-item) {
+  list-style: none;
+  margin-left: -24px;
+}
+
+.markdown-renderer :deep(.task-list-item input[type="checkbox"]) {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  accent-color: #FF6B4A;
+  cursor: pointer;
+}
+
+.markdown-renderer :deep(.task-list-item.checked) {
+  text-decoration: line-through;
+  color: #78716C;
+}
+
+/* 代码块样式 - 深色主题 */
+.markdown-renderer :deep(.code-block) {
+  background: #1e1e1e;
+  padding: 16px;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid #3f3f46;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.markdown-renderer :deep(.code-block::before) {
+  content: attr(data-lang);
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 11px;
+  color: #78716C;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.markdown-renderer :deep(.code-block code) {
+  background: none;
+  padding: 0;
+  color: #e5e5e5;
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* 行内代码样式 */
+.markdown-renderer :deep(code:not([class*="language-"])) {
   background: #f5f5f4;
   padding: 3px 6px;
   border-radius: 5px;
@@ -120,24 +172,10 @@ const renderedContent = computed(() => {
 }
 
 .markdown-renderer :deep(pre) {
-  background: #1e1e1e;
-  padding: 16px;
-  border-radius: 10px;
-  overflow-x: auto;
-  margin: 16px 0;
-  border: 1px solid #3f3f46;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 0;
 }
 
-.markdown-renderer :deep(pre code) {
-  background: none;
-  padding: 0;
-  color: #e5e5e5;
-  font-size: 14px;
-  line-height: 1.5;
-  border: none;
-}
-
+/* 引用块样式 */
 .markdown-renderer :deep(blockquote) {
   border-left: 4px solid #FF6B4A;
   padding: 12px 20px;
@@ -148,6 +186,7 @@ const renderedContent = computed(() => {
   border-radius: 0 8px 8px 0;
 }
 
+/* 链接样式 */
 .markdown-renderer :deep(a) {
   color: #3B82F6;
   text-decoration: none;
@@ -161,6 +200,7 @@ const renderedContent = computed(() => {
   color: #2563EB;
 }
 
+/* 表格样式 */
 .markdown-renderer :deep(table) {
   width: 100%;
   border-collapse: collapse;
@@ -196,6 +236,7 @@ const renderedContent = computed(() => {
   background: #f5f5f4;
 }
 
+/* 分割线样式 */
 .markdown-renderer :deep(hr) {
   border: none;
   border-top: 2px solid #e7e5e4;
@@ -204,6 +245,7 @@ const renderedContent = computed(() => {
   height: 2px;
 }
 
+/* 图片样式 */
 .markdown-renderer :deep(img) {
   max-width: 100%;
   border-radius: 10px;
@@ -216,6 +258,44 @@ const renderedContent = computed(() => {
   transform: scale(1.02);
 }
 
+/* 表情符号样式 */
+.markdown-renderer :deep(.emoji) {
+  font-size: 1.2em;
+  vertical-align: middle;
+}
+
+/* 容器样式（warning, info, tip） */
+.markdown-renderer :deep(.warning) {
+  background: #FEF3C7;
+  border-left: 4px solid #F59E0B;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.markdown-renderer :deep(.info) {
+  background: #DBEAFE;
+  border-left: 4px solid #3B82F6;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.markdown-renderer :deep(.tip) {
+  background: #D1FAE5;
+  border-left: 4px solid #10B981;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+/* 删除线样式 */
+.markdown-renderer :deep(del) {
+  color: #78716C;
+  text-decoration: line-through;
+}
+
+/* 响应式样式 */
 @media (max-width: 768px) {
   .markdown-renderer :deep(h1) {
     font-size: 20px;
@@ -231,7 +311,7 @@ const renderedContent = computed(() => {
     font-size: 16px;
   }
 
-  .markdown-renderer :deep(pre) {
+  .markdown-renderer :deep(.code-block) {
     padding: 12px;
     font-size: 13px;
   }
