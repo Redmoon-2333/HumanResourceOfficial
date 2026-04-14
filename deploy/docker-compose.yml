@@ -49,7 +49,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api/v1}
+      CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api}
       CHATECNU_API_KEY: ${CHATECNU_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       ALIYUN_OSS_ENDPOINT: ${ALIYUN_OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}
@@ -57,7 +57,7 @@ services:
       ALIYUN_OSS_ACCESS_KEY_SECRET: ${ALIYUN_OSS_ACCESS_KEY_SECRET:-}
       ALIYUN_OSS_BUCKET_NAME: ${ALIYUN_OSS_BUCKET_NAME:-}
       FILE_ACCESS_URL: ${FILE_ACCESS_URL:-http://81.70.218.85:3000}
-      RAG_KB_PATH: ${RAG_KB_PATH:-file:/app/rag-knowledge-base}
+      RAG_KB_PATH: ${RAG_KB_PATH:-/app/rag-knowledge-base}
     volumes:
       - ${RAG_KB_HOST_PATH:-./rag-knowledge-base}:/app/rag-knowledge-base:ro
       - ${UPLOADS_HOST_PATH:-./uploads}:/app/uploads
