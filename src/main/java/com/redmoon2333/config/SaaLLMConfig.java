@@ -41,8 +41,11 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class SaaLLMConfig {
 
-    private static final String ECNU_CHAT_MODEL = "ecnu-plus";
-    private static final String ECNU_TOOL_MODEL = "ecnu-max";
+    @Value("${spring.ai.openai.chat.options.model:ecnu-plus}")
+    private String chatModelName;
+
+    @Value("${spring.ai.openai.tool-model:ecnu-max}")
+    private String toolModelName;
 
     @Value("${spring.ai.openai.api-key}")
     private String apiKey;
@@ -107,7 +110,7 @@ public class SaaLLMConfig {
     @Bean
     @Primary
     public ChatClient ecnuChatClient() {
-        return ChatClient.builder(createChatModel(ECNU_CHAT_MODEL)).build();
+        return ChatClient.builder(createChatModel(chatModelName)).build();
     }
 
     /**
@@ -117,7 +120,7 @@ public class SaaLLMConfig {
      */
     @Bean
     public ChatClient ecnuToolChatClient() {
-        return ChatClient.builder(createChatModel(ECNU_TOOL_MODEL)).build();
+        return ChatClient.builder(createChatModel(toolModelName)).build();
     }
 
     /**
@@ -127,6 +130,6 @@ public class SaaLLMConfig {
      */
     @Bean
     public ChatClient planGeneratorChatClient() {
-        return ChatClient.builder(createChatModel(ECNU_CHAT_MODEL)).build();
+        return ChatClient.builder(createChatModel(chatModelName)).build();
     }
 }
