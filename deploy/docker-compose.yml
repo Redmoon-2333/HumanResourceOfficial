@@ -57,7 +57,7 @@ services:
       ALIYUN_OSS_ACCESS_KEY_SECRET: ${ALIYUN_OSS_ACCESS_KEY_SECRET:-}
       ALIYUN_OSS_BUCKET_NAME: ${ALIYUN_OSS_BUCKET_NAME:-}
       FILE_ACCESS_URL: ${FILE_ACCESS_URL:-http://81.70.218.85:3000}
-      RAG_KB_PATH: ${RAG_KB_PATH:-file:/app/rag-knowledge-base}
+      RAG_KB_PATH: ${RAG_KB_PATH:-/app/rag-knowledge-base}
     volumes:
       - ${RAG_KB_HOST_PATH:-./rag-knowledge-base}:/app/rag-knowledge-base:ro
       - ${UPLOADS_HOST_PATH:-./uploads}:/app/uploads
