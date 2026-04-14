@@ -18,17 +18,6 @@ import reactor.netty.http.client.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Embedding模型配置类（ECNU重构版）
- *
- * Why: 使用ECNU提供的ecnu-embedding-small模型
- *      通过OpenAI兼容接口调用，与Chat模型共用同一个API Key
- *
- * ECNU Embedding模型:
- * - ecnu-embedding-small: 1024维向量输出
- *
- * Warning: 修改此配置后必须清空Redis索引重建，否则会出现维度不匹配错误
- */
 @Configuration
 public class EmbeddingConfig {
 
@@ -38,11 +27,14 @@ public class EmbeddingConfig {
     @Value("${spring.ai.openai.base-url}")
     private String baseUrl;
 
+    @Value("${spring.ai.openai.chat.completions-path:/chat/completions}")
+    private String completionsPath;
+
+    @Value("${spring.ai.openai.embedding.embeddings-path:/embeddings}")
+    private String embeddingsPath;
+
     @Value("${rag.embedding-model:ecnu-embedding-small}")
     private String embeddingModelName;
-
-    @Value("${rag.embedding-dimensions:1024}")
-    private Integer embeddingDimensions;
 
     @Value("${spring.ai.openai.timeout.connect:30s}")
     private Duration connectTimeout;
@@ -55,6 +47,8 @@ public class EmbeddingConfig {
         return OpenAiApi.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
+                .completionsPath(completionsPath)
+                .embeddingsPath(embeddingsPath)
                 .webClientBuilder(createWebClientBuilder())
                 .build();
     }
