@@ -31,10 +31,7 @@ public class OssUtil {
     
     @Value("${aliyun.oss.bucketName:}")
     private String bucketName;
-    
-    @Value("${aliyun.oss.domain:}")
-    private String domain;
-    
+
     private OSS ossClient;
     
     // 通过依赖注入获取OSS客户端
@@ -247,12 +244,7 @@ public class OssUtil {
      * @return 完整的URL
      */
     private String buildFileUrl(String filePath) {
-        String fileUrl;
-        if (domain != null && !domain.isEmpty()) {
-            fileUrl = domain + "/" + filePath;
-        } else {
-            fileUrl = "https://" + bucketName + "." + endpoint + "/" + filePath;
-        }
+        String fileUrl = "https://" + bucketName + "." + endpoint + "/" + filePath;
         logger.debug("构建文件URL: {}", fileUrl);
         return fileUrl;
     }

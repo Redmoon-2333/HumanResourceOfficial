@@ -842,10 +842,13 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
       <el-dialog
         v-model="showUploadDialog"
         title="上传资料"
-        width="500px"
+        width="90vw"
         :close-on-click-modal="false"
         @closed="resetUploadForm"
       >
+        <template #title>
+          <div style="max-width: 500px; margin: 0 auto;"></div>
+        </template>
         <div class="upload-form">
           <div class="form-group">
             <label>选择文件 <span class="required">*</span></label>
@@ -915,9 +918,12 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
       <el-dialog
         v-model="showEditDialog"
         title="编辑资料"
-        width="500px"
+        width="90vw"
         :close-on-click-modal="false"
       >
+        <template #title>
+          <div style="max-width: 500px; margin: 0 auto;"></div>
+        </template>
         <div class="upload-form">
           <div class="form-group">
             <label>资料名称 <span class="required">*</span></label>
@@ -970,9 +976,12 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
       <el-dialog
         v-model="showCategoryDialog"
         :title="isEditMode ? '编辑分类' : '添加分类'"
-        width="400px"
+        width="90vw"
         :close-on-click-modal="false"
       >
+        <template #title>
+          <div style="max-width: 400px; margin: 0 auto;"></div>
+        </template>
         <div class="upload-form">
           <div class="form-group">
             <label>分类名称 <span class="required">*</span></label>
@@ -1006,9 +1015,12 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
       <el-dialog
         v-model="showSubcategoryDialog"
         :title="isEditMode ? '编辑子分类' : '添加子分类'"
-        width="400px"
+        width="90vw"
         :close-on-click-modal="false"
       >
+        <template #title>
+          <div style="max-width: 400px; margin: 0 auto;"></div>
+        </template>
         <div class="upload-form">
           <div class="form-group">
             <label>子分类名称 <span class="required">*</span></label>
@@ -1043,10 +1055,9 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 
 <style scoped>
 .materials-page {
-  min-height: 100vh;
-  background: #FFFFFF;
   max-width: 1400px;
   margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-12);
 }
 
 /* Hero区域 */
@@ -1267,9 +1278,8 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 
 /* 主内容区 */
 .main-content {
-  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 40px 60px;
+  padding: 0 var(--space-6) var(--space-12);
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 32px;
@@ -2127,6 +2137,11 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
   }
 }
 
+/* 对话框最大宽度限制 - 桌面端 */
+:deep(.el-dialog) {
+  max-width: 900px;
+}
+
 /* 减少动画偏好支持 */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -2135,6 +2150,72 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  /* Stack file grid to single column */
+  .materials-list.grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Breadcrumb overflow handling */
+  .subcategory-list {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* File list view on mobile */
+  .material-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  .material-card .material-info {
+    width: 100%;
+  }
+  
+  .material-card .material-actions {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-2);
+  }
+  
+  /* Stats cards stack */
+  .stats-row {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-4) !important;
+  }
+  
+  /* Filter buttons wrap */
+  .toolbar {
+    flex-wrap: wrap !important;
+    gap: var(--space-2) !important;
+  }
+  
+  .upload-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  
+  /* Search bar full width */
+  .search-box {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Tablet optimization */
+@media (max-width: 1024px) {
+  .materials-list.grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 </style>

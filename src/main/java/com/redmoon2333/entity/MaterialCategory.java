@@ -1,32 +1,29 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "material_category")
+@TableName("material_category")
 public class MaterialCategory {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "category_id")
+    @TableId(type = IdType.AUTO)
     private Integer categoryId;
     
-    @Column(name = "category_name")
     private String categoryName;
     
-    @Column(name = "sort_order")
     private Integer sortOrder = 0;
     
-    @Column(name = "create_time")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     
     // 构造函数
     public MaterialCategory() {
-        this.createTime = LocalDateTime.now();
     }
     
     public MaterialCategory(String categoryName) {
-        this();
         this.categoryName = categoryName;
     }
     

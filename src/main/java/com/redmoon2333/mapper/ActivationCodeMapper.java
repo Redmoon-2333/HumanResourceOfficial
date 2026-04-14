@@ -1,5 +1,6 @@
 package com.redmoon2333.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.redmoon2333.entity.ActivationCode;
 import com.redmoon2333.enums.ActivationStatus;
 import org.apache.ibatis.annotations.Mapper;
@@ -9,11 +10,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 激活码Mapper接口
+ * 激活码 Mapper 接口
  * 提供激活码相关的数据访问方法
  */
 @Mapper
-public interface ActivationCodeMapper {
+public interface ActivationCodeMapper extends BaseMapper<ActivationCode> {
     
     /**
      * 根据激活码查找
@@ -34,37 +35,9 @@ public interface ActivationCodeMapper {
                                 @Param("now") LocalDateTime now);
     
     /**
-     * 插入新激活码
-     * @param activationCode 激活码实体
-     * @return 影响行数
-     */
-    int insert(ActivationCode activationCode);
-    
-    /**
-     * 更新激活码状态
-     * @param activationCode 激活码实体
-     * @return 影响行数
-     */
-    int update(ActivationCode activationCode);
-    
-    /**
      * 根据创建于查找激活码
-     * @param creatorId 创建于ID
+     * @param creatorId 创建于 ID
      * @return 激活码列表
      */
     List<ActivationCode> findByCreatorId(@Param("creatorId") Integer creatorId);
-    
-    /**
-     * 根据ID查找激活码
-     * @param codeId 激活码ID
-     * @return 激活码实体
-     */
-    ActivationCode findById(@Param("codeId") Integer codeId);
-    
-    /**
-     * 根据ID删除激活码
-     * @param codeId 激活码ID
-     * @return 影响行数
-     */
-    int deleteById(@Param("codeId") Integer codeId);
 }

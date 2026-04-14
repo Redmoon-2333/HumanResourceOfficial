@@ -1,13 +1,15 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "past_activity")
+@TableName("past_activity")
 public class PastActivity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Integer pastActivityId;
     
     private String title;
@@ -18,15 +20,14 @@ public class PastActivity {
     
     private Integer year;
     
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     
     // 构造函数
     public PastActivity() {
-        this.createTime = LocalDateTime.now();
     }
     
     public PastActivity(String title, String coverImage, String pushUrl, Integer year) {
-        this();
         this.title = title;
         this.coverImage = coverImage;
         this.pushUrl = pushUrl;

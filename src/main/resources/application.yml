@@ -6,22 +6,22 @@
 spring:
   application:
     name: HumanResourceOfficial
-    
-  # 激活环境配置
+
   profiles:
     active: dev
-    
-  # 数据源配置（通用）
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/hrofficial?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
       idle-timeout: 30000
       max-lifetime: 1800000
       connection-timeout: 30000
-      
-  # JPA配置
+
   jpa:
     hibernate:
       ddl-auto: none
@@ -30,8 +30,7 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
-        
-  # Redis配置（通用）
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -45,15 +44,14 @@ spring:
           max-wait: -1ms
           max-idle: 8
           min-idle: 0
-          
-  # AI Vector Store配置 - Redis Stack
+
   ai:
-    # ECNU OpenAI 兼容配置
-    # BaseURL: https://chat.ecnu.edu.cn/open/api/v1
-    # Warning: 必须通过环境变量 CHATECNU_API_KEY 设置，禁止硬编码密钥
     openai:
-      base-url: ${CHATECNU_BASE_URL:https://chat.ecnu.edu.cn/open/api}
-      api-key: ${CHATECNU_API_KEY:sk-placeholder}
+      base-url: ${CHATECNU_BASE_URL:https://chat.ecnu.edu.cn/open/api/v1}
+      api-key: ${CHATECNU_API_KEY:}
+      timeout:
+        connect: 30s
+        read: 300s
       chat:
         options:
           model: ecnu-plus
@@ -61,72 +59,62 @@ spring:
       embedding:
         options:
           model: ecnu-embedding-small
+    tool-model: ${AI_TOOL_MODEL:ecnu-max}
     vectorstore:
       redis:
         initialize-schema: true
         index-name: campus-knowledge-index
         prefix: "rag:embedding:"
-        
-  # 文件上传配置
+
   servlet:
     multipart:
       enabled: true
       max-file-size: 50MB
       max-request-size: 100MB
-      
-  # 静态资源配置
+
   web:
     resources:
       static-locations: classpath:/static/,file:uploads/
 
-# MyBatis配置
-mybatis:
+mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.redmoon2333.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
-# PageHelper分页配置
-pagehelper:
-  helper-dialect: mysql
-  reasonable: true
-  support-methods-arguments: true
-  params: count=countSql
-
-# JWT配置
 jwt:
-  secret: "YourJWTSecretKeyMustBeAtLeast256BitsLongForHS256Algorithm"
-  expiration: 604800000
+  secret: ${JWT_SECRET:YourJWTSecretKeyMustBeAtLeast256BitsLongForHS256Algorithm}
+  expiration: ${JWT_EXPIRATION:604800000}
 
-# 阿里云配置
 aliyun:
-  # OSS配置（使用环境变量）
   oss:
-    endpoint: oss-cn-hangzhou.aliyuncs.com
+    endpoint: ${ALIYUN_OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}
     accessKeyId: ${ALIYUN_OSS_ACCESS_KEY_ID:}
     accessKeySecret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
     bucketName: ${ALIYUN_OSS_BUCKET_NAME:}
 
-# 本地文件上传配置
 local:
   file:
     upload:
       path: uploads
     access:
-      # 文件访问基础URL，生产环境应配置为服务器公网地址
       url: ${FILE_ACCESS_URL:http://localhost:8080}
 
-# 文件访问基础URL - 用于拼接图片完整URL
 file:
   base-url: ${FILE_ACCESS_URL:http://localhost:8080}
 
-# RAG配置
 rag:
-  knowledge-base-path: src/main/resources/rag-knowledge-base
-  
+  knowledge-base-path: ${RAG_KB_PATH:src/main/resources/rag-knowledge-base}
+
   # ============================================================
-  # 智能分块配置（优化RAG检索效果）
+  # 智能分块配置（优化 RAG 检索效果）
   # ============================================================
   # 最大分块大小（字符数），400字符平衡检索精度和语义完整性
   chunk-size: 400
@@ -138,7 +126,7 @@ rag:
   enable-semantic-chunking: true
   # 自动识别文档类型（结构化/叙述性/技术文档）
   auto-detect-doc-type: true
-  
+
   # Embedding模型配置
   # ECNU提供: ecnu-embedding-small (1024维)
   # Warning: 修改维度后必须清空Redis索引重建
@@ -150,9 +138,9 @@ rag:
   vector-dimension: 1024
   enable-batch-processing: true
   batch-size: 25
-  
+
   # ============================================================
-  # 低内存模式配置（适用于2核2G等低配服务器）
+  # 低内存模式配置（适用于1G等低配服务器）
   # Why: 防止RAG初始化时内存溢出导致服务器死机
   # ============================================================
   # 启用低内存模式（低配服务器建议设置为true）
@@ -170,13 +158,11 @@ rag:
   # 低内存模式下的文件处理间隔（毫秒）
   low-memory-file-delay-ms: 500
 
-# AI对话记忆配置
 ai:
   chat:
     memory:
       ttl: 168
 
-# 日志配置
 logging:
   level:
     root: INFO

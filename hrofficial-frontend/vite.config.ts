@@ -29,28 +29,51 @@ export default defineConfig({
     target: 'es2020',
     cssMinify: true,
     chunkSizeWarningLimit: 1000,
+    reportCompressedSize: true,
     rollupOptions: {
       output: {
         manualChunks(id: string) {
+          // Vue core libraries
           if (id.includes('node_modules/vue/') || 
               id.includes('node_modules/vue-router/') || 
               id.includes('node_modules/pinia/')) {
             return 'vue-vendor'
           }
+          // Element Plus UI
           if (id.includes('node_modules/element-plus/') || 
               id.includes('node_modules/@element-plus/')) {
-            return 'element-plus'
+            return 'vendor-element-plus'
           }
+          // Markdown rendering - split into separate chunks
           if (id.includes('node_modules/markdown-it/')) {
-            return 'markdown'
+            return 'vendor-markdown-it'
+          }
+          if (id.includes('node_modules/markstream-vue/')) {
+            return 'vendor-markstream'
+          }
+          if (id.includes('node_modules/markdown-it-task-lists') ||
+              id.includes('node_modules/markdown-it-container')) {
+            return 'vendor-markdown-plugins'
+          }
+          // Security utilities
+          if (id.includes('node_modules/dompurify/')) {
+            return 'vendor-security'
           }
         },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
+        // Better asset organization
         entryFileNames: 'assets/js/[name]-[hash].js',
-        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: (chunkInfo: any) => {
+          const name = chunkInfo.name || ''
+          if (name.endsWith('.css')) {
+            return 'assets/css/[name]-[hash].css'
+          }
+          return 'assets/[ext]/[name]-[hash].[ext]'
+        }
       }
     }
   },
+  // Build analysis: run `npx vite build --report` to generate bundle analysis report
   optimizeDeps: {
     include: ['vue', 'vue-router', 'pinia', 'element-plus'],
     exclude: []

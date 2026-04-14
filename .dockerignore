@@ -1,0 +1,79 @@
+# ============================================================
+# Docker 构建忽略文件
+# 优化构建速度和镜像大小
+# ============================================================
+
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Maven
+target
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# 文档
+docs
+*.md
+!README.md
+
+# 测试
+src/test
+*.test.js
+*.spec.js
+
+# 前端构建产物
+hrofficial-frontend/dist
+hrofficial-frontend/node_modules
+hrofficial-frontend/.vite
+
+# 上传文件
+uploads
+*.jpg
+*.png
+*.gif
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+
+# 日志
+logs
+*.log
+
+# 临时文件
+tmp
+temp
+*.tmp
+*.bak
+*.swp
+*~
+
+# 环境文件
+.env
+.env.local
+.env.*.local
+
+# 其他
+.DS_Store
+Thumbs.db
+*.exe
+*.dll
+*.so
+*.dylib

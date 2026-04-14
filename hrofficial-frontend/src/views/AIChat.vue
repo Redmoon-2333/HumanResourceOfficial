@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted } from 'vue'
+import { ref, nextTick, computed, onMounted, shallowRef } from 'vue'
 import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
 import FloatingParticles from '@/components/FloatingParticles.vue'
@@ -27,6 +27,7 @@ import {
 const userStore = useUserStore()
 
 interface Message {
+  id: number
   role: 'user' | 'assistant'
   content: string
   timestamp?: Date
@@ -36,7 +37,7 @@ interface Message {
 
 type ChatMode = 'normal' | 'rag' | 'tool'
 
-const messages = ref<Message[]>([])
+const messages = shallowRef<Message[]>([])
 const inputMessage = ref('')
 const loading = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
@@ -105,6 +106,7 @@ const sendMessage = async (content: string = inputMessage.value) => {
   hasStartedChat.value = true
 
   messages.value.push({
+    id: Date.now(),
     role: 'user',
     content: content.trim(),
     timestamp: new Date()
@@ -119,6 +121,7 @@ const sendMessage = async (content: string = inputMessage.value) => {
     let aiResponse = ''
 
     messages.value.push({
+      id: Date.now(),
       role: 'assistant',
       content: '',
       timestamp: new Date(),
@@ -135,7 +138,7 @@ const sendMessage = async (content: string = inputMessage.value) => {
           aiResponse += chunk
           if (messages.value[messageIndex]) {
             messages.value[messageIndex].content = aiResponse
-            messages.value = [...messages.value]
+            messages.value = messages.value
             scrollToBottom()
           }
         },
@@ -156,18 +159,18 @@ const sendMessage = async (content: string = inputMessage.value) => {
           aiResponse += chunk
           if (messages.value[messageIndex]) {
             messages.value[messageIndex].content = aiResponse
-            messages.value = [...messages.value]
+            messages.value = messages.value
             scrollToBottom()
           }
         }
       )
     }
 
-    if (messages.value[messageIndex]) {
-      messages.value[messageIndex].content = postprocessMarkdown(messages.value[messageIndex].content)
-      messages.value[messageIndex].isLoading = false
-      messages.value = [...messages.value]
-    }
+if (messages.value[messageIndex]) {
+       messages.value[messageIndex].content = postprocessMarkdown(messages.value[messageIndex].content)
+       messages.value[messageIndex].isLoading = false
+       messages.value = messages.value
+     }
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : '发送消息失败'
     ElMessage.error(errMsg)
@@ -224,25 +227,23 @@ const loadChatHistory = async () => {
 
     if (history && history.length > 0) {
       // 有历史记录：加载并显示聊天界面
-      const loadedMessages: Message[] = history.map((msg: ChatHistoryMessage) => ({
+      const loadedMessages: Message[] = history.map((msg: ChatHistoryMessage, idx: number) => ({
+        id: Date.now() + idx,
         role: msg.role,
         content: msg.content,
         timestamp: new Date()
       }))
 
-      messages.value = loadedMessages
+messages.value = loadedMessages
       hasStartedChat.value = true
-
-      logger.debug('已加载对话历史: {} 条消息', loadedMessages.length)
     } else {
       // 无历史记录：显示欢迎页
       messages.value = []
       hasStartedChat.value = false
 
-      logger.debug('无对话历史，显示欢迎页')
+      
     }
   } catch (error) {
-    logger.error('加载对话历史失败', error)
     // 加载失败默认显示欢迎页
     messages.value = []
     hasStartedChat.value = false
@@ -280,11 +281,6 @@ const handleClearHistory = async () => {
 }
 
 // Why: 使用简单的logger替代，避免引入额外依赖
-const logger = {
-  debug: (...args: any[]) => console.log('[AIChat]', ...args),
-  error: (...args: any[]) => console.error('[AIChat]', ...args)
-}
-
 const handleInitializeKnowledgeBase = async () => {
   try {
     const confirmed = await ElMessageBox.confirm(
@@ -387,7 +383,7 @@ onMounted(() => {
               <button
                 v-for="(item, index) in quickQuestions"
                 :key="index"
-                class="quick-btn"
+                class="quick-btn hover-refined"
                 :style="{ '--btn-color': item.color }"
                 @click="handleQuickQuestion(item.text)"
               >
@@ -404,8 +400,8 @@ onMounted(() => {
       <div v-else class="chat-section" ref="messagesContainer">
         <div class="chat-messages">
           <div
-            v-for="(message, index) in messages"
-            :key="index"
+            v-for="message in messages"
+            :key="message.id"
             class="message-wrapper"
             :class="message.role"
           >
@@ -431,7 +427,9 @@ onMounted(() => {
                     <div v-if="getModeTag(message.mode)" class="mode-tag" :style="{ background: getModeTagColor(message.mode) }">
                       {{ getModeTag(message.mode) }}
                     </div>
-                    <MarkdownRenderer :content="message.content" />
+                    <div class="prose">
+                      <MarkdownRenderer :content="message.content" />
+                    </div>
                   </template>
                 </div>
               </div>
@@ -496,7 +494,7 @@ onMounted(() => {
             <div class="input-wrapper">
               <textarea
                 v-model="inputMessage"
-                class="chat-input"
+                class="chat-input focus-enhanced"
                 placeholder="输入您的问题..."
                 rows="1"
                 @keydown="handleKeydown"
@@ -1045,8 +1043,8 @@ onMounted(() => {
 }
 
 .action-btn {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(8px);
@@ -1613,5 +1611,47 @@ onMounted(() => {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Message typography refinements */
+.message-text.ai-message {
+  line-height: var(--leading-lg);
+}
+
+.message-text.ai-message h1,
+.message-text.ai-message h2,
+.message-text.ai-message h3 {
+  letter-spacing: var(--tracking-tight);
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-3);
+}
+
+.message-text.ai-message p {
+  margin-bottom: var(--space-3);
+}
+
+/* Input refinements */
+.chat-input {
+  transition: all var(--transition-base) var(--ease-smooth);
+}
+
+.chat-input:focus {
+  box-shadow: 0 0 0 4px rgba(255, 138, 112, 0.1);
+}
+
+/* Quick button refinements */
+.quick-btn {
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth);
+}
+
+.quick-btn:hover {
+  transform: translateY(-2px);
+}
+
+.quick-btn:active {
+  transform: translateY(0);
+  transition: var(--transition-micro);
 }
 </style>

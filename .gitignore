@@ -145,7 +145,10 @@ build/
 node_modules/
 
 ### Docker ###
-.dockerignore
+# 根目录的.dockerignore 保留，用于优化构建
+# .dockerignore
+# deploy 目录的.dockerignore 保留
+!/deploy/.dockerignore
 
 ### 系统文件 ###
 .DS_Store
@@ -156,13 +159,13 @@ Desktop.ini
 /uploads/**
 
 ### 部署相关（可能包含敏感信息）###
-/deploy/
-/deploy/**
+/deploy/*
 !/deploy/.env.example
-!/deploy/**/.env.example
 !/deploy/Dockerfile*
 !/deploy/docker-compose*.yml
 !/deploy/init/
+!/deploy/init/**
+!/deploy/.dockerignore
 
 ### 压缩包和备份文件 ###
 *.zip
@@ -217,3 +220,21 @@ deploy*.bat
 /ui-ux-pro-max-skill-main/
 /hrofficial-frontend/design-system/
 /hrofficial-frontend/docs/
+
+### ���� AI/������ʱ�ļ� ###
+.sisyphus/
+**/.sisyphus/
+.qoder/
+**/.qoder/
+.promptx/
+**/.promptx/
+
+### ������ʱ�ļ� ###
+test-api.http
+test-markdown-fix.html
+temp_settings.xml
+MyBatis-Plus-Day1.md
+MyBatis-Plus-Optimization-Report.md
+
+### 前端测试文件 ###
+hrofficial-frontend/src/utils/__tests__/

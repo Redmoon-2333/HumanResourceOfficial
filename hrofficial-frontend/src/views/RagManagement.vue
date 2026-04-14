@@ -351,20 +351,16 @@ onMounted(() => {
 
 <style scoped>
 .rag-management-page {
-  min-height: calc(100vh - 64px);
-  background: #FFFFFF;
-  padding: 32px;
-  padding-bottom: 40px;
   max-width: 1400px;
   margin: 0 auto;
-  box-sizing: border-box;
+  padding: 0 var(--space-6) var(--space-12);
 }
 
 /* Hero区域 */
 .hero-section {
   position: relative;
   padding: var(--space-10) var(--space-8);
-  margin: var(--space-8);
+  margin: var(--space-6);
   margin-bottom: 0;
   border-radius: 32px;
   overflow: hidden;
