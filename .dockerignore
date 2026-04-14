@@ -17,6 +17,7 @@
 
 # Maven
 target
+!target/HumanResourceOfficial-1.0-SNAPSHOT.jar
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
