@@ -253,11 +253,35 @@
   --leading-relaxed: 1.625;
   --leading-loose: 2;
 
+  /* Enhanced Line-Height Scale - For optimal readability */
+  --leading-xs: 1.1;       /* Tight - display text, logos */
+  --leading-sm: 1.25;      /* Small - large headings (h1, h2) */
+  --leading-md: 1.375;     /* Medium - medium headings (h3, h4) */
+  --leading-base: 1.5;     /* Base - body text (optimal) */
+  --leading-lg: 1.625;     /* Large - comfortable reading */
+  --leading-xl: 1.75;      /* XL - long-form content */
+  --leading-2xl: 2;        /* 2XL - loose, poetic text */
+
+  /* Semantic line-height mappings */
+  --leading-heading: var(--leading-sm);
+  --leading-body: var(--leading-lg);
+  --leading-relaxed-text: var(--leading-xl);
+
   /* 字间距 */
   --tracking-tight: -0.025em;
   --tracking-normal: 0;
   --tracking-wide: 0.025em;
   --tracking-wider: 0.05em;
+
+  /* Enhanced Letter-Spacing Scale */
+  --tracking-tighter: -0.03em;   /* Extra tight - display text */
+  --tracking-tight: -0.02em;     /* Tight - h1, h2 */
+  --tracking-tight-md: -0.015em; /* Medium tight - h3 */
+  --tracking-tight-sm: -0.01em;  /* Slight tight - h4, h5 */
+  --tracking-normal: 0;          /* Normal - body text */
+  --tracking-wide: 0.01em;       /* Wide - uppercase labels */
+  --tracking-wider: 0.025em;     /* Wider - decorative */
+  --tracking-widest: 0.05em;     /* Widest - special effects */
 }
 
 /* ============================================================
@@ -464,6 +488,7 @@
    ============================================================ */
 :root {
   /* 过渡时间 */
+  --transition-micro: 100ms;
   --transition-fast: 150ms;
   --transition-normal: 300ms;
   --transition-slow: 500ms;
@@ -472,6 +497,7 @@
   --ease-linear: linear;
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -488,6 +514,11 @@
   --container-lg: 1024px;
   --container-xl: 1200px;
   --container-2xl: 1400px;
+
+  /* Optimal Line Length for Readability */
+  --max-line-length: 75ch;      /* Optimal reading width (65-75 chars) */
+  --max-line-length-relaxed: 65ch; /* Comfortable reading */
+  --max-line-length-tight: 50ch;  /* Tight spaces */
 
   /* 页面内边距 */
   --page-padding: var(--space-6);
@@ -867,8 +898,62 @@
   overflow: hidden;
 }
 
+/* Prose Utilities - Optimal Reading */
+.prose {
+  max-width: var(--max-line-length);
+  margin: 0 auto;
+  line-height: var(--leading-lg);
+}
+
+.prose-relaxed {
+  max-width: var(--max-line-length-relaxed);
+  margin: 0 auto;
+  line-height: var(--leading-xl);
+}
+
+/* Container with prose constraints */
+.container-prose {
+  max-width: var(--container-xl);
+  padding: 0 var(--space-6);
+}
+
+/* Auto-apply letter-spacing to headings */
+h1, .text-5xl {
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-sm);
+}
+
+h2, .text-4xl {
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-sm);
+}
+
+h3, .text-3xl {
+  letter-spacing: var(--tracking-tight-md);
+  line-height: var(--leading-md);
+}
+
+h4, .text-2xl {
+  letter-spacing: var(--tracking-tight-sm);
+  line-height: var(--leading-md);
+}
+
+h5, .text-xl {
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-base);
+}
+
+/* Body text */
+p {
+  line-height: var(--leading-lg);
+  margin-bottom: var(--space-4);
+}
+
+p:first-child { margin-top: 0; }
+p:last-child { margin-bottom: 0; }
+
 /* ============================================================
-   11. 响应式断点 / Responsive Breakpoints
+    11. 响应式断点 / Responsive Breakpoints
    ============================================================
    
    移动优先设计原则：
@@ -2304,3 +2389,180 @@
 .text-letter-animate span:nth-child(14) { animation-delay: 0.7s; }
 .text-letter-animate span:nth-child(15) { animation-delay: 0.75s; }
 .text-letter-animate span:nth-child(n) { animation-delay: calc(0.05s * n); }
+
+/* ============================================================
+   UI REFINEMENT - Micro-interaction Polish
+   Based on DESIGN.md + UI/UX Pro Max Guidelines
+   ============================================================ */
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Universal Hover Refinement */
+.hover-refined {
+  cursor: pointer;
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth),
+    border-color var(--transition-normal) var(--ease-smooth);
+}
+
+.hover-refined:hover {
+  transform: translateY(-2px);
+}
+
+.hover-refined:active {
+  transform: translateY(0);
+  transition: var(--transition-micro);
+}
+
+/* Card Hover Enhancement */
+.card-hover-lift {
+  cursor: pointer;
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.card-hover-lift:active {
+  transform: translateY(-2px);
+}
+
+/* Button Micro-interactions */
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-base) var(--ease-smooth);
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.4s, opacity 0.4s;
+  pointer-events: none;
+}
+
+.btn:active::after {
+  transform: scale(4);
+  opacity: 1;
+  transition: 0s;
+}
+
+/* Enhanced Focus States - Accessibility */
+.focus-enhanced:focus-visible {
+  outline: none;
+  box-shadow: 
+    0 0 0 2px var(--bg-primary),
+    0 0 0 4px var(--coral-400);
+  transition: box-shadow var(--transition-micro);
+}
+
+/* Input Focus Enhancement */
+input.focus-enhanced:focus,
+textarea.focus-enhanced:focus,
+select.focus-enhanced:focus {
+  border-color: var(--coral-400);
+  box-shadow: 
+    0 0 0 4px rgba(255, 138, 112, 0.1),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  outline: none;
+}
+
+/* Link Hover Enhancement */
+a.link-refined {
+  position: relative;
+  text-decoration: none;
+  transition: color var(--transition-fast) var(--ease-smooth);
+}
+
+a.link-refined::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform var(--transition-base) var(--ease-smooth);
+}
+
+a.link-refined:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Interactive Element Cursor */
+[role="button"],
+button,
+a[href],
+input[type="button"],
+input[type="submit"],
+summary {
+  cursor: pointer;
+}
+
+/* Disabled State */
+[disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+  pointer-events: none;
+}
+
+/* Touch-Friendly Spacing - WCAG 2.1 Compliance */
+:root {
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+  --touch-gap-min: var(--space-2);
+}
+
+/* Touch-safe utility class */
+.touch-safe {
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  padding: var(--space-3);
+}
+
+.touch-safe-gap {
+  gap: var(--touch-gap-min);
+}
+
+/* Button touch optimization */
+.btn {
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) var(--space-4);
+}
+
+.btn-sm {
+  min-height: var(--touch-target-min);
+  padding: var(--space-3);
+}

@@ -1,5 +1,6 @@
 package com.redmoon2333.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.redmoon2333.entity.MaterialSubcategory;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -7,15 +8,10 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
-public interface MaterialSubcategoryMapper {
+public interface MaterialSubcategoryMapper extends BaseMapper<MaterialSubcategory> {
     
     /**
-     * 根据ID查找子分类
-     */
-    MaterialSubcategory findById(@Param("subcategoryId") Integer subcategoryId);
-    
-    /**
-     * 根据分类ID查找所有子分类
+     * 根据分类 ID 查找所有子分类
      */
     List<MaterialSubcategory> findByCategoryId(@Param("categoryId") Integer categoryId);
     
@@ -25,28 +21,13 @@ public interface MaterialSubcategoryMapper {
     List<MaterialSubcategory> findAll();
     
     /**
-     * 根据子分类名称和分类ID查找
+     * 根据子分类名称和分类 ID 查找
      */
     MaterialSubcategory findByNameAndCategoryId(@Param("subcategoryName") String subcategoryName, 
-                                               @Param("categoryId") Integer categoryId);
+                                                @Param("categoryId") Integer categoryId);
     
     /**
-     * 插入新子分类
-     */
-    int insert(MaterialSubcategory materialSubcategory);
-    
-    /**
-     * 更新子分类信息
-     */
-    int update(MaterialSubcategory materialSubcategory);
-    
-    /**
-     * 根据ID删除子分类
-     */
-    int deleteById(@Param("subcategoryId") Integer subcategoryId);
-    
-    /**
-     * 根据分类ID删除所有子分类
+     * 根据分类 ID 删除所有子分类
      */
     int deleteByCategoryId(@Param("categoryId") Integer categoryId);
 }

@@ -36,7 +36,6 @@ const handleLogin = async () => {
   loading.value = true
   try {
     const res = await loginApi(loginForm.value)
-    console.log('登录响应:', res)
 
     if (res.code === 200 && res.data) {
       if (!res.data.token) {

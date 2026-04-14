@@ -1,35 +1,31 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "activity")
+@TableName("activity")
 public class Activity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "activity_id")
+    @TableId(type = IdType.AUTO)
     private Integer activityId;
     
-    @Column(name = "activity_name")
     private String activityName;
     
-    @Column(name = "background")
     private String background;
     
-    @Column(name = "significance")
     private String significance;
     
-    @Column(name = "purpose")
     private String purpose;
     
-    @Column(name = "process")
     private String process;
     
-    @Column(name = "create_time")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     
-    @Column(name = "update_time")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
     
     // Constructors
@@ -42,8 +38,6 @@ public class Activity {
         this.significance = significance;
         this.purpose = purpose;
         this.process = process;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
     }
     
     // Getters and Setters

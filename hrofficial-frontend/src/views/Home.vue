@@ -306,11 +306,11 @@ const goToImageManagement = () => {
             <el-icon><Sunny /></el-icon>
             <span>{{ greeting }}</span>
           </div>
-          <h1 class="hero-title hero-title-universal animate-hero-scale stagger-delay-2">
+          <h1 class="hero-title hero-title-universal animate-hero-scale stagger-delay-2" style="letter-spacing: -0.02em; line-height: 1.25;">
             <span class="name-highlight">{{ userStore.userInfo?.name || '访客' }}</span>
             <span class="welcome-text">，欢迎回来！</span>
           </h1>
-          <p class="hero-subtitle animate-hero-scale stagger-delay-3">
+          <p class="hero-subtitle animate-hero-scale stagger-delay-3" style="line-height: 1.6; max-width: 75ch; margin: 0 auto;">
             这里是人力资源中心管理系统，为您提供活动管理、资料共享、AI助手等服务
           </p>
 
@@ -329,7 +329,7 @@ const goToImageManagement = () => {
       </section>
 
       <!-- 部门简介板块 -->
-      <section class="intro-section">
+      <section class="intro-section features-section" style="margin: 48px 0;">
         <div class="section-header">
           <div class="section-icon intro-icon">
             <el-icon><OfficeBuilding /></el-icon>
@@ -367,7 +367,7 @@ const goToImageManagement = () => {
       </section>
 
       <!-- 我们的日常板块 -->
-      <section class="daily-section">
+      <section class="daily-section features-section" style="margin: 48px 0;">
         <div class="section-header">
           <div class="section-icon daily-icon">
             <el-icon><Coffee /></el-icon>
@@ -1960,6 +1960,44 @@ section {
   .section-title {
     font-size: var(--text-xl);
   }
+}
+
+/* Hero typography refinements */
+.hero-title {
+  font-size: var(--text-5xl);
+  line-height: var(--leading-sm);
+  letter-spacing: var(--tracking-tight);
+}
+
+.hero-subtitle {
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  max-width: var(--max-line-length);
+  margin: var(--space-4) auto var(--space-6);
+}
+
+/* Section spacing */
+.features-section,
+.stats-section,
+.content-section {
+  margin: var(--spacing-section) 0;
+}
+
+/* Card grid refinements */
+.card-grid {
+  gap: var(--space-6);
+}
+
+.card-grid .card {
+  padding: var(--space-6);
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth);
+}
+
+.card-grid .card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-coral-md);
 }
 
 /* 减少动画偏好支持 */

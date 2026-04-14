@@ -1,25 +1,18 @@
 package com.redmoon2333.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.redmoon2333.entity.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
 /**
- * 用户Mapper接口
+ * 用户 Mapper 接口
  * 提供用户相关的数据访问方法
  */
 @Mapper
-public interface UserMapper {
-    
-    /**
-     * 根据用户ID查找用户
-     * @param userId 用户ID
-     * @return 用户实体
-     */
-    User findById(@Param("userId") Integer userId);
+public interface UserMapper extends BaseMapper<User> {
     
     /**
      * 根据用户名查找用户
@@ -50,36 +43,9 @@ public interface UserMapper {
     int countByUsername(@Param("username") String username);
     
     /**
-     * 插入新用户
-     * @param user 用户实体
-     * @return 影响行数
-     */
-    int insert(User user);
-    
-    /**
-     * 更新用户信息
-     * @param user 用户实体
-     * @return 影响行数
-     */
-    int update(User user);
-    
-    /**
-     * 删除用户
-     * @param userId 用户ID
-     * @return 影响行数
-     */
-    int deleteById(@Param("userId") Integer userId);
-    
-    /**
-     * 批量根据用户ID查找用户
-     * @param userIds 用户ID列表
+     * 批量根据用户 ID 查找用户
+     * @param userIds 用户 ID 列表
      * @return 用户实体列表
      */
     List<User> findByIds(@Param("userIds") List<Integer> userIds);
-    
-    /**
-     * 获取所有用户
-     * @return 所有用户列表
-     */
-    List<User> selectAll();
 }
