@@ -53,10 +53,12 @@ spring:
         connect: 30s
         read: 300s
       chat:
+        completions-path: /chat/completions
         options:
           model: ecnu-plus
           temperature: 0.7
       embedding:
+        embeddings-path: /embeddings
         options:
           model: ecnu-embedding-small
     tool-model: ${AI_TOOL_MODEL:ecnu-max}
