@@ -251,9 +251,7 @@ const handleFileChange = async (event: Event) => {
   uploading.value = true
   try {
     // 使用 activity 类型上传到 images/activities/ 目录
-    const res = await uploadImageByType(file, 'activity', (percent) => {
-      console.log('上传进度:', percent)
-    })
+    const res = await uploadImageByType(file, 'activity', () => {})
     if (res.code === 200 && res.data) {
       // 拼接完整URL
       // Why: 生产环境使用相对路径，开发环境使用环境变量或默认值

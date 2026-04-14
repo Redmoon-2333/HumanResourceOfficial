@@ -1,6 +1,10 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 /**
@@ -10,44 +14,33 @@ import java.time.LocalDateTime;
  * @author 人力资源中心技术组
  * @since 2026-02-13
  */
-@Entity
-@Table(name = "daily_image")
+@TableName("daily_image")
 public class DailyImage {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "image_id")
+    @TableId(type = IdType.AUTO)
     private Integer imageId;
 
-    @Column(name = "image_url", nullable = false, length = 500)
     private String imageUrl;
 
-    @Column(name = "title", length = 100)
     private String title;
 
-    @Column(name = "description", length = 255)
     private String description;
 
-    @Column(name = "sort_order")
     private Integer sortOrder = 0;
 
-    @Column(name = "is_active")
     private Boolean isActive = true;
 
-    @Column(name = "create_time")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @Column(name = "update_time")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     // 构造函数
     public DailyImage() {
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
     }
 
     public DailyImage(String imageUrl, String title, String description) {
-        this();
         this.imageUrl = imageUrl;
         this.title = title;
         this.description = description;

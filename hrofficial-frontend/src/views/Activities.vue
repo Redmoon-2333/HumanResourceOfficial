@@ -401,7 +401,7 @@ onMounted(() => {
             <el-icon><StarFilled /></el-icon>
             <span>特色活动</span>
           </div>
-          <h1 class="hero-title">精彩活动</h1>
+          <h1 class="hero-title" style="letter-spacing: -0.015em; line-height: 1.25;">精彩活动</h1>
           <p class="hero-description">
             探索我们精心策划的特色活动，了解活动背景、意义与流程
             <br />开启一段充满成长与收获的精彩旅程
@@ -456,11 +456,11 @@ onMounted(() => {
           </el-button>
         </div>
 
-        <div class="activities-grid">
+        <div class="activities-grid touch-safe-gap">
           <div
             v-for="(activity, index) in filteredActivities"
             :key="activity.id"
-            class="activity-card"
+            class="activity-card card-hover-lift"
             :class="{ 'is-expanded': expandedCards.has(activity.id) }"
             :style="{ animationDelay: `${index * 100}ms` }"
           >
@@ -780,6 +780,56 @@ onMounted(() => {
    Activities Page - Modern Magazine Style
    色彩增强版：活力渐变 + 动态装饰
    ============================================ */
+
+/* Section title refinements */
+.section-title {
+  font-size: var(--text-4xl);
+  line-height: var(--leading-sm);
+  letter-spacing: var(--tracking-tight-md);
+  margin-bottom: var(--spacing-section-sm);
+}
+
+/* Activity grid refinements */
+.activity-grid {
+  gap: var(--space-6);
+}
+
+.touch-safe-gap {
+  gap: var(--space-6);
+}
+
+.activity-card {
+  padding: var(--space-6);
+  min-height: var(--touch-target-min);
+}
+
+/* Ensure buttons are touch-friendly */
+.activity-card button,
+.activity-card .btn {
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) var(--space-4);
+}
+
+/* Card hover lift effect */
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth);
+}
+
+.card-hover-lift:hover {
+  box-shadow: var(--shadow-coral-md, 0 12px 40px rgba(0, 0, 0, 0.1));
+}
+
+/* Fallback for cards not using card-hover-lift class */
+.activity-card:not(.card-hover-lift):hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-coral-md, 0 12px 40px rgba(0, 0, 0, 0.1));
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth);
+}
 
 .activities-page {
   max-width: 1400px;
@@ -1122,6 +1172,13 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
   gap: var(--space-6);
+}
+
+/* Mobile breakpoint - stack cards on small screens */
+@media (max-width: 640px) {
+  .activities-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Activity Card - 增强版 */

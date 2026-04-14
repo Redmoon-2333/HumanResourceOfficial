@@ -20,11 +20,12 @@ const renderedContent = computed(() => {
 </script>
 
 <template>
-  <div class="markdown-renderer" v-html="renderedContent"></div>
+  <div class="markdown-renderer" v-memo="[props.content]" v-html="renderedContent"></div>
 </template>
 
 <style scoped>
 .markdown-renderer {
+  contain: content;
   line-height: 1.7;
   color: #1C1917;
   word-wrap: break-word;

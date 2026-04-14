@@ -145,7 +145,10 @@ build/
 node_modules/
 
 ### Docker ###
-.dockerignore
+# æ ¹ç›®å½•çš„.dockerignore ä¿ç•™ï¼Œç”¨äºä¼˜åŒ–æ„å»º
+# .dockerignore
+# deploy ç›®å½•çš„.dockerignore ä¿ç•™
+!/deploy/.dockerignore
 
 ### ç³»ç»Ÿæ–‡ä»¶ ###
 .DS_Store
@@ -163,6 +166,7 @@ Desktop.ini
 !/deploy/Dockerfile*
 !/deploy/docker-compose*.yml
 !/deploy/init/
+!/deploy/.dockerignore
 
 ### å‹ç¼©åŒ…å’Œå¤‡ä»½æ–‡ä»¶ ###
 *.zip
@@ -217,3 +221,18 @@ deploy*.bat
 /ui-ux-pro-max-skill-main/
 /hrofficial-frontend/design-system/
 /hrofficial-frontend/docs/
+
+### ÆäËû AI/¹¤¾ßÁÙÊ±ÎÄ¼ş ###
+.sisyphus/
+**/.sisyphus/
+.qoder/
+**/.qoder/
+.promptx/
+**/.promptx/
+
+### ²âÊÔÁÙÊ±ÎÄ¼ş ###
+test-api.http
+test-markdown-fix.html
+temp_settings.xml
+MyBatis-Plus-Day1.md
+MyBatis-Plus-Optimization-Report.md

@@ -98,7 +98,6 @@ public class MaterialService {
             material.setFileUrl(fileUrl);
             material.setFileSize((int) file.getSize());
             material.setFileType(extension);
-            material.setUploadTime(LocalDateTime.now());
             material.setUploaderId(uploaderId);
 
             // 保存到数据库
@@ -216,12 +215,12 @@ public class MaterialService {
         // 检查权限（部员及以上）
         permissionUtil.checkMemberPermission();
 
-        Material material = materialMapper.findById(materialId);
+        Material material = materialMapper.selectById(materialId);
         if (material == null) {
-            logger.warn("未找到指定资料: materialId={}", materialId);
+            logger.warn("未找到指定资料：materialId={}", materialId);
             throw new RuntimeException("指定的资料不存在");
         }
-        logger.info("成功获取资料详情: materialId={}", materialId);
+        logger.info("成功获取资料详情：materialId={}", materialId);
         return material;
     }
 
@@ -248,7 +247,7 @@ public class MaterialService {
     private void incrementDownloadCount(Integer materialId) {
         logger.info("统计资料下载次数: materialId={}", materialId);
 
-        Material material = materialMapper.findById(materialId);
+        Material material = materialMapper.selectById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料: materialId={}", materialId);
             return; // 不抛异常，防止影响URL生成
@@ -300,7 +299,7 @@ public class MaterialService {
         permissionUtil.checkMinisterPermission();
 
         // 检查分类是否存在
-        MaterialCategory category = categoryMapper.findById(categoryId);
+        MaterialCategory category = categoryMapper.selectById(categoryId);
         if (category == null) {
             logger.warn("指定的分类不存在: categoryId={}", categoryId);
             throw new RuntimeException("指定的分类不存在");
@@ -415,25 +414,25 @@ public class MaterialService {
         // 检查权限（部长/副部长）
         permissionUtil.checkMinisterPermission();
 
-        Material material = materialMapper.findById(materialId);
+        Material material = materialMapper.selectById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料: materialId={}", materialId);
             throw new RuntimeException("指定的资料不存在");
         }
 
-        material.setCategoryId(categoryId);
+material.setCategoryId(categoryId);
         material.setSubcategoryId(subcategoryId);
         material.setMaterialName(materialName);
         material.setDescription(description);
 
-        materialMapper.update(material);
-        logger.info("资料信息更新成功: materialId={}", materialId);
+        materialMapper.updateById(material);
+        logger.info("资料信息更新成功：materialId={}", materialId);
         return material;
     }
 
     /**
      * 删除资料
-     * @param materialId 资料ID
+     * @param materialId 资料 ID
      */
     @Transactional
     public void deleteMaterial(Integer materialId) {
@@ -442,7 +441,7 @@ public class MaterialService {
         // 检查权限（部长/副部长）
         permissionUtil.checkMinisterPermission();
 
-        Material material = materialMapper.findById(materialId);
+        Material material = materialMapper.selectById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料: materialId={}", materialId);
             throw new RuntimeException("指定的资料不存在");
@@ -528,7 +527,7 @@ public class MaterialService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "资料ID不能为空");
         }
         
-        Material material = materialMapper.findById(materialId);
+        Material material = materialMapper.selectById(materialId);
         if (material == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "未找到指定的资料");
         }
@@ -551,7 +550,7 @@ public class MaterialService {
         permissionUtil.checkMinisterPermission();
         
         // 检查分类是否存在
-        MaterialCategory category = categoryMapper.findById(categoryId);
+        MaterialCategory category = categoryMapper.selectById(categoryId);
         if (category == null) {
             logger.warn("未找到指定分类: categoryId={}", categoryId);
             throw new RuntimeException("指定的分类不存在");
@@ -566,7 +565,7 @@ public class MaterialService {
         
         category.setCategoryName(categoryName);
         category.setSortOrder(sortOrder);
-        categoryMapper.update(category);
+        categoryMapper.updateById(category);
         
         logger.info("分类信息更新成功: categoryId={}", categoryId);
         return category;
@@ -587,7 +586,7 @@ public class MaterialService {
         permissionUtil.checkMinisterPermission();
         
         // 检查子分类是否存在
-        MaterialSubcategory subcategory = subcategoryMapper.findById(subcategoryId);
+        MaterialSubcategory subcategory = subcategoryMapper.selectById(subcategoryId);
         if (subcategory == null) {
             logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
             throw new RuntimeException("指定的子分类不存在");
@@ -604,7 +603,7 @@ public class MaterialService {
         
         subcategory.setSubcategoryName(subcategoryName);
         subcategory.setSortOrder(sortOrder);
-        subcategoryMapper.update(subcategory);
+        subcategoryMapper.updateById(subcategory);
         
         logger.info("子分类信息更新成功: subcategoryId={}", subcategoryId);
         return subcategory;

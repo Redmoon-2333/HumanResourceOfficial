@@ -64,12 +64,27 @@ const gradientMap = {
   border-radius: 24px;
   overflow: hidden;
   transform-style: preserve-3d;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  transition: 
+    transform var(--transition-normal) var(--ease-smooth),
+    box-shadow var(--transition-normal) var(--ease-smooth);
 }
 
 .gradient-card.hover-effect:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(255, 107, 74, 0.25);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-coral-lg);
+}
+
+.gradient-card:active {
+  transform: translateY(-2px) scale(1);
+  transition: var(--transition-micro);
+}
+
+.gradient-card:focus-visible {
+  outline: none;
+  box-shadow: 
+    0 0 0 2px white,
+    0 0 0 4px var(--coral-400);
 }
 
 .gradient-card.glow-effect {

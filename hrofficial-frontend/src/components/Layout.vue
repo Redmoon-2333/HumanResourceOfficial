@@ -166,7 +166,7 @@ const toggleMobileMenu = () => {
             v-for="item in publicMenuItems"
             :key="item.path"
             :to="item.path"
-            class="nav-item"
+            class="nav-item hover-refined"
             :class="{ active: activeMenu === item.path }"
             @click="isMobile && (mobileMenuOpen = false)"
           >
@@ -189,7 +189,7 @@ const toggleMobileMenu = () => {
             v-for="item in memberMenuItems"
             :key="item.path"
             :to="item.path"
-            class="nav-item"
+            class="nav-item hover-refined"
             :class="{ active: activeMenu === item.path }"
             @click="isMobile && (mobileMenuOpen = false)"
           >
@@ -212,7 +212,7 @@ const toggleMobileMenu = () => {
             v-for="item in adminMenuItems"
             :key="item.path"
             :to="item.path"
-            class="nav-item"
+            class="nav-item hover-refined"
             :class="{ active: activeMenu === item.path }"
             @click="isMobile && (mobileMenuOpen = false)"
           >
@@ -514,10 +514,19 @@ const toggleMobileMenu = () => {
   border-radius: var(--radius-lg);
   color: var(--text-secondary);
   text-decoration: none;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-base) var(--ease-smooth);
   margin-bottom: var(--space-1);
   position: relative;
   overflow: hidden;
+}
+
+/* Menu hover refinements */
+.nav-item.hover-refined {
+  transition: all var(--transition-base) var(--ease-smooth);
+}
+
+.nav-item.hover-refined:hover {
+  transform: translateX(4px);
 }
 
 .nav-item::before {
@@ -680,6 +689,11 @@ const toggleMobileMenu = () => {
   height: calc(72px + var(--mobile-safe-area-top));
 }
 
+/* Navigation spacing */
+.nav-header {
+  padding: var(--space-4) var(--space-6);
+}
+
 .header-left {
   display: flex;
   align-items: center;
@@ -770,11 +784,22 @@ const toggleMobileMenu = () => {
 /* 页面内容 */
 .page-content {
   flex: 1;
-  padding: var(--page-padding);
+  padding: var(--spacing-section-sm);
   overflow-x: hidden;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+}
+
+.page-content h1,
+.page-content h2,
+.page-content h3 {
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-sm);
+}
+
+.page-content p {
+  line-height: var(--leading-lg);
 }
 
 @media (max-width: 768px) {

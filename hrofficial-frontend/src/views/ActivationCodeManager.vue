@@ -22,25 +22,6 @@ import {
   TrendCharts
 } from '@element-plus/icons-vue'
 
-// 直接测试API调用
-const testApi = async () => {
-  console.log('Testing API call...')
-  try {
-    const response = await getActivationCodes()
-    console.log('Full API response:', response)
-    console.log('Response data:', response.data)
-    console.log('Response data.codes:', response.data.codes)
-    console.log('Response data.stats:', response.data.stats)
-    ElMessage.success('API test completed')
-  } catch (error) {
-    console.error('API test error:', error)
-    ElMessage.error('API test failed')
-  }
-}
-
-// 立即测试
-testApi()
-
 interface ActivationCode {
   id: number
   code: string
@@ -72,15 +53,12 @@ const backendStats = ref<{
 // 获取激活码列表
 const fetchCodes = async () => {
   loading.value = true
-  try {
-    console.log('Starting fetchCodes...')
+try {
     const response = await getActivationCodes()
-    console.log('Full response:', response)
-    console.log('Response code:', response.code)
 
     // 防御性编程：检查响应是否有效
     if (!response) {
-      console.error('API返回空响应')
+      console.error('API 返回空响应')
       ElMessage.error('获取激活码失败：服务器无响应')
       return
     }
@@ -88,19 +66,15 @@ const fetchCodes = async () => {
     if (response.code === 200) {
       // 防御性编程：确保 data 存在
       const responseData = response.data || {}
-      console.log('Response data:', responseData)
 
       // 提取激活码列表 - 兼容多种可能的字段名
       const codesList = responseData.codes || responseData.list || responseData.activationCodes || []
-      console.log('Extracted codes list:', codesList)
 
       // 使用展开运算符强制替换数组，确保响应式更新触发
       codes.value = [...codesList]
-      console.log('Codes value after update:', codes.value)
 
       // 提取统计数据 - 兼容多种可能的字段名和结构
       const statsData = responseData.stats || responseData.statistics || {}
-      console.log('Extracted stats:', statsData)
 
       // 更新后端统计数据 - 使用对象替换确保响应式更新
       backendStats.value = {
@@ -109,19 +83,8 @@ const fetchCodes = async () => {
         usedCount: statsData.usedCount ?? statsData.used ?? 0,
         expiredCount: statsData.expiredCount ?? statsData.expired ?? 0
       }
-      console.log('BackendStats after update:', backendStats.value)
-
-      // 检查stats计算属性
-      console.log('Stats computed value:', stats.value)
-
-      // 提示用户数据加载成功
-      if (codes.value.length === 0) {
-        console.log('激活码列表为空')
-      } else {
-        console.log(`成功加载 ${codes.value.length} 个激活码`)
-      }
     } else {
-      console.error('API返回错误:', response.message)
+      console.error('API 返回错误:', response.message)
       ElMessage.error(response.message || '获取激活码失败')
     }
   } catch (error: any) {
@@ -221,7 +184,6 @@ const stats = computed(() => {
   const unused = Number(stats.unusedCount) || 0
   const usageRate = total > 0 ? Math.round((used / total) * 100) : 0
 
-  console.log('Stats computed:', { total, used, unused, usageRate })
   return { total, used, unused, usageRate }
 })
 
@@ -497,20 +459,16 @@ onMounted(() => {
 
 <style scoped>
 .activation-code-page {
-  min-height: calc(100vh - 64px);
-  background: #FFFFFF;
-  padding: 32px;
-  padding-bottom: 40px;
   max-width: 1400px;
   margin: 0 auto;
-  box-sizing: border-box;
+  padding: 0 var(--space-6) var(--space-12);
 }
 
 /* Hero区域 */
 .hero-section {
   position: relative;
-  padding: var(--space-10) var(--space-8);
-  margin: var(--space-8);
+  padding: var(--space-8) var(--space-8) var(--space-12);
+  margin: var(--space-6);
   margin-bottom: 0;
   border-radius: 32px;
   overflow: hidden;
