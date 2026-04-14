@@ -47,18 +47,16 @@ spring:
 
   ai:
     openai:
-      base-url: ${CHATECNU_BASE_URL:https://chat.ecnu.edu.cn/open/api/v1}
+      base-url: ${CHATECNU_BASE_URL:https://chat.ecnu.edu.cn/open/api}
       api-key: ${CHATECNU_API_KEY:}
       timeout:
         connect: 30s
         read: 300s
       chat:
-        completions-path: /chat/completions
         options:
           model: ecnu-plus
           temperature: 0.7
       embedding:
-        embeddings-path: /embeddings
         options:
           model: ecnu-embedding-small
     tool-model: ${AI_TOOL_MODEL:ecnu-max}
