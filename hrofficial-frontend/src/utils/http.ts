@@ -2,7 +2,7 @@ import type { ApiResponse } from '@/types'
 
 // 开发环境使用代理，生产环境使用实际地址
 const API_BASE_URL = import.meta.env.PROD
-  ? (import.meta.env.VITE_API_BASE_URL || 'http://81.70.218.85:8080')
+  ? (import.meta.env.VITE_API_BASE_URL || '')
   : '' // 开发环境使用相对路径，通过Vite代理转发
 
 // 请求拦截器

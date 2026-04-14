@@ -203,6 +203,8 @@ HumanResourceOfficial/
 │   ├── docker-compose.yml                   # Docker Compose 编排
 │   ├── .env.example                         # 环境变量模板
 │   ├── .dockerignore                        # Docker 构建忽略
+│   ├── nginx/                               # Nginx 配置
+│   │   └── hrofficial.conf                  # 站点配置（前端静态 + API 代理）
 │   └── init/                                # 数据库初始化
 │       └── init.sql                         # 建表脚本（首次运行自动执行）
 ├── .github/workflows/                       # CI/CD 配置
@@ -603,6 +605,8 @@ ai:
 ├── hrofficial-deploy/              # 从仓库 deploy/ 目录复制
 │   ├── docker-compose.yml          # Docker Compose 编排
 │   ├── .env                        # 环境变量（从 .env.example 复制并填写）
+│   ├── nginx/
+│   │   └── hrofficial.conf         # Nginx 站点配置
 │   ├── init/
 │   │   └── init.sql                # 数据库初始化脚本（首次运行自动执行）
 │   └── rag-knowledge-base/         # RAG 知识库文件（从仓库复制或自行补充）
@@ -610,42 +614,114 @@ ai:
 │       ├── 01-组织概况/
 │       ├── 02-规章制度/
 │       └── ...
+├── frontend/                       # 前端构建产物
+│   └── dist/                       # npm run build 输出
 └── uploads/                        # 上传文件存储（Docker Volume 自动管理）
 ```
 
 ### Docker Compose 一键部署（推荐）
 
+#### 1. 配置 Docker 镜像加速（国内服务器必须）
+
 ```bash
-# 1. 在服务器上创建部署目录
-mkdir -p /home/hrofficial/hrofficial-deploy
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<'EOF'
+{
+  "registry-mirrors": [
+    "https://docker.1ms.run",
+    "https://docker.xuanyuan.me"
+  ]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+#### 2. 上传部署文件
+
+将 `deploy/` 目录下的文件上传到服务器 `/home/hrofficial/hrofficial-deploy/`：
+
+```bash
+# 在本地执行
+scp -r deploy/* user@server:/home/hrofficial/hrofficial-deploy/
+```
+
+#### 3. 配置环境变量
+
+```bash
 cd /home/hrofficial/hrofficial-deploy
-
-# 2. 将 deploy/ 目录下的文件上传到服务器
-#    - docker-compose.yml
-#    - .env.example → 重命名为 .env
-#    - init/init.sql
-#    - rag-knowledge-base/ 整个目录
-
-# 3. 配置环境变量
 cp .env.example .env
 # 编辑 .env，填写必填配置：DB_PASSWORD, JWT_SECRET, CHATECNU_API_KEY
+vim .env
+```
 
-# 4. 拉取镜像并启动所有服务
+#### 4. 启动后端服务
+
+```bash
 docker-compose up -d
 
-# 5. 查看日志
+# 查看日志
 docker-compose logs -f backend
 ```
 
 **首次运行自动初始化：** MySQL 容器首次启动时，会自动执行 `init/init.sql` 创建数据库、表结构和测试数据。
 
+#### 5. 构建并部署前端
+
+```bash
+# 在本地构建
+cd hrofficial-frontend
+npm install
+npm run build
+
+# 将 dist/ 上传到服务器
+scp -r dist/ user@server:/home/hrofficial/frontend/
+```
+
+#### 6. 配置 Nginx
+
+将 `deploy/nginx/hrofficial.conf` 链接到 Nginx 配置目录：
+
+```bash
+# 方式一：软链接（推荐）
+sudo ln -s /home/hrofficial/hrofficial-deploy/nginx/hrofficial.conf /etc/nginx/conf.d/hrofficial.conf
+
+# 方式二：直接复制
+sudo cp /home/hrofficial/hrofficial-deploy/nginx/hrofficial.conf /etc/nginx/conf.d/
+
+# 检查配置并重载
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
 ### 服务说明
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| MySQL | 3306 | 业务数据库（首次启动自动建表+测试数据） |
-| Redis Stack | 6379 / 8001 | 缓存 + 向量存储 + RedisInsight |
-| Backend | 8080 | Spring Boot 后端服务（从 Docker Hub 拉取） |
+| MySQL | 仅容器内部 | 业务数据库（首次启动自动建表+测试数据） |
+| Redis Stack | 仅容器内部 | 缓存 + 向量存储 |
+| Backend | 127.0.0.1:8080 | Spring Boot 后端服务（仅 Nginx 可访问） |
+| Nginx | 80 | 前端静态文件 + API 反向代理（宿主机） |
+
+> **安全说明**：MySQL 和 Redis 不暴露端口到宿主机，Backend 仅绑定 `127.0.0.1`，所有外部流量通过 Nginx 代理。
+
+### Nginx 配置说明
+
+`deploy/nginx/hrofficial.conf` 的核心逻辑：
+
+```mermaid
+graph LR
+    A[用户请求 :80] --> B{路径匹配}
+    B -->|/api/| C[反向代理 → 127.0.0.1:8080]
+    B -->|/assets/| D[静态文件 + 长缓存]
+    B -->|其他| E[Vue Router history 回退]
+    C --> F[SSE 流式支持]
+    C --> G[超时 5 分钟]
+```
+
+- `/api/` → 反向代理到后端 `127.0.0.1:8080`，支持 SSE 流式响应
+- `/assets/` → 静态资源长缓存（Vite 构建带 hash 文件名）
+- 其他路径 → `try_files` 回退到 `index.html`（Vue Router history 模式）
 
 ### RAG 知识库更新
 

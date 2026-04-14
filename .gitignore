@@ -166,6 +166,8 @@ Desktop.ini
 !/deploy/init/
 !/deploy/init/**
 !/deploy/.dockerignore
+!/deploy/nginx/
+!/deploy/nginx/**
 
 ### 压缩包和备份文件 ###
 *.zip
@@ -197,6 +199,7 @@ trae/**
 nginx.conf
 *.conf.server
 *.conf.prod
+!deploy/nginx/*.conf
 
 # 服务脚本（可能包含服务器信息）
 *.service
