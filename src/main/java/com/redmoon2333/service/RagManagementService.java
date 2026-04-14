@@ -91,6 +91,11 @@ public class RagManagementService {
         try {
             String sourcePath = request.getSourcePath() != null ? 
                               request.getSourcePath() : ragConfig.getKnowledgeBasePath();
+
+            if (sourcePath.startsWith("file:")) {
+                sourcePath = sourcePath.substring(5);
+                logger.info("检测到file:前缀，已去除: {}", sourcePath);
+            }
             
             // 防御性编程：检查文档路径是否存在
             Path baseDir = Paths.get(sourcePath);
