@@ -1,15 +1,3 @@
-# ============================================================
-# 人力资源中心官网 - 后端构建与测�?# ============================================================
-# 触发条件:
-#   - push �?main �?develop 分支
-#   - pull request �?main �?develop 分支
-#
-# 构建流程:
-#   1. 设置 Java 环境
-#   2. Maven 构建
-#   3. 运行单元测试
-#   4. 代码质量检�?# ============================================================
-
 name: Backend Build & Test
 
 on:
@@ -25,55 +13,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    steps:
-      # 1. 检出代�?      - name: Checkout code
-        uses: actions/checkout@v4
 
-      # 2. 设置 Java 环境
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
-      # 3. Maven 依赖缓存
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      # 4. 编译项目
-      - name: Compile with Maven
-        run: mvn clean compile -B
-
-      # 5. 运行单元测试
-      - name: Run tests with Maven
-        run: mvn test -B
-
-      # 6. 打包 JAR
-      - name: Package with Maven
-        run: mvn package -DskipTests -B
-
-      # 7. 上传构建产物
-      - name: Upload JAR artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jar
-          path: target/*.jar
-          retention-days: 7
-
-  # ============================================================
-  # 代码质量检�?(可�?
-  # ============================================================
-  quality:
-    runs-on: ubuntu-latest
-    needs: build
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -85,11 +25,50 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 使用 SpotBugs 进行代码质量检�?      - name: Run SpotBugs
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Compile with Maven
+        run: mvn clean compile -B
+
+      - name: Run tests with Maven
+        run: mvn test -B
+
+      - name: Package with Maven
+        run: mvn package -DskipTests -B
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: target/*.jar
+          retention-days: 7
+
+  quality:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run SpotBugs
         run: |
           mvn spotbugs:check -B || true
 
-      # 使用 JaCoCo 生成测试覆盖率报�?      - name: Generate JaCoCo report
+      - name: Generate JaCoCo report
         run: mvn jacoco:report -B
 
       - name: Upload JaCoCo report

@@ -1,14 +1,3 @@
-# ============================================================
-# 人力资源中心官网 - Docker 镜像自动构建与推�?# ============================================================
-# 触发条件:
-#   - push �?main �?develop 分支
-#   - push �?v* 格式的标�?#
-# 构建流程:
-#   1. 构建后端 JAR �?#   2. 构建 Docker 镜像 (多阶段构�?
-#   3. 打标�?(基于 Git tag �?commit hash)
-#   4. 推送到 Docker Hub
-# ============================================================
-
 name: Build and Push Docker Image
 
 on:
@@ -32,25 +21,19 @@ on:
         required: false
 
 env:
-  # Docker 镜像仓库配置
   DOCKER_REGISTRY: ${{ github.event.inputs.docker_registry || 'docker.io' }}
   DOCKER_USERNAME: ${{ github.event.inputs.docker_username || secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ github.event.inputs.docker_password || secrets.DOCKER_PASSWORD }}
   IMAGE_NAME: ${{ github.repository }}
-  # 默认使用 latest 标签，tag 推送时使用 version 标签
 
 jobs:
-  # ============================================================
-  # 构建和推�?Docker 镜像
-  # ============================================================
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
-      # 1. 检出代�?      - name: Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 设置 Java 环境
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -58,13 +41,6 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # 3. 设置 Maven 环境变量
-      - name: Set up Maven
-        run: |
-          mvn --version
-          echo "MAVEN_LOCAL_REPO=$HOME/.m2/repository" >> $GITHUB_ENV
-
-      # 4. Maven 依赖缓存
       - name: Cache Maven dependencies
         uses: actions/cache@v4
         with:
@@ -73,10 +49,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      # 5. 构建后端 JAR �?      - name: Build with Maven
+      - name: Build with Maven
         run: mvn clean package -DskipTests -B
 
-      # 6. 验证 JAR 包构建成�?      - name: Verify JAR file
+      - name: Verify JAR file
         run: |
           ls -lh target/*.jar
           if [ ! -f "target/HumanResourceOfficial-1.0-SNAPSHOT.jar" ]; then
@@ -84,11 +60,9 @@ jobs:
             exit 1
           fi
 
-      # 7. 设置 Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 8. 登录 Docker Hub
       - name: Login to Docker Hub
         if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
         uses: docker/login-action@v3
@@ -96,23 +70,18 @@ jobs:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
-      # 9. 提取镜像元数�?(标签)
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # 如果�?tag 推送，使用版本标签
             type=semver,pattern={{version}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=semver,pattern={{major}}.{{minor}},enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-            # 分支标签
             type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            # 开发版本标�?(�?commit hash)
-            type=raw,value=dev-${{ github.sha }}.short,enable=${{ !startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=dev-${{ github.sha }},enable=${{ !startsWith(github.ref, 'refs/tags/v') }}
 
-      # 10. 构建并推�?Docker 镜像
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -123,20 +92,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # 多平台构�?(可选，需�?Docker Hub Pro 账户)
-          # platforms: linux/amd64,linux/arm64
-          # 构建参数
-          build-args: |
-            JAVA_VERSION=17
 
-      # 11. 输出镜像信息
       - name: Image digest
         if: env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != ''
         run: echo ${{ steps.push.outputs.digest }}
 
-  # ============================================================
-  # 通知构建结果 (可�?
-  # ============================================================
   notify:
     needs: build
     runs-on: ubuntu-latest
@@ -145,9 +105,9 @@ jobs:
       - name: Notify build status
         run: |
           if [ "${{ needs.build.result }}" == "success" ]; then
-            echo "�?Docker 镜像构建成功!"
-            echo "镜像地址�?{{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            echo "Docker image build succeeded!"
+            echo "Image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           else
-            echo "�?Docker 镜像构建失败!"
+            echo "Docker image build failed!"
             exit 1
           fi

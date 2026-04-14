@@ -4,13 +4,12 @@
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.5-6DB33F?logo=spring-boot)](https://spring.io/projects/spring-boot)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.5+-4FC08D?logo=vue.js)](https://vuejs.org/)
-[![Java](https://img.shields.io/badge/Java-21-007396?logo=openjdk)](https://openjdk.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Spring AI](https://img.shields.io/badge/Spring%20AI-1.1.2-6DB33F)](https://docs.spring.io/spring-ai/reference/)
-[![Spring AI Alibaba](https://img.shields.io/badge/Spring%20AI%20Alibaba-1.1.2.0-FF6A00)](https://sca.aliyun.com/)
+[![Java](https://img.shields.io/badge/Java-17-007396?logo=openjdk)](https://openjdk.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Spring AI](https://img.shields.io/badge/Spring%20AI-1.0.0-6DB33F)](https://docs.spring.io/spring-ai/reference/)
+[![MyBatis-Plus](https://img.shields.io/badge/MyBatis%20Plus-3.5.12-BF2A2A)](https://baomidou.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql)](https://www.mysql.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.0+-DC382D?logo=redis)](https://redis.io/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **基于 Spring Boot + Vue3 + Spring AI 的智能化学生会人力资源管理系统**
 
@@ -24,15 +23,15 @@
 
 ## 📖 项目概述
 
-人力资源中心官网是一个面向学生会组织的数字化管理平台，采用前后端分离架构，深度融合 Spring AI 技术栈，提供智能化的成员管理、活动管理、资料管理和 AI 辅助决策能力。
+人力资源中心官网是一个面向学生会组织的数字化管理平台，采用前后端分离架构，基于 Spring AI 接入 ECNU AI（华东师范大学 AI 平台），提供智能化的成员管理、活动管理、资料管理和 AI 辅助决策能力。
 
 ### 核心能力
 
-- 🤖 **AI 智能助手** - 基于通义千问大模型的流式对话，支持知识库问答
-- 📚 **RAG 知识库** - 检索增强生成，智能回答组织相关问题
-- 👥 **成员管理** - 多角色权限体系，支持往届成员追溯
-- 📋 **活动管理** - 活动全生命周期管理，支持策划案 AI 生成
-- 📁 **资料管理** - 三级分类体系，安全文件存储与分享
+- 🤖 **AI 智能助手** - 基于 ECNU AI（ecnu-plus）的流式对话，支持工具调用（ecnu-max）与知识库问答
+- 📚 **RAG 知识库** - 检索增强生成，基于 Redis Vector Store 的语义检索与智能回答
+- 👥 **成员管理** - 多角色权限体系，支持往届成员追溯与激活码注册
+- 📋 **活动管理** - 活动全生命周期管理，支持策划案 AI 生成（HTML 格式 + 沙箱渲染）
+- 📁 **资料管理** - 三级分类体系，阿里云 OSS 预签名 URL 安全下载
 - 🏛️ **历史档案** - 往届活动和成员档案管理
 
 ---
@@ -43,24 +42,29 @@
 
 | 功能模块 | 技术实现 | 说明 |
 |---------|---------|------|
-| **认证授权** | JWT + Spring Security | 无状态认证，细粒度权限控制 |
-| **角色体系** | 注解 + AOP | 游客/部员/部长三级权限 |
-| **AI 对话** | Spring AI Alibaba | 通义千问流式输出，支持上下文记忆 |
-| **RAG 问答** | Redis Vector Store | 向量检索 + 语义增强回答 |
-| **文件管理** | 本地存储 + 阿里云 OSS | 预签名 URL 安全下载 |
-| **数据访问** | MyBatis + JPA | 灵活的数据持久化方案 |
-| **性能监控** | 自定义监控服务 | 内存、向量索引、RAG 状态监控 |
+| **认证授权** | JWT + Spring Security | 无状态认证，Redis 存储 Token 黑名单 |
+| **角色体系** | 注解 + AOP | 游客/部员/部长三级权限，自定义注解声明式控制 |
+| **AI 对话** | Spring AI + OpenAI 兼容接口 | ECNU AI 流式输出，支持上下文记忆与工具调用 |
+| **RAG 问答** | Redis Vector Store | 向量检索 + 语义增强回答，智能文本分块 |
+| **文件管理** | 本地存储 + 阿里云 OSS | 预签名 URL 安全下载，支持多场景上传 |
+| **数据访问** | MyBatis-Plus | 内置分页、逻辑删除、自动填充 |
+| **性能监控** | 自定义监控服务 | 内存、向量索引、RAG 状态监控，Redis 内存清理 |
+| **异常处理** | 全局异常处理器 | 统一错误码体系，业务/系统异常分离 |
 
 ### 前端能力
 
 | 功能模块 | 技术实现 | 说明 |
 |---------|---------|------|
-| **UI 框架** | Element Plus + Vue3 | 现代化组件库 |
-| **状态管理** | Pinia | 轻量级状态管理 |
-| **类型安全** | TypeScript | 全链路类型支持 |
-| **流式渲染** | SSE + markstream | AI 消息实时流式显示 |
-| **构建工具** | Vite | 极速开发体验 |
-| **Markdown 渲染** | markdown-it + DOMPurify | 安全的富文本显示 |
+| **UI 框架** | Element Plus + Vue3 | 现代化组件库，暖色调珊瑚橙主题 |
+| **状态管理** | Pinia (Composition API) | 轻量级状态管理，Token + 用户信息持久化 |
+| **类型安全** | TypeScript | 全链路类型支持，全局类型定义 |
+| **流式渲染** | SSE + markstream-vue | AI 消息实时流式 Markdown 渲染 |
+| **HTTP 客户端** | 原生 fetch 自定义 HttpClient | 支持 SSE 流式请求、文件上传进度、超时控制 |
+| **Markdown 渲染** | markdown-it + DOMPurify | 安全的富文本显示，支持锚点/表情/任务列表 |
+| **HTML 渲染** | iframe 沙箱 | 策划案 HTML 安全渲染 |
+| **构建工具** | rolldown-vite | 基于 Rust 的高性能构建 |
+| **权限控制** | 路由守卫 + composables | usePermission 组合式函数，五级权限检查 |
+| **视觉设计** | CSS 变量设计系统 | 毛玻璃效果、渐变卡片、响应式断点 |
 
 ---
 
@@ -93,8 +97,8 @@ graph TB
     end
 
     subgraph AI 层["AI 层 Spring AI"]
-        K[通义千问 LLM]
-        L[Embedding 向量化]
+        K[ECNU AI ecnu-plus/ecnu-max]
+        L[ecnu-embedding-small]
         M[Vector Store 检索]
     end
 
@@ -120,18 +124,20 @@ graph TB
 | 技术 | 版本 | 用途 |
 |------|------|------|
 | Spring Boot | 3.3.5 | 核心应用框架 |
-| Spring AI | 1.1.2 | AI 能力抽象层 |
-| Spring AI Alibaba | 1.1.2.0 | 通义千问集成 |
+| Spring AI | 1.0.0 | AI 能力抽象层 |
+| Spring AI OpenAI | 由 BOM 管理 | OpenAI 兼容接口（ECNU AI） |
+| Spring AI Redis Vector Store | 由 BOM 管理 | 向量存储与检索 |
 | Spring Security | 6.x | 安全认证授权 |
-| MyBatis | 3.0.3 | ORM 框架 |
-| MySQL | 8.0.33 | 关系型数据库 |
-| Redis | 7.x | 缓存 + 向量存储 |
-| JWT | 0.11.5 | 令牌认证 |
+| MyBatis-Plus | 3.5.12 | ORM 框架（内置分页、逻辑删除） |
+| MySQL Connector | 8.0.33 | 关系型数据库驱动 |
+| Redis + Lettuce | 7.x | 缓存 + 向量存储 + 对话记忆 |
+| JWT (jjwt) | 0.11.5 | 令牌认证 |
 | Hutool | 5.8.22 | Java 工具库 |
-| PageHelper | 1.4.6 | 分页插件 |
+| Lombok | 1.18.38 | 代码简化 |
 | 阿里云 OSS | 3.17.2 | 对象存储（可选） |
-| Apache POI | 5.2.5 | Excel 处理 |
-| PDFBox | 2.0.30 | PDF 处理 |
+| Apache POI | 5.2.5 | Word 文档解析（RAG 知识库） |
+| PDFBox | 2.0.30 | PDF 文档解析（RAG 知识库） |
+| SnakeYAML | 2.2 | 提示词 YAML 配置 |
 
 #### 前端技术栈
 
@@ -140,13 +146,18 @@ graph TB
 | Vue | 3.5.22 | 渐进式框架 |
 | TypeScript | 5.9.0 | 类型系统 |
 | Element Plus | 2.11.8 | UI 组件库 |
+| @element-plus/icons-vue | 2.3.2 | 图标库 |
 | Pinia | 3.0.3 | 状态管理 |
 | Vue Router | 4.6.3 | 路由管理 |
-| Vite | 6.x | 构建工具 |
-| Axios | 1.13.2 | HTTP 客户端 |
+| rolldown-vite | latest | 构建工具（基于 Rust） |
 | markdown-it | 14.1.0 | Markdown 解析 |
+| markdown-it-anchor | 9.2.0 | 标题锚点 |
+| markdown-it-container | 4.0.0 | 容器块 |
+| markdown-it-emoji | 3.0.0 | 表情符号 |
+| markdown-it-task-lists | 2.1.1 | 任务列表 |
+| markstream-vue | 0.0.4-beta.8 | 流式 Markdown 渲染 |
+| marked | 17.0.2 | Markdown 解析（辅助） |
 | DOMPurify | 3.3.1 | XSS 防护 |
-| dayjs | 1.11.19 | 日期处理 |
 
 ---
 
@@ -157,58 +168,48 @@ HumanResourceOfficial/
 ├── src/main/java/com/redmoon2333/          # 后端源码
 │   ├── annotation/                          # 自定义注解（权限控制）
 │   ├── aspect/                              # AOP 切面
-│   ├── config/                              # 配置类
-│   │   ├── JwtAuthenticationFilter.java     # JWT 认证过滤器
-│   │   ├── SecurityConfig.java              # 安全配置
-│   │   ├── RagConfig.java                   # RAG 配置
-│   │   └── VectorStoreConfig.java           # 向量存储配置
-│   ├── controller/                          # 控制器层
-│   │   ├── AIChatController.java            # AI 对话接口
-│   │   ├── ActivityController.java          # 活动管理接口
-│   │   ├── AuthController.java              # 认证接口
-│   │   ├── DailyImageController.java        # 每日一图接口
-│   │   ├── MaterialController.java          # 资料管理接口
-│   │   ├── PastActivityController.java      # 往届活动接口
-│   │   ├── PerformanceController.java       # 性能监控接口
-│   │   ├── RagController.java               # RAG 知识库接口
-│   │   └── UserController.java              # 用户管理接口
-│   ├── dto/                                 # 数据传输对象
-│   ├── entity/                              # 实体类
+│   ├── config/                              # 配置类（16个）
+│   ├── controller/                          # 控制器层（10个）
+│   ├── dto/                                 # 数据传输对象（28个）
+│   ├── entity/                              # 实体类（9个）
+│   ├── enums/                               # 枚举类
 │   ├── exception/                           # 异常处理
-│   ├── mapper/                              # MyBatis 映射器
-│   ├── service/                             # 业务服务层
-│   │   ├── AIChatService.java               # AI 对话服务
-│   │   ├── RagManagementService.java        # RAG 管理服务
-│   │   ├── RagRetrievalService.java         # RAG 检索服务
-│   │   ├── PerformanceMonitorService.java   # 性能监控服务
-│   │   └── MaterialService.java             # 资料服务
-│   ├── util/                                # 工具类
-│   │   ├── JwtUtil.java                     # JWT 工具
-│   │   ├── SmartTextChunker.java            # 智能文本分块
-│   │   └── OssUtil.java                     # OSS 工具
+│   ├── mapper/                              # MyBatis-Plus 映射器（9个）
+│   ├── service/                             # 业务服务层（12个）
+│   ├── util/                                # 工具类（10个）
+│   ├── validation/                          # 自定义校验
 │   └── Main.java                            # 启动类
 ├── src/main/resources/
-│   ├── mapper/                              # MyBatis XML
+│   ├── mapper/                              # MyBatis XML（8个）
 │   ├── prompttemplate/                      # AI 提示词模板
-│   ├── rag-knowledge-base/                  # RAG 知识库文档
-│   └── application.yml                      # 主配置文件
+│   ├── rag-knowledge-base/                  # RAG 知识库文档（8类27文件）
+│   ├── application.yml                      # 主配置文件
+│   └── application-dev.yml                  # 开发环境配置
 ├── hrofficial-frontend/                     # 前端项目
 │   ├── src/
-│   │   ├── api/                             # API 接口定义
-│   │   ├── components/                      # 公共组件
+│   │   ├── api/                             # API 接口定义（11个模块）
+│   │   ├── components/                      # 公共组件（9个）
+│   │   ├── composables/                     # 组合式函数
+│   │   ├── directives/                      # 自定义指令
 │   │   ├── router/                          # 路由配置
 │   │   ├── stores/                          # Pinia 状态管理
-│   │   ├── views/                           # 页面组件
-│   │   │   ├── AIChat.vue                   # AI 对话页面
-│   │   │   ├── Activities.vue               # 活动管理页面
-│   │   │   ├── Materials.vue                # 资料管理页面
-│   │   │   ├── RagManagement.vue            # RAG 管理页面
-│   │   │   ├── Alumni.vue                   # 往届成员页面
-│   │   │   └── PlanGenerator.vue            # 策划案生成页面
-│   │   └── utils/                           # 工具函数
+│   │   ├── styles/                          # 样式设计系统
+│   │   ├── types/                           # TypeScript 类型定义
+│   │   ├── utils/                           # 工具函数
+│   │   └── views/                           # 页面组件（15个）
 │   └── package.json
+├── deploy/                                  # 部署配置
+│   ├── Dockerfile                           # 后端 Docker 镜像
+│   ├── docker-compose.yml                   # Docker Compose 编排
+│   ├── .env.example                         # 环境变量模板
+│   ├── .dockerignore                        # Docker 构建忽略
+│   └── init/                                # 数据库初始化
+│       └── init.sql                         # 建表脚本（首次运行自动执行）
+├── .github/workflows/                       # CI/CD 配置
+│   ├── backend-build-test.yml               # 后端构建测试
+│   ├── docker-build-push.yml                # Docker 镜像构建推送
+│   └── env.example                          # GitHub Secrets 说明
 ├── docs/                                    # 项目文档
-├── .qoder/                                  # Qoder 项目文档
 └── pom.xml                                  # Maven 配置
 ```
 
@@ -218,11 +219,11 @@ HumanResourceOfficial/
 
 ### 环境要求
 
-- **Java**: 21+
+- **Java**: 17+
 - **Maven**: 3.6+
-- **Node.js**: 20.19.0+ 或 >=22.12.0
+- **Node.js**: ^20.19.0 或 >=22.12.0
 - **MySQL**: 8.0+
-- **Redis**: 7.0+ (推荐 Redis Stack)
+- **Redis**: 7.0+ (推荐 Redis Stack，需支持 RediSearch 向量检索)
 
 ### 1. 克隆项目
 
@@ -234,55 +235,56 @@ cd HumanResourceOfficial
 ### 2. 数据库初始化
 
 ```sql
-CREATE DATABASE hrofficial 
-  CHARACTER SET utf8mb4 
+CREATE DATABASE hrofficial
+  CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 ```
 
-导入数据库表结构（根据项目提供的 SQL 文件执行）。
+导入数据库表结构：
+
+```bash
+mysql -u root -p hrofficial < deploy/init/init.sql
+```
 
 ### 3. 环境变量配置
 
-创建环境变量配置文件：
-
-**后端环境变量**（在项目根目录创建 `.env` 文件）：
+复制环境变量模板并填写：
 
 ```bash
-# 数据库配置
-DB_NAME=hrofficial
-DB_USERNAME=root
-DB_PASSWORD=your_password
-
-# JWT 配置
-JWT_SECRET=your_jwt_secret_at_least_32_chars
-
-# 阿里云 AI 配置
-ALIQWEN_API=your_dashscope_api_key
-
-# 阿里云 OSS 配置（可选）
-ALIYUN_OSS_ACCESS_KEY_ID=your_access_key
-ALIYUN_OSS_ACCESS_KEY_SECRET=your_secret
-ALIYUN_OSS_BUCKET_NAME=your_bucket
-
-# Redis 配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-
-# 文件访问 URL
-FILE_ACCESS_URL=http://localhost:8080
+cp deploy/.env.example .env
 ```
 
-**前端环境变量**（在 `hrofficial-frontend` 目录创建 `.env.local` 文件）：
+**必填配置：**
 
-```bash
-VITE_API_BASE_URL=http://localhost:8080
-```
+| 环境变量 | 说明 |
+|---------|------|
+| `DB_PASSWORD` | MySQL root 密码 |
+| `JWT_SECRET` | JWT 密钥（至少 256 位，用于 HS256 算法） |
+| `CHATECNU_API_KEY` | ECNU AI 平台 API Key |
+
+**可选配置（有默认值）：**
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `DB_URL` | `jdbc:mysql://localhost:3306/hrofficial?...` | 数据库连接 URL |
+| `DB_USERNAME` | `root` | 数据库用户名 |
+| `CHATECNU_BASE_URL` | `https://chat.ecnu.edu.cn/open/api/v1` | ECNU AI 接口地址 |
+| `AI_TOOL_MODEL` | `ecnu-max` | AI 工具调用模型 |
+| `JWT_EXPIRATION` | `604800000`（7天） | JWT 过期时间（毫秒） |
+| `REDIS_HOST` | `localhost` | Redis 主机 |
+| `REDIS_PORT` | `6379` | Redis 端口 |
+| `REDIS_PASSWORD` | (空) | Redis 密码 |
+| `ALIYUN_OSS_ENDPOINT` | `oss-cn-beijing.aliyuncs.com` | OSS Endpoint |
+| `ALIYUN_OSS_ACCESS_KEY_ID` | (空) | OSS AccessKey ID |
+| `ALIYUN_OSS_ACCESS_KEY_SECRET` | (空) | OSS AccessKey Secret |
+| `ALIYUN_OSS_BUCKET_NAME` | (空) | OSS Bucket 名称 |
+| `FILE_ACCESS_URL` | `http://localhost:8080` | 文件访问基础 URL |
+
+> **注意**：开发环境下，前端通过 Vite 代理（`/api` → `http://localhost:8080`）访问后端，无需额外配置前端环境变量。
 
 ### 4. 启动后端
 
 ```bash
-# 编译并运行
 mvn spring-boot:run
 
 # 或打包后运行
@@ -308,12 +310,21 @@ npm run dev
 
 ### AI 智能对话
 
-系统集成了通义千问大模型，支持：
+系统通过 Spring AI 接入 ECNU AI 平台（OpenAI 兼容接口），支持：
 
-- **流式输出** - 实时显示 AI 回复
-- **上下文记忆** - 基于 Redis 的对话历史
-- **角色设定** - 针对学生会场景优化的系统提示词
+- **流式输出** - 基于 SSE 实时显示 AI 回复
+- **上下文记忆** - 基于 Redis 的对话历史（TTL 7 天）
+- **角色设定** - 针对学生会场景优化的系统提示词（YAML 配置）
+- **工具调用** - AI 可调用查询人员信息、统计数据等工具（ecnu-max 模型）
 - **RAG 增强** - 结合知识库进行智能问答
+
+### AI 模型配置
+
+| 用途 | 模型 | 配置项 |
+|------|------|--------|
+| 通用对话 | `ecnu-plus` | `spring.ai.openai.chat.options.model` |
+| 工具调用 | `ecnu-max` | `spring.ai.openai.tool-model` |
+| 向量化 | `ecnu-embedding-small` (1024维) | `rag.embedding-model` |
 
 ### RAG 知识库问答
 
@@ -321,24 +332,25 @@ npm run dev
 
 ```mermaid
 flowchart LR
-    A[用户提问] --> B[Embedding 向量化]
+    A[用户提问] --> B[ecnu-embedding-small 向量化]
     B --> C[Redis Vector Search]
     C --> D[检索 Top-K 文档]
     D --> E[上下文组装]
-    E --> F[LLM 生成回答]
+    E --> F[ecnu-plus 生成回答]
     F --> G[流式返回]
 ```
 
 **智能文本分块特性：**
+
 - 语义分块：按章节、段落、句子边界智能分割
 - 自动文档类型识别：结构化/叙述性/技术文档
-- 分块重叠：保留上下文连贯性
-- 低内存模式：支持低配服务器部署
+- 分块重叠：保留上下文连贯性（400 字符分块，100 字符重叠）
+- 低内存模式：支持低配服务器部署（可配置内存警告/危险阈值）
+- 文档解析：支持 PDF（PDFBox）和 Excel（Apache POI）自动解析
 
 **知识库初始化：**
 
 ```bash
-# 首次部署时需要初始化知识库
 curl -X POST http://localhost:8080/api/rag/initialize \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
@@ -349,16 +361,20 @@ curl -X POST http://localhost:8080/api/rag/initialize \
 
 ```
 rag-knowledge-base/
-├── 01-组织概况/          # 学生会简介、组织文化
-├── 02-规章制度/          # 学生会章程
-├── 03-活动管理/          # 活动策划、执行流程
-├── 04-部门信息/          # 各部门介绍
-├── 05-财务制度/          # 经费管理制度
-├── 06-校园生活/          # 校园实用信息
-├── 07-学习指导/          # 选课、学习技巧
-├── 08-职业发展/          # 实习、社会实践
-└── 00-使用说明.txt
+├── 00-使用说明.txt           # 知识库编写规范
+├── 01-组织概况/              # 学生会简介、组织文化
+├── 02-规章制度/              # 学生会章程
+├── 03-活动管理/              # 活动策划、执行流程
+├── 04-部门信息/              # 各部门介绍（5个中心）
+├── 05-财务制度/              # 经费管理制度
+├── 06-校园生活/              # 校园实用信息（交通/饮食/住宿等）
+├── 07-学习指导/              # 选课、学习技巧、竞赛
+└── 08-职业发展/              # 实习、社会实践
 ```
+
+### 策划案生成
+
+AI 可根据输入参数生成 HTML 格式的活动策划案，前端通过 iframe 沙箱安全渲染，包含活动目的、流程、分工、注意事项等完整内容。
 
 ---
 
@@ -369,8 +385,8 @@ rag-knowledge-base/
 | 角色 | 权限范围 |
 |------|---------|
 | **游客** | 查看活动介绍、往届活动、往届成员 |
-| **部员** | 游客权限 + 资料查看/下载、AI 对话、文件上传 |
-| **部长** | 部员权限 + 所有管理功能（增删改）、RAG 管理、激活码管理 |
+| **部员** | 游客权限 + 资料查看/下载、AI 对话、策划案生成、文件上传 |
+| **部长** | 部员权限 + 所有管理功能（增删改）、RAG 管理、激活码管理、每日一图管理 |
 
 ### 权限注解使用
 
@@ -381,6 +397,18 @@ public ResponseEntity<?> viewMaterials() { }
 @RequireMinisterRole("删除活动")   // 需要部长权限
 public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 ```
+
+### 前端权限控制
+
+路由元信息 + 导航守卫 + `usePermission` 组合式函数，五级权限检查：
+
+| 权限级别 | 路由 meta | 说明 |
+|---------|----------|------|
+| 公开 | `public: true` | 无需登录 |
+| 仅游客 | `guestOnly: true` | 已登录用户重定向 |
+| 需登录 | `requiresAuth: true` | 需要有效 Token |
+| 需部员 | `requiresMember: true` | 需要激活的部员身份 |
+| 需部长 | `requiresMinister: true` | 需要部长/副部长身份 |
 
 ---
 
@@ -401,6 +429,8 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 | POST | `/api/ai/chat/stream` | AI 流式对话（SSE） |
 | POST | `/api/ai/chat-with-rag` | RAG 增强对话（SSE） |
 | POST | `/api/ai/plan/generate` | 生成活动策划案 |
+| POST | `/api/ai/plan/generate/stream` | 流式生成活动策划案（SSE） |
+| GET | `/api/ai/chat/history` | 获取对话历史 |
 
 ### RAG 管理接口
 
@@ -409,6 +439,7 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 | POST | `/api/rag/initialize` | 初始化/重建知识库 |
 | GET | `/api/rag/stats` | 获取知识库统计 |
 | GET | `/api/rag/test-retrieve` | 测试向量检索 |
+| GET | `/api/rag/debug/list-files` | 列出知识库文件 |
 
 ### 活动管理接口
 
@@ -419,6 +450,9 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 | POST | `/api/activities` | 创建活动 |
 | PUT | `/api/activities/{id}` | 更新活动 |
 | DELETE | `/api/activities/{id}` | 删除活动 |
+| POST | `/api/activities/{id}/images` | 上传活动图片 |
+| GET | `/api/activities/{id}/images` | 获取活动图片列表 |
+| DELETE | `/api/activities/images/{imageId}` | 删除活动图片 |
 
 ### 资料管理接口
 
@@ -429,13 +463,38 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 | POST | `/api/materials` | 上传资料 |
 | DELETE | `/api/materials/{id}` | 删除资料 |
 | GET | `/api/materials/categories` | 获取分类列表 |
+| POST | `/api/materials/categories` | 创建分类 |
+| POST | `/api/materials/categories/{id}/subcategories` | 创建子分类 |
 
-### 往届成员接口
+### OSS 接口
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
+| POST | `/api/oss/presigned-url` | 获取通用预签名 URL |
+| POST | `/api/oss/presigned-url/material` | 获取资料上传预签名 URL |
+| POST | `/api/oss/presigned-url/activity-image` | 获取活动图片上传预签名 URL |
+
+### 每日一图接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/daily-images` | 获取图片列表 |
+| POST | `/api/daily-images` | 上传图片 |
+| DELETE | `/api/daily-images/{id}` | 删除图片 |
+| PUT | `/api/daily-images/{id}/toggle-status` | 切换图片状态 |
+| POST | `/api/daily-images/batch-delete` | 批量删除 |
+
+### 用户管理接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/users/me` | 获取当前用户信息 |
+| PUT | `/api/users/me` | 更新个人资料 |
 | GET | `/api/users/alumni` | 获取往届成员列表 |
 | GET | `/api/users/alumni/{id}` | 获取往届成员详情 |
+| GET | `/api/users/search` | 搜索用户 |
+| GET | `/api/auth/activation-codes` | 获取激活码列表 |
+| POST | `/api/auth/generate-code` | 生成激活码 |
 
 ### 往届活动接口
 
@@ -443,6 +502,7 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 |------|------|------|
 | GET | `/api/past-activities` | 获取往届活动列表 |
 | GET | `/api/past-activities/{id}` | 获取往届活动详情 |
+| GET | `/api/past-activities/years` | 获取年份统计 |
 | POST | `/api/past-activities` | 创建往届活动 |
 | PUT | `/api/past-activities/{id}` | 更新往届活动 |
 | DELETE | `/api/past-activities/{id}` | 删除往届活动 |
@@ -451,9 +511,8 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/performance/memory` | 获取内存使用情况 |
-| GET | `/api/performance/vector-index` | 获取向量索引状态 |
-| GET | `/api/performance/rag-status` | 获取 RAG 系统状态 |
+| GET | `/api/performance/report` | 获取综合性能报告 |
+| POST | `/api/performance/reset` | 重置监控数据 |
 
 ---
 
@@ -462,146 +521,215 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 ### 核心配置项
 
 ```yaml
-# application.yml
-
 spring:
-  # 数据源配置
   datasource:
-    url: jdbc:mysql://localhost:3306/hrofficial?useUnicode=true&characterEncoding=utf8
+    url: ${DB_URL:jdbc:mysql://localhost:3306/hrofficial?...}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
-  
-  # Redis 配置（支持 Redis Stack）
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-  
-  # Spring AI 配置
+
   ai:
-    dashscope:
-      api-key: ${ALIQWEN_API:}
+    openai:
+      base-url: ${CHATECNU_BASE_URL:https://chat.ecnu.edu.cn/open/api/v1}
+      api-key: ${CHATECNU_API_KEY:}
+      chat:
+        options:
+          model: ecnu-plus
+          temperature: 0.7
+      embedding:
+        options:
+          model: ecnu-embedding-small
+    tool-model: ${AI_TOOL_MODEL:ecnu-max}
     vectorstore:
       redis:
         index-name: campus-knowledge-index
+        prefix: "rag:embedding:"
 
-# JWT 配置
 jwt:
-  secret: ${JWT_SECRET:}
+  secret: ${JWT_SECRET:YourJWTSecretKeyMustBeAtLeast256BitsLongForHS256Algorithm}
   expiration: ${JWT_EXPIRATION:604800000}
 
-# RAG 配置
+aliyun:
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT:oss-cn-beijing.aliyuncs.com}
+    accessKeyId: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+    accessKeySecret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    bucketName: ${ALIYUN_OSS_BUCKET_NAME:}
+
 rag:
-  chunk-size: 400                    # 文本分块大小
-  chunk-overlap: 100                 # 分块重叠
-  embedding-dimensions: 1024         # 向量维度
-  retrieval-top-k: 5                 # 检索文档数
-  low-memory-mode: false             # 低内存模式
-  enable-semantic-chunking: true     # 启用语义分块
+  chunk-size: 400
+  chunk-overlap: 100
+  embedding-dimensions: 1024
+  retrieval-top-k: 5
+  enable-semantic-chunking: true
+
+ai:
+  chat:
+    memory:
+      ttl: 168
 ```
 
 ---
 
 ## 🔒 安全说明
 
-- **JWT 认证** - 无状态令牌，支持过期刷新
+- **JWT 认证** - 无状态令牌，Redis 存储 Token 黑名单，支持登出失效
 - **密码加密** - BCrypt 哈希存储
-- **SQL 注入防护** - MyBatis 预编译语句
-- **XSS 防护** - 前端输入过滤 + DOMPurify 后端转义
-- **文件安全** - 预签名 URL 限时访问
+- **SQL 注入防护** - MyBatis-Plus 预编译语句
+- **XSS 防护** - 前端 DOMPurify 双配置（Markdown 场景 + HTML 场景）
+- **文件安全** - 阿里云 OSS 预签名 URL 限时访问
 - **环境隔离** - 敏感配置通过环境变量注入
 - **激活码注册** - 新用户注册需要激活码，防止恶意注册
+- **请求日志** - RequestLoggingFilter 记录请求信息
+- **内存保护** - Redis 内存清理任务，防止内存溢出
+
+> ⚠️ **注意**：`jwt.secret` 有默认值仅供开发使用，生产环境**必须**通过 `JWT_SECRET` 环境变量覆盖。
 
 ---
 
-## 🐳 Docker 部署
+## 🐳 部署指南
 
-### Docker Compose 配置
+### 服务器目录结构
 
-项目提供了完整的 Docker 部署方案，包含 MySQL、Redis Stack、后端和前端服务。
+在服务器上按以下结构组织部署文件：
 
-```yaml
-# deploy/docker-compose.yml
-version: '3.8'
-
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: hrofficial-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-
-  redis:
-    image: redis/redis-stack:latest
-    container_name: hrofficial-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-
-  backend:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.backend
-    container_name: hrofficial-backend
-    ports:
-      - "8080:8080"
-    environment:
-      DB_NAME: ${DB_NAME}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: redis
-      ALIQWEN_API: ${ALIQWEN_API}
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      - mysql
-      - redis
-
-  frontend:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.frontend
-    container_name: hrofficial-frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-
-volumes:
-  mysql-data:
-  redis-data:
+```
+/home/hrofficial/
+├── hrofficial-deploy/              # 从仓库 deploy/ 目录复制
+│   ├── docker-compose.yml          # Docker Compose 编排
+│   ├── .env                        # 环境变量（从 .env.example 复制并填写）
+│   ├── init/
+│   │   └── init.sql                # 数据库初始化脚本（首次运行自动执行）
+│   └── rag-knowledge-base/         # RAG 知识库文件（从仓库复制或自行补充）
+│       ├── 00-使用说明.txt
+│       ├── 01-组织概况/
+│       ├── 02-规章制度/
+│       └── ...
+└── uploads/                        # 上传文件存储（Docker Volume 自动管理）
 ```
 
-### 快速部署
+### Docker Compose 一键部署（推荐）
 
 ```bash
-cd deploy
+# 1. 在服务器上创建部署目录
+mkdir -p /home/hrofficial/hrofficial-deploy
+cd /home/hrofficial/hrofficial-deploy
 
-# 复制并编辑环境变量
+# 2. 将 deploy/ 目录下的文件上传到服务器
+#    - docker-compose.yml
+#    - .env.example → 重命名为 .env
+#    - init/init.sql
+#    - rag-knowledge-base/ 整个目录
+
+# 3. 配置环境变量
 cp .env.example .env
-# 编辑 .env 文件，填写实际配置
+# 编辑 .env，填写必填配置：DB_PASSWORD, JWT_SECRET, CHATECNU_API_KEY
 
-# 启动所有服务
+# 4. 拉取镜像并启动所有服务
 docker-compose up -d
 
-# 查看日志
+# 5. 查看日志
 docker-compose logs -f backend
 ```
+
+**首次运行自动初始化：** MySQL 容器首次启动时，会自动执行 `init/init.sql` 创建数据库、表结构和测试数据。
 
 ### 服务说明
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| MySQL | 3306 | 业务数据库 |
-| Redis Stack | 6379 | 缓存 + 向量存储 |
-| Backend | 8080 | Spring Boot 后端服务 |
-| Frontend | 80 | Nginx 前端服务 |
+| MySQL | 3306 | 业务数据库（首次启动自动建表+测试数据） |
+| Redis Stack | 6379 / 8001 | 缓存 + 向量存储 + RedisInsight |
+| Backend | 8080 | Spring Boot 后端服务（从 Docker Hub 拉取） |
+
+### RAG 知识库更新
+
+知识库文件通过 Docker Volume 挂载到容器中，更新步骤：
+
+```bash
+# 1. 在宿主机上增删知识库文件
+vim /home/hrofficial/hrofficial-deploy/rag-knowledge-base/09-新分类/新文件.txt
+
+# 2. 调用 RAG 初始化接口重新索引
+curl -X POST http://localhost:8080/api/rag/initialize \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"forceReindex": false}'
+
+# 无需重新构建或重启 Docker 容器
+```
+
+### 环境变量说明
+
+**必填：**
+
+| 环境变量 | 说明 |
+|---------|------|
+| `DB_PASSWORD` | MySQL root 密码 |
+| `JWT_SECRET` | JWT 密钥（至少 256 位） |
+| `CHATECNU_API_KEY` | ECNU AI 平台 API Key |
+
+**RAG 知识库：**
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `RAG_KB_HOST_PATH` | `./rag-knowledge-base` | 宿主机知识库目录路径（Docker 挂载用） |
+| `RAG_KB_PATH` | `file:/app/rag-knowledge-base` | 容器内知识库路径 |
+
+**Docker 镜像：**
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `DOCKER_IMAGE` | `redmoon2333/hrofficial-backend:latest` | 后端 Docker 镜像地址 |
+
+### 手动部署
+
+```bash
+# 1. 初始化数据库
+mysql -u root -p < deploy/init/init.sql
+
+# 2. 构建后端 JAR
+mvn clean package -DskipTests
+
+# 3. 运行后端
+java -jar target/HumanResourceOfficial-1.0-SNAPSHOT.jar \
+  --spring.profiles.active=prod \
+  -DJWT_SECRET=your_jwt_secret \
+  -DCHATECNU_API_KEY=your_ecnu_api_key \
+  -DDB_PASSWORD=your_db_password
+
+# 4. 构建前端
+cd hrofficial-frontend
+npm install
+npm run build
+
+# 5. 使用 Nginx 托管前端静态文件并反向代理后端
+```
+
+### CI/CD 自动部署
+
+项目配置了 GitHub Actions 流水线：
+
+| 工作流 | 触发条件 | 功能 |
+|--------|---------|------|
+| `backend-build-test.yml` | push/PR 到 main/develop | Maven 编译、测试、SpotBugs、JaCoCo |
+| `docker-build-push.yml` | push 到 main/develop，推送 v* 标签 | 构建 Docker 镜像并推送到 Docker Hub |
+
+**GitHub Secrets 配置：**
+
+| Secret | 说明 |
+|--------|------|
+| `DOCKER_USERNAME` | Docker Hub 用户名 |
+| `DOCKER_PASSWORD` | Docker Hub 密码/Token |
+| `CHATECNU_API_KEY` | ECNU AI API Key |
+| `ALIYUN_OSS_ACCESS_KEY_ID` | 阿里云 OSS AccessKey ID |
+| `ALIYUN_OSS_ACCESS_KEY_SECRET` | 阿里云 OSS AccessKey Secret |
+| `ALIYUN_OSS_BUCKET_NAME` | 阿里云 OSS Bucket 名称 |
 
 ---
 
@@ -609,7 +737,7 @@ docker-compose logs -f backend
 
 1. Fork 本仓库
 2. 创建特性分支：`git checkout -b feature/AmazingFeature`
-3. 提交更改：`git commit -m 'Add some AmazingFeature'`
+3. 提交更改：`git commit -m 'feat: Add some AmazingFeature'`
 4. 推送分支：`git push origin feature/AmazingFeature`
 5. 创建 Pull Request
 
@@ -618,9 +746,9 @@ docker-compose logs -f backend
 - 遵循阿里巴巴 Java 开发手册
 - 使用中文编写注释和文档
 - 保持代码简洁，遵循单一职责原则
-- 新增功能需配套单元测试
-- 严格遵循分层架构：Controller → Service → Repository/DAO
+- 严格遵循分层架构：Controller → Service → Mapper/DAO
 - API 设计遵循 RESTful 规范
+- 提交信息遵循 Conventional Commits 规范
 
 ---
 
@@ -628,10 +756,10 @@ docker-compose logs -f backend
 
 - [Spring Boot](https://spring.io/projects/spring-boot)
 - [Spring AI](https://docs.spring.io/spring-ai/reference/)
-- [Spring AI Alibaba](https://sca.aliyun.com/)
+- [MyBatis-Plus](https://baomidou.com/)
 - [Vue.js](https://vuejs.org/)
 - [Element Plus](https://element-plus.org/)
-- [通义千问](https://tongyi.aliyun.com/)
+- [ECNU AI](https://chat.ecnu.edu.cn/)
 - [Redis](https://redis.io/)
 
 ---
