@@ -27,12 +27,6 @@ public class EmbeddingConfig {
     @Value("${spring.ai.openai.base-url}")
     private String baseUrl;
 
-    @Value("${spring.ai.openai.chat.completions-path:/chat/completions}")
-    private String completionsPath;
-
-    @Value("${spring.ai.openai.embedding.embeddings-path:/embeddings}")
-    private String embeddingsPath;
-
     @Value("${rag.embedding-model:ecnu-embedding-small}")
     private String embeddingModelName;
 
@@ -47,8 +41,8 @@ public class EmbeddingConfig {
         return OpenAiApi.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
-                .completionsPath(completionsPath)
-                .embeddingsPath(embeddingsPath)
+                .embeddingsPath("/v1/embeddings")
+                .completionsPath("/v1/chat/completions")
                 .webClientBuilder(createWebClientBuilder())
                 .build();
     }
