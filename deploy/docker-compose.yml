@@ -49,7 +49,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api/v1}
+      CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api}
       CHATECNU_API_KEY: ${CHATECNU_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       ALIYUN_OSS_ENDPOINT: ${ALIYUN_OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}
