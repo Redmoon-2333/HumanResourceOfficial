@@ -1,5 +1,6 @@
 package com.redmoon2333.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.redmoon2333.entity.DailyImage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -8,21 +9,13 @@ import java.util.List;
 
 /**
  * 日常活动图片数据访问层
- * 提供对daily_image表的CRUD操作
+ * 提供对 daily_image 表的 CRUD 操作
  *
  * @author 人力资源中心技术组
  * @since 2026-02-13
  */
 @Mapper
-public interface DailyImageMapper {
-
-    /**
-     * 根据ID查找图片
-     *
-     * @param imageId 图片ID
-     * @return 图片实体
-     */
-    DailyImage findById(@Param("imageId") Integer imageId);
+public interface DailyImageMapper extends BaseMapper<DailyImage> {
 
     /**
      * 查询所有启用的图片列表（按排序顺序）
@@ -40,33 +33,9 @@ public interface DailyImageMapper {
     List<DailyImage> findAll();
 
     /**
-     * 插入新图片
-     *
-     * @param dailyImage 图片实体
-     * @return 影响行数
-     */
-    int insert(DailyImage dailyImage);
-
-    /**
-     * 更新图片信息
-     *
-     * @param dailyImage 图片实体
-     * @return 影响行数
-     */
-    int update(DailyImage dailyImage);
-
-    /**
-     * 根据ID删除图片
-     *
-     * @param imageId 图片ID
-     * @return 影响行数
-     */
-    int deleteById(@Param("imageId") Integer imageId);
-
-    /**
      * 批量删除图片
      *
-     * @param imageIds 图片ID列表
+     * @param imageIds 图片 ID 列表
      * @return 影响行数
      */
     int batchDelete(@Param("imageIds") List<Integer> imageIds);
@@ -81,7 +50,7 @@ public interface DailyImageMapper {
     /**
      * 更新图片状态
      *
-     * @param imageId 图片ID
+     * @param imageId 图片 ID
      * @param isActive 状态
      * @return 影响行数
      */

@@ -118,16 +118,13 @@ public class AuthService {
         
         logger.info("Registering user with name: {}", registerRequest.getName());
         
-        int insertResult = userMapper.insert(newUser);
-        if (insertResult <= 0) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户创建失败");
-        }
+        userMapper.insert(newUser);
         
         // 更新激活码状态
         activationCode.setStatus(ActivationStatus.已使用);
         activationCode.setUserId(newUser.getUserId());
         activationCode.setUseTime(LocalDateTime.now());
-        activationCodeMapper.update(activationCode);
+        activationCodeMapper.updateById(activationCode);
         
         return newUser;
     }
@@ -154,11 +151,11 @@ public class AuthService {
      * @throws BusinessException 更新失败时抛出异常
      */
     public User updateUserInfo(User user) {
-        int result = userMapper.update(user);
+        int result = userMapper.updateById(user);
         if (result <= 0) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户信息更新失败");
         }
-        return userMapper.findById(user.getUserId());
+        return userMapper.selectById(user.getUserId());
     }
     
     /**
@@ -199,10 +196,7 @@ public class AuthService {
         activationCode.setStatus(ActivationStatus.未使用);
         
         // 保存到数据库
-        int result = activationCodeMapper.insert(activationCode);
-        if (result <= 0) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "激活码生成失败");
-        }
+        activationCodeMapper.insert(activationCode);
         
         // 重新查询以获取完整的激活码信息（包括创建时间等）
         return activationCodeMapper.findByCode(code);

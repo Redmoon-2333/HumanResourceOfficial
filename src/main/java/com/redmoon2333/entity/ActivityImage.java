@@ -1,38 +1,33 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "activity_image")
+@TableName("activity_image")
 public class ActivityImage {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "image_id")
+    @TableId(type = IdType.AUTO)
     private Integer imageId;
     
-    @Column(name = "activity_id")
     private Integer activityId;
     
-    @Column(name = "image_url")
     private String imageUrl;
     
-    @Column(name = "description")
     private String description;
     
-    @Column(name = "sort_order")
     private Integer sortOrder = 0;
     
-    @Column(name = "upload_time")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime uploadTime;
     
     // 构造函数
     public ActivityImage() {
-        this.uploadTime = LocalDateTime.now();
     }
     
     public ActivityImage(Integer activityId, String imageUrl, String description) {
-        this();
         this.activityId = activityId;
         this.imageUrl = imageUrl;
         this.description = description;

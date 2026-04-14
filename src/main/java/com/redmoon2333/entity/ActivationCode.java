@@ -1,42 +1,38 @@
 package com.redmoon2333.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.redmoon2333.enums.ActivationStatus;
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "activation_code")
+@TableName(value = "activation_code", autoResultMap = true)
 public class ActivationCode {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "code_id")
+    @TableId(type = IdType.AUTO)
     private Integer codeId;
-    
-    @Column(name = "code")
+
     private String code;
-    
-    @Column(name = "creator_id")
+
     private Integer creatorId;
-    
-    @Column(name = "create_time")
+
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
     private ActivationStatus status = ActivationStatus.未使用;
     
-    @Column(name = "user_id")
     private Integer userId;
     
-    @Column(name = "use_time")
     private LocalDateTime useTime;
     
-    @Column(name = "expire_time")
     private LocalDateTime expireTime;
     
     // 无参构造函数
     public ActivationCode() {
-        this.createTime = LocalDateTime.now();
+        // createTime 由 MyBatis-Plus 自动填充
     }
     
     // 带参数的构造函数

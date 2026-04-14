@@ -60,7 +60,7 @@ public class DailyImageService {
      */
     public DailyImage getImageById(Integer imageId) {
         logger.debug("获取图片详情，ID: {}", imageId);
-        return dailyImageMapper.findById(imageId);
+        return dailyImageMapper.selectById(imageId);
     }
 
     /**
@@ -106,14 +106,14 @@ public class DailyImageService {
         }
 
         // 检查图片是否存在
-        DailyImage existing = dailyImageMapper.findById(dailyImage.getImageId());
+        DailyImage existing = dailyImageMapper.selectById(dailyImage.getImageId());
         if (existing == null) {
             throw new IllegalArgumentException("图片不存在，ID: " + dailyImage.getImageId());
         }
 
         logger.info("更新图片，ID: {}", dailyImage.getImageId());
-        dailyImageMapper.update(dailyImage);
-        return dailyImageMapper.findById(dailyImage.getImageId());
+        dailyImageMapper.updateById(dailyImage);
+        return dailyImageMapper.selectById(dailyImage.getImageId());
     }
 
     /**
@@ -162,8 +162,8 @@ public class DailyImageService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void swapImageOrder(Integer imageId1, Integer imageId2) {
-        DailyImage image1 = dailyImageMapper.findById(imageId1);
-        DailyImage image2 = dailyImageMapper.findById(imageId2);
+        DailyImage image1 = dailyImageMapper.selectById(imageId1);
+        DailyImage image2 = dailyImageMapper.selectById(imageId2);
 
         if (image1 == null || image2 == null) {
             throw new IllegalArgumentException("图片不存在");
@@ -173,8 +173,8 @@ public class DailyImageService {
         image1.setSortOrder(image2.getSortOrder());
         image2.setSortOrder(tempOrder);
 
-        dailyImageMapper.update(image1);
-        dailyImageMapper.update(image2);
+        dailyImageMapper.updateById(image1);
+        dailyImageMapper.updateById(image2);
 
         logger.info("交换图片排序，ID: {} <-> {}", imageId1, imageId2);
     }
@@ -242,7 +242,7 @@ public class DailyImageService {
         logger.info("删除图片及本地文件，ID: {}", imageId);
 
         // 1. 获取图片信息
-        DailyImage image = dailyImageMapper.findById(imageId);
+        DailyImage image = dailyImageMapper.selectById(imageId);
         if (image == null) {
             throw new IllegalArgumentException("图片不存在，ID: " + imageId);
         }
@@ -274,7 +274,7 @@ public class DailyImageService {
         logger.info("仅删除图片文件，不删除记录，ID: {}", imageId);
 
         // 1. 获取图片信息
-        DailyImage image = dailyImageMapper.findById(imageId);
+        DailyImage image = dailyImageMapper.selectById(imageId);
         if (image == null) {
             logger.warn("图片不存在，ID: {}", imageId);
             return;

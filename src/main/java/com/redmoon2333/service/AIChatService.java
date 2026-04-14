@@ -1,6 +1,7 @@
 package com.redmoon2333.service;
 
 import com.redmoon2333.config.PromptConfig;
+import com.redmoon2333.config.RedisChatMemory;
 import com.redmoon2333.dto.ChatResponse;
 import com.redmoon2333.dto.PlanGeneratorRequest;
 import com.redmoon2333.util.MarkdownFormatter;
@@ -8,6 +9,9 @@ import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
@@ -21,9 +25,8 @@ import reactor.core.publisher.Flux;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-
 
 /**
  * AI聊天服务（精简重构版）
@@ -32,10 +35,12 @@ import java.util.Map;
  * - 单一职责：仅负责协调对话流程，具体逻辑下沉到策略和配置
  * - RAG检索：使用 Spring AI 原生的 RetrievalAugmentationAdvisor
  * - 工具调用：使用 @Tool 注解，AI自动决定何时调用
- * - 对话记忆：由 ChatClient 内置的 MessageChatMemoryAdvisor 自动处理
+ * - 对话记忆：手动管理（不使用 MessageChatMemoryAdvisor）
  * - 提示词管理：从配置文件加载，支持热更新
  *
- * Why: 将原有的350+行代码精简到150行以内，消除重复逻辑，提高可维护性
+ * Why: Spring AI 1.0.0 的 MessageChatMemoryAdvisor 不实现 StreamAroundAdvisor，
+ *      调用 .stream() 时会抛出 IllegalStateException: No StreamAdvisors available to execute
+ *      因此改为手动管理对话记忆，同时兼容同步和流式调用
  */
 @Service
 public class AIChatService {
@@ -59,49 +64,69 @@ public class AIChatService {
     @Autowired(required = false)
     private ToolService toolService;
 
+    @Autowired
+    private RedisChatMemory chatMemory;
+
     /**
      * 普通对话（同步）
+     *
+     * Why: 手动管理对话记忆，不依赖 MessageChatMemoryAdvisor
+     *      1. 从 RedisChatMemory 获取历史消息
+     *      2. 将历史消息注入到 prompt 中
+     *      3. 调用完成后保存用户消息和AI回复到记忆
      */
     public ChatResponse chat(Integer userId, String message) {
         logger.info("用户 {} 发送消息", userId);
 
-        // Why: 使用userId作为conversationId，确保每个用户的对话历史独立隔离
         String conversationId = "user_" + userId;
+
+        List<Message> history = chatMemory.get(conversationId);
 
         String response = chatClient.prompt()
                 .system(promptConfig.getSystemPrompt())
+                .messages(history.toArray(new Message[0]))
                 .user(message)
-                .advisors(advisor -> advisor.param("chat_memory_conversation_id", conversationId))
                 .call()
                 .content();
 
-        // 后处理：清理Markdown格式问题
         response = MarkdownFormatter.format(response);
 
+        chatMemory.add(conversationId, List.of(
+                new UserMessage(message),
+                new AssistantMessage(response)
+        ));
+
         logger.info("AI响应用户 {}: {} 字符", userId, response != null ? response.length() : 0);
-        return new ChatResponse(response, "user_" + userId);
+        return new ChatResponse(response, conversationId);
     }
 
     /**
      * 普通对话（流式）
+     *
+     * Why: 手动管理对话记忆，流式完成后保存完整对话到 RedisChatMemory
+     *      使用 StringBuilder 收集完整响应，在 doOnComplete 中保存
      */
     public Flux<String> chatStream(Integer userId, String message) {
         logger.info("用户 {} 发送流式消息", userId);
 
-        // Why: 使用userId作为conversationId，确保每个用户的对话历史独立隔离
         String conversationId = "user_" + userId;
 
-        // 使用缓冲区处理流式内容的格式化
+        List<Message> history = chatMemory.get(conversationId);
+
         StringBuilder formatBuffer = new StringBuilder();
+        StringBuilder fullResponse = new StringBuilder();
 
         return chatClient.prompt()
                 .system(promptConfig.getSystemPrompt())
+                .messages(history.toArray(new Message[0]))
                 .user(message)
-                .advisors(advisor -> advisor.param("chat_memory_conversation_id", conversationId))
                 .stream()
                 .content()
                 .limitRate(100)
-                .map(chunk -> MarkdownFormatter.formatStreamChunk(chunk, formatBuffer))
+                .map(chunk -> {
+                    fullResponse.append(chunk);
+                    return MarkdownFormatter.formatStreamChunk(chunk, formatBuffer);
+                })
                 .filter(chunk -> !chunk.isEmpty())
                 .concatWith(Flux.defer(() -> {
                     String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
@@ -111,12 +136,22 @@ public class AIChatService {
                     }
                     return Flux.empty();
                 }))
+                .doOnComplete(() -> {
+                    chatMemory.add(conversationId, List.of(
+                            new UserMessage(message),
+                            new AssistantMessage(fullResponse.toString())
+                    ));
+                    logger.debug("流式对话记忆已保存，用户ID: {}", userId);
+                })
                 .doOnError(e -> logger.error("流式对话错误，用户ID: {}", userId, e))
                 .onErrorResume(e -> isClientDisconnect(e) ? Flux.empty() : Flux.error(e))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(this::isRetryableError)
-                        .doBeforeRetry(retrySignal ->
-                                logger.warn("流式对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1)));
+                        .doBeforeRetry(retrySignal -> {
+                            fullResponse.setLength(0);
+                            formatBuffer.setLength(0);
+                            logger.warn("流式对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1);
+                        }));
     }
 
     /**
@@ -127,24 +162,22 @@ public class AIChatService {
     public Flux<String> chatWithRag(Integer userId, String message, boolean useRAG, boolean enableTools) {
         logger.info("用户 {} 发送消息, RAG: {}, Tools: {}", userId, message, useRAG, enableTools);
 
-        // 工具调用模式：使用独立ChatClient避免污染对话历史
         if (enableTools && toolService != null) {
             return handleToolCalling(message, userId);
         }
 
-        // Why: 使用userId作为conversationId，确保每个用户的对话历史独立隔离
         String conversationId = "user_" + userId;
 
-        // 使用缓冲区处理流式内容的格式化
-        StringBuilder formatBuffer = new StringBuilder();
+        List<Message> history = chatMemory.get(conversationId);
 
-        // 标准RAG模式
+        StringBuilder formatBuffer = new StringBuilder();
+        StringBuilder fullResponse = new StringBuilder();
+
         var promptSpec = chatClient.prompt()
                 .system(promptConfig.getSystemPrompt())
-                .user(message)
-                .advisors(advisor -> advisor.param("chat_memory_conversation_id", conversationId));
+                .messages(history.toArray(new Message[0]))
+                .user(message);
 
-        // 动态添加RAG Advisor
         if (useRAG && vectorStore != null) {
             promptSpec = promptSpec.advisors(buildRagAdvisor());
         }
@@ -152,7 +185,10 @@ public class AIChatService {
         return promptSpec.stream()
                 .content()
                 .limitRate(100)
-                .map(chunk -> MarkdownFormatter.formatStreamChunk(chunk, formatBuffer))
+                .map(chunk -> {
+                    fullResponse.append(chunk);
+                    return MarkdownFormatter.formatStreamChunk(chunk, formatBuffer);
+                })
                 .filter(chunk -> !chunk.isEmpty())
                 .concatWith(Flux.defer(() -> {
                     String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
@@ -162,48 +198,46 @@ public class AIChatService {
                     }
                     return Flux.empty();
                 }))
+                .doOnComplete(() -> {
+                    chatMemory.add(conversationId, List.of(
+                            new UserMessage(message),
+                            new AssistantMessage(fullResponse.toString())
+                    ));
+                    logger.debug("RAG对话记忆已保存，用户ID: {}", userId);
+                })
                 .doOnError(e -> logger.error("RAG对话错误，用户ID: {}", userId, e))
                 .onErrorResume(e -> isClientDisconnect(e) ? Flux.empty() : Flux.error(e))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(1))
                         .filter(this::isRetryableError)
-                        .doBeforeRetry(retrySignal ->
-                                logger.warn("RAG对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1)));
+                        .doBeforeRetry(retrySignal -> {
+                            fullResponse.setLength(0);
+                            formatBuffer.setLength(0);
+                            logger.warn("RAG对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1);
+                        }));
     }
 
     /**
      * 检测ChatECNU模型是否支持tool功能
-     *
-     * Why: 不同的ChatECNU模型可能具有不同的能力，需要动态检测
      */
     private boolean isToolSupported() {
-        // TODO: 实现更复杂的模型能力检测逻辑
-        // 暂时假设ecnu-max支持tool功能
-        // 后续可通过API调用或配置文件来确定模型能力
         return true;
     }
 
     /**
      * 生成活动策划案（同步）
-     * 使用无记忆的ChatClient，每次生成都是独立的
      */
     public String generatePlan(PlanGeneratorRequest request) {
         logger.info("生成策划案，主题: {}", request.getTheme());
         String response = planGeneratorChatClient.prompt(buildPlanPrompt(request)).call().content();
-        // 后处理：清理Markdown格式问题
         return MarkdownFormatter.format(response);
     }
 
     /**
      * 生成活动策划案（流式）
-     * 使用无记忆的ChatClient，每次生成都是独立的
-     *
-     * Why: 添加重试机制处理网络瞬断问题
-     * Warning: 仅对网络相关错误进行重试，业务错误不重试
      */
     public Flux<String> generatePlanStream(PlanGeneratorRequest request) {
         logger.info("流式生成策划案，主题: {}", request.getTheme());
 
-        // 使用缓冲区处理流式内容的格式化
         StringBuilder formatBuffer = new StringBuilder();
 
         return planGeneratorChatClient.prompt(buildPlanPrompt(request))
@@ -228,11 +262,6 @@ public class AIChatService {
                             logger.warn("策划案生成失败，正在进行第 {} 次重试", retrySignal.totalRetries() + 1)));
     }
 
-    /**
-     * 判断错误是否可重试
-     *
-     * Why: 只有网络瞬断类错误才值得重试，业务逻辑错误重试无意义
-     */
     private boolean isRetryableError(Throwable error) {
         if (error == null || error.getMessage() == null) return false;
         String msg = error.getMessage().toLowerCase();
@@ -241,21 +270,16 @@ public class AIChatService {
                 || msg.contains("timeout")
                 || msg.contains("broken pipe")
                 || msg.contains("unexpected end of stream")
-                || msg.contains("ssl");
+                || msg.contains("ssl")
+                || msg.contains("premature close")
+                || msg.contains("prematurecloseexception");
     }
 
     // ==================== 私有辅助方法 ====================
 
-    /**
-     * 处理工具调用
-     *
-     * Why: 工具调用使用同步模式获取结果，再模拟流式输出，保持接口一致性
-     * Warning: 需要检测ChatECNU模型是否支持tool功能
-     */
     private Flux<String> handleToolCalling(String message, Integer userId) {
         return Flux.defer(() -> {
             try {
-                // 检测ChatECNU模型是否支持tool功能
                 if (!isToolSupported()) {
                     String errorMsg = "当前ChatECNU模型不支持工具调用功能";
                     logger.warn(errorMsg);
@@ -268,11 +292,10 @@ public class AIChatService {
                 String response = toolChatClient.prompt()
                         .system(promptConfig.getSystemPromptWithTools())
                         .user(message)
-                        .toolCallbacks(tools)  // Spring AI 1.1.x 使用 toolCallbacks() 方法
+                        .toolCallbacks(tools)
                         .call()
                         .content();
 
-                // 后处理：清理Markdown格式问题
                 response = MarkdownFormatter.format(response != null ? response : "");
 
                 return simulateStream(response);
@@ -283,9 +306,6 @@ public class AIChatService {
         }).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }
 
-    /**
-     * 构建RAG Advisor
-     */
     private RetrievalAugmentationAdvisor buildRagAdvisor() {
         return RetrievalAugmentationAdvisor.builder()
                 .documentRetriever(VectorStoreDocumentRetriever.builder()
@@ -295,9 +315,6 @@ public class AIChatService {
                 .build();
     }
 
-    /**
-     * 构建策划案提示词
-     */
     private Prompt buildPlanPrompt(PlanGeneratorRequest request) {
         String planTemplate = promptConfig.getPlanGeneratorPrompt();
         PromptTemplate template = new PromptTemplate(planTemplate);
@@ -314,9 +331,6 @@ public class AIChatService {
         return template.create(params);
     }
 
-    /**
-     * 模拟流式输出（将同步结果转为流式）
-     */
     private Flux<String> simulateStream(String text) {
         if (text == null || text.isEmpty()) {
             return Flux.empty();
@@ -326,9 +340,6 @@ public class AIChatService {
                 .delayElements(Duration.ofMillis(50));
     }
 
-    /**
-     * 判断是否为客户端断开连接异常
-     */
     private boolean isClientDisconnect(Throwable error) {
         if (error == null || error.getMessage() == null) return false;
         String msg = error.getMessage();

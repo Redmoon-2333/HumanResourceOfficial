@@ -296,7 +296,7 @@ public class UserService {
     private List<User> getAllUsers() {
         try {
             logger.debug("开始获取所有用户信息");
-            List<User> users = userMapper.selectAll();
+            List<User> users = userMapper.selectList(null);
             logger.debug("成功获取所有用户信息，共 {} 个用户", users.size());
             return users;
         } catch (Exception e) {
@@ -312,7 +312,7 @@ public class UserService {
      */
     public int getUserCount() {
         try {
-            List<User> users = userMapper.selectAll();
+            List<User> users = userMapper.selectList(null);
             return users.size();
         } catch (Exception e) {
             logger.error("获取用户总数时发生异常", e);
@@ -443,7 +443,7 @@ public class UserService {
             }
             
             // 检验激活码是否存在且是由该用户生成
-            com.redmoon2333.entity.ActivationCode code = activationCodeMapper.findById(codeId);
+            com.redmoon2333.entity.ActivationCode code = activationCodeMapper.selectById(codeId);
             if (code == null) {
                 throw new BusinessException(ErrorCode.INVALID_ACTIVATION_CODE, "激活码不存在");
             }
@@ -475,7 +475,7 @@ public class UserService {
     public List<User> getAllUsersDebug() {
         try {
             logger.debug("开始获取所有用户信息（调试模式）");
-            List<User> users = userMapper.selectAll();
+            List<User> users = userMapper.selectList(null);
             logger.debug("成功获取所有用户信息（调试模式），共 {} 个用户", users.size());
             // 添加调试输出
             for (User user : users) {

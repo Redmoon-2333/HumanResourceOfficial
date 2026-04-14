@@ -11,8 +11,8 @@ import container from 'markdown-it-container'
 import DOMPurify from 'dompurify'
 
 const MARKDOWN_SANITIZE_CONFIG = {
-  ADD_ATTR: ['target', 'class', 'id', 'data-*'],
-  ADD_TAGS: ['mark', 'kbd', 'samp', 'details', 'summary', 'figure', 'figcaption', 'input'],
+  ADD_ATTR: ['target', 'class', 'id', 'data-*', 'align'],
+  ADD_TAGS: ['mark', 'kbd', 'samp', 'details', 'summary', 'figure', 'figcaption', 'input', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'colgroup', 'col'],
   FORBID_TAGS: ['script', 'object', 'embed', 'form'],
   FORBID_ATTR: ['on*', 'srcdoc']
 }

@@ -1,54 +1,44 @@
 package com.redmoon2333.entity;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "material")
+@TableName("material")
 public class Material {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "material_id")
+    @TableId(type = IdType.AUTO)
     private Integer materialId;
     
-    @Column(name = "category_id")
     private Integer categoryId;
     
-    @Column(name = "subcategory_id")
     private Integer subcategoryId;
     
-    @Column(name = "material_name")
     private String materialName;
     
-    @Column(name = "description")
     private String description;
     
-    @Column(name = "file_url")
     private String fileUrl;
     
-    @Column(name = "file_size")
     private Integer fileSize;
     
-    @Column(name = "file_type")
     private String fileType;
     
-    @Column(name = "upload_time")
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime uploadTime;
     
-    @Column(name = "uploader_id")
     private Integer uploaderId;
     
-    @Column(name = "download_count")
     private Integer downloadCount = 0;
     
     // 构造函数
     public Material() {
-        this.uploadTime = LocalDateTime.now();
     }
     
     public Material(Integer categoryId, Integer subcategoryId, String materialName, 
                    String fileUrl, Integer uploaderId) {
-        this();
         this.categoryId = categoryId;
         this.subcategoryId = subcategoryId;
         this.materialName = materialName;

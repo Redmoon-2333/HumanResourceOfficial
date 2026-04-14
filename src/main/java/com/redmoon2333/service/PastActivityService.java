@@ -1,7 +1,7 @@
 package com.redmoon2333.service;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.redmoon2333.dto.PageResponse;
 import com.redmoon2333.dto.PastActivityRequest;
 import com.redmoon2333.dto.PastActivityResponse;
@@ -48,7 +48,6 @@ public class PastActivityService {
                                                                    Integer year, String title) {
         
         try {
-            // 参数校验
             if (pageNum <= 0 || pageSize <= 0) {
                 logger.warn("分页参数非法 - 页码: {}, 每页大小: {}", pageNum, pageSize);
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "分页参数必须大于0");
@@ -59,26 +58,27 @@ public class PastActivityService {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "每页最多100条记录");
             }
             
-            PageHelper.startPage(pageNum, pageSize);
+            Page<PastActivity> page = new Page<>(pageNum, pageSize);
             
-            List<PastActivity> pastActivities;
+            IPage<PastActivity> pageResult;
             
-            // 根据条件查询
             if (year != null && StringUtils.hasText(title)) {
-                pastActivities = pastActivityMapper.findByYearAndTitleLike(year, title.trim());
+                pageResult = pastActivityMapper.findByYearAndTitleLike(page, year, title.trim());
             } else if (year != null) {
-                pastActivities = pastActivityMapper.findByYear(year);
+                pageResult = pastActivityMapper.findByYear(page, year);
             } else if (StringUtils.hasText(title)) {
-                pastActivities = pastActivityMapper.findByTitleLike(title.trim());
+                pageResult = pastActivityMapper.findByTitleLike(page, title.trim());
             } else {
-                pastActivities = pastActivityMapper.findAll();
+                pageResult = pastActivityMapper.findAll(page);
             }
             
-            PageInfo<PastActivity> pageInfo = new PageInfo<>(pastActivities);
-            List<PastActivityResponse> responses = PastActivityResponse.fromList(pastActivities, fileBaseUrl);
+            List<PastActivityResponse> responses = PastActivityResponse.fromList(pageResult.getRecords(), fileBaseUrl);
             
             return PageResponse.of(
-                responses, pageInfo.getPageNum(), pageInfo.getPageSize(), pageInfo.getTotal());
+                responses, 
+                (int) pageResult.getCurrent(), 
+                (int) pageResult.getSize(), 
+                pageResult.getTotal());
             
         } catch (BusinessException e) {
             throw e;
@@ -105,7 +105,7 @@ public class PastActivityService {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "往届活动ID不能为空且必须大于0");
             }
             
-            PastActivity pastActivity = pastActivityMapper.findById(pastActivityId);
+            PastActivity pastActivity = pastActivityMapper.selectById(pastActivityId);
             if (pastActivity == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "往届活动不存在");
             }
@@ -150,7 +150,6 @@ public class PastActivityService {
             pastActivity.setCoverImage(request.getCoverImage());
             pastActivity.setPushUrl(request.getPushUrl());
             pastActivity.setYear(request.getYear());
-            pastActivity.setCreateTime(LocalDateTime.now());
             
             logger.info("准备插入数据库 - Entity: {}", pastActivity);
             
@@ -192,7 +191,7 @@ public class PastActivityService {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "请求参数不能为空");
             }
             
-            PastActivity existingActivity = pastActivityMapper.findById(pastActivityId);
+            PastActivity existingActivity = pastActivityMapper.selectById(pastActivityId);
             if (existingActivity == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "往届活动不存在");
             }
@@ -209,7 +208,7 @@ public class PastActivityService {
             existingActivity.setPushUrl(request.getPushUrl());
             existingActivity.setYear(request.getYear());
             
-            int result = pastActivityMapper.update(existingActivity);
+            int result = pastActivityMapper.updateById(existingActivity);
             if (result <= 0) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "更新往届活动失败");
             }
@@ -241,7 +240,7 @@ public class PastActivityService {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "往届活动ID不能为空且必须大于0");
             }
             
-            PastActivity existingActivity = pastActivityMapper.findById(pastActivityId);
+            PastActivity existingActivity = pastActivityMapper.selectById(pastActivityId);
             if (existingActivity == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "往届活动不存在");
             }
