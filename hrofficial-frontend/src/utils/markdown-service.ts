@@ -32,7 +32,7 @@ class MarkdownService {
   private initMarkdownIt(): void {
     if (this.md) return
 
-    this.md = new MarkdownIt({
+    this.md = new MarkdownIt('default', {
       html: true,
       linkify: true,
       typographer: true,
