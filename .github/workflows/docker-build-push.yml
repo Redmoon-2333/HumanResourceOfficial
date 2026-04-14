@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - REDACTED_REDIS_PASS
     tags:
       - 'v*'
   workflow_dispatch:
@@ -24,7 +25,7 @@ env:
   DOCKER_REGISTRY: ${{ github.event.inputs.docker_registry || 'docker.io' }}
   DOCKER_USERNAME: ${{ github.event.inputs.docker_username || secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ github.event.inputs.docker_password || secrets.DOCKER_PASSWORD }}
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME || 'redmoon2333' }}/hrofficial-backend
 
 jobs:
   build:
