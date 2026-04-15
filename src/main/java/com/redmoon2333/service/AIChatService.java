@@ -113,7 +113,6 @@ public class AIChatService {
 
         List<Message> history = chatMemory.get(conversationId);
 
-        StringBuilder formatBuffer = new StringBuilder();
         StringBuilder fullResponse = new StringBuilder();
 
         return chatClient.prompt()
@@ -125,17 +124,8 @@ public class AIChatService {
                 .limitRate(100)
                 .map(chunk -> {
                     fullResponse.append(chunk);
-                    return MarkdownFormatter.formatStreamChunk(chunk, formatBuffer);
+                    return chunk;
                 })
-                .filter(chunk -> !chunk.isEmpty())
-                .concatWith(Flux.defer(() -> {
-                    String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
-                    if (!remaining.isEmpty()) {
-                        logger.debug("流式响应结束，发送剩余内容: {} 字符", remaining.length());
-                        return Flux.just(remaining);
-                    }
-                    return Flux.empty();
-                }))
                 .doOnComplete(() -> {
                     chatMemory.add(conversationId, List.of(
                             new UserMessage(message),
@@ -149,7 +139,6 @@ public class AIChatService {
                         .filter(this::isRetryableError)
                         .doBeforeRetry(retrySignal -> {
                             fullResponse.setLength(0);
-                            formatBuffer.setLength(0);
                             logger.warn("流式对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1);
                         }));
     }
@@ -170,7 +159,6 @@ public class AIChatService {
 
         List<Message> history = chatMemory.get(conversationId);
 
-        StringBuilder formatBuffer = new StringBuilder();
         StringBuilder fullResponse = new StringBuilder();
 
         var promptSpec = chatClient.prompt()
@@ -187,17 +175,8 @@ public class AIChatService {
                 .limitRate(100)
                 .map(chunk -> {
                     fullResponse.append(chunk);
-                    return MarkdownFormatter.formatStreamChunk(chunk, formatBuffer);
+                    return chunk;
                 })
-                .filter(chunk -> !chunk.isEmpty())
-                .concatWith(Flux.defer(() -> {
-                    String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
-                    if (!remaining.isEmpty()) {
-                        logger.debug("RAG流式响应结束，发送剩余内容: {} 字符", remaining.length());
-                        return Flux.just(remaining);
-                    }
-                    return Flux.empty();
-                }))
                 .doOnComplete(() -> {
                     chatMemory.add(conversationId, List.of(
                             new UserMessage(message),
@@ -211,7 +190,6 @@ public class AIChatService {
                         .filter(this::isRetryableError)
                         .doBeforeRetry(retrySignal -> {
                             fullResponse.setLength(0);
-                            formatBuffer.setLength(0);
                             logger.warn("RAG对话失败，用户ID: {}，正在进行第 {} 次重试", userId, retrySignal.totalRetries() + 1);
                         }));
     }
@@ -238,22 +216,11 @@ public class AIChatService {
     public Flux<String> generatePlanStream(PlanGeneratorRequest request) {
         logger.info("流式生成策划案，主题: {}", request.getTheme());
 
-        StringBuilder formatBuffer = new StringBuilder();
-
         return planGeneratorChatClient.prompt(buildPlanPrompt(request))
                 .stream()
                 .content()
                 .limitRate(100)
-                .map(chunk -> MarkdownFormatter.formatStreamChunk(chunk, formatBuffer))
-                .filter(chunk -> !chunk.isEmpty())
-                .concatWith(Flux.defer(() -> {
-                    String remaining = MarkdownFormatter.flushStreamBuffer(formatBuffer);
-                    if (!remaining.isEmpty()) {
-                        logger.debug("策划案流式响应结束，发送剩余内容: {} 字符", remaining.length());
-                        return Flux.just(remaining);
-                    }
-                    return Flux.empty();
-                }))
+                .map(chunk -> chunk)
                 .doOnError(e -> logger.error("策划案生成错误", e))
                 .onErrorResume(e -> isClientDisconnect(e) ? Flux.empty() : Flux.error(e))
                 .retryWhen(reactor.util.retry.Retry.backoff(3, Duration.ofSeconds(1))
