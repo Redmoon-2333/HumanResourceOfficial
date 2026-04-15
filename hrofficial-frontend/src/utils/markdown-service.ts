@@ -71,34 +71,66 @@ class MarkdownService {
 
   private preprocess(text: string): string {
     if (!text) return ''
-    
-    let processed = text
-    
-    // Rule 1 & 3: Convert malformed tables and clean debris
-    // A malformed table has debris patterns like • | or :-•
-    const lines = processed.split('\n')
+
+    const lines = text.split('\n')
     const result: string[] = []
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
+    let i = 0
+
+    while (i < lines.length) {
+      const line = lines[i] ?? ''
       const trimmed = line.trim()
-      
-      // Rule 3: Remove debris lines
-      if (/^\u2022\s*\|/.test(trimmed)) continue  // • | patterns
-      if (/^\|\s*$/.test(trimmed)) continue  // Empty pipe lines
-      if (/^[\s|:•-]+$/.test(trimmed) && /:-\u2022/.test(trimmed)) continue  // | :-• | separator
-      
-      // Rule 2: Remove standalone --- lines (preserve Setext headings)
-      if (/^[-_]{3,}$/.test(trimmed)) {
-        const prevLine = i > 0 ? lines[i - 1].trim() : ''
-        const isSetextUnderline = prevLine && !prevLine.startsWith('#') && !prevLine.startsWith('-') && prevLine.length > 0
-        if (!isSetextUnderline) continue
+
+      // Detect table-like region (consecutive lines containing |)
+      if (trimmed.includes('|') && this.isTableLikeLine(trimmed)) {
+        const tableLines: string[] = []
+        while (i < lines.length && (lines[i] ?? '').trim() !== '') {
+          tableLines.push(lines[i] ?? '')
+          i++
+        }
+        // Skip separator rows (|---|---|) at the start
+        let startIdx = 0
+        if (tableLines.length > 0 && /^[\s|:-]+$/.test((tableLines[0] ?? '').trim())) {
+          startIdx = 1
+        }
+        const dataRows = tableLines.slice(startIdx)
+        if (dataRows.length > 0) {
+          const converted = this.convertMalformedTable(dataRows)
+          if (converted) {
+            result.push(converted)
+          } else {
+            dataRows.forEach(row => result.push(row ?? ''))
+          }
+        }
+        continue
       }
-      
+
+      // Rule: Remove debris lines (• | patterns, empty pipe lines)
+      if (/^\u2022\s*\|/.test(trimmed)) { i++; continue }
+      if (/^\|\s*$/.test(trimmed)) { i++; continue }
+
+      // Rule: Remove standalone --- lines (preserve Setext headings)
+      if (/^[-_]{3,}$/.test(trimmed)) {
+        const prevLine = result.length > 0 ? (result[result.length - 1] ?? '').trim() : ''
+        const isSetextUnderline = prevLine.length > 0 &&
+          !prevLine.startsWith('#') &&
+          !prevLine.startsWith('-') &&
+          !prevLine.startsWith('*')
+        if (!isSetextUnderline) { i++; continue }
+      }
+
       result.push(line)
+      i++
     }
-    
+
     return result.join('\n')
+  }
+
+  private isTableLikeLine(line: string): boolean {
+    const trimmed = line.trim()
+    if (!trimmed.includes('|')) return false
+    // Must have at least 2 pipe-separated segments
+    const segments = trimmed.split('|').filter(s => s.trim().length > 0)
+    return segments.length >= 2
   }
   
   /**
@@ -110,7 +142,7 @@ class MarkdownService {
     
     // Look ahead for debris patterns in next 10 lines
     for (let j = i; j < Math.min(i + 10, lines.length); j++) {
-      const trimmed = lines[j].trim()
+      const trimmed = (lines[j] ?? '').trim()
       // Skip empty lines
       if (/^\s*$/.test(trimmed)) continue
       
@@ -133,7 +165,7 @@ class MarkdownService {
     let headers: string[] = []
     
     for (let i = 0; i < tableRows.length; i++) {
-      const row = tableRows[i]
+      const row = tableRows[i] ?? ''
       const trimmed = row.trim()
       
       // Skip separator rows (|---|---|)
@@ -177,7 +209,7 @@ class MarkdownService {
   }
   
   private isValidTableRow(line: string, isFirstRow: boolean): boolean {
-    const trimmed = line.trim()
+    const trimmed = (line ?? '').trim()
     
     // Must contain |
     if (!trimmed.includes('|')) return false
@@ -197,7 +229,7 @@ class MarkdownService {
     if (tableRows.length === 0) return ''
     
     // Parse header row
-    const headerLine = tableRows[0].trim()
+    const headerLine = (tableRows[0] ?? '').trim()
     const headers = headerLine.split('|')
       .map(h => h.trim())
       .filter(h => h.length > 0)
@@ -208,7 +240,7 @@ class MarkdownService {
     
     // Process data rows
     for (let i = 1; i < tableRows.length; i++) {
-      const dataLine = tableRows[i].trim()
+      const dataLine = (tableRows[i] ?? '').trim()
       if (!dataLine || /^[\s|:-]+$/.test(dataLine)) continue
       
       const columns = dataLine.split('|')
