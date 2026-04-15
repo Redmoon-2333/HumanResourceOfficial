@@ -16,8 +16,10 @@ import {
   getDownloadUrl,
   createCategory,
   updateCategory,
+  deleteCategory,
   createSubcategory,
-  updateSubcategory
+  updateSubcategory,
+  deleteSubcategory
 } from '@/api/materials'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -521,6 +523,59 @@ const handleSubcategorySubmit = async () => {
   }
 }
 
+const handleDeleteCategory = async (category: Category) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除分类「${category.categoryName}」吗？此操作不可恢复。`,
+      '删除确认',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning', confirmButtonClass: 'el-button--danger' }
+    )
+    const res = await deleteCategory(category.categoryId)
+    if (res.code === 200) {
+      ElMessage.success('分类删除成功')
+      await fetchCategories()
+      if (currentCategory.value === category.categoryId) {
+        currentCategory.value = null
+        subcategories.value = []
+      }
+      await fetchMaterials()
+    } else {
+      ElMessage.error(res.message || '删除失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
+const handleDeleteSubcategory = async (subcategory: Subcategory) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除子分类「${subcategory.subcategoryName}」吗？此操作不可恢复。`,
+      '删除确认',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning', confirmButtonClass: 'el-button--danger' }
+    )
+    const res = await deleteSubcategory(subcategory.subcategoryId)
+    if (res.code === 200) {
+      ElMessage.success('子分类删除成功')
+      if (currentCategory.value) {
+        await fetchSubcategories(currentCategory.value)
+        if (currentSubcategory.value === subcategory.subcategoryId) {
+          currentSubcategory.value = null
+        }
+        await fetchMaterials()
+      }
+    } else {
+      ElMessage.error(res.message || '删除失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
+  }
+}
+
 const onCategoryChange = async () => {
   uploadForm.value.subcategoryId = null
   if (uploadForm.value.categoryId) {
@@ -632,6 +687,9 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
                   <button class="action-btn" @click="openSubcategoryDialog(category.categoryId)" title="添加子分类">
                     <el-icon :size="14"><Plus /></el-icon>
                   </button>
+                  <el-tooltip content="删除分类" :show-after="300">
+                    <el-icon class="action-btn danger" @click.stop="handleDeleteCategory(category)"><Delete /></el-icon>
+                  </el-tooltip>
                 </div>
                 <el-icon v-else :size="16" class="arrow-icon"><ArrowRight /></el-icon>
               </div>
@@ -664,6 +722,9 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
                     <button class="action-btn small" @click="openSubcategoryDialog(subcategory.categoryId, subcategory)" title="编辑">
                       <el-icon :size="12"><Edit /></el-icon>
                     </button>
+                    <el-tooltip content="删除子分类" :show-after="300">
+                      <el-icon class="action-btn danger small" @click.stop="handleDeleteSubcategory(subcategory)"><Delete /></el-icon>
+                    </el-tooltip>
                   </div>
                 </div>
               </div>
@@ -1397,6 +1458,10 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
   font-size: 15px;
   font-weight: 600;
   color: #1F2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
 }
 
 .category-actions {
@@ -1405,8 +1470,8 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 }
 
 .action-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: rgba(0, 0, 0, 0.05);
   color: #6B7280;
@@ -1424,8 +1489,17 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 }
 
 .action-btn.small {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
+}
+
+.action-btn.danger {
+  color: #F56C6C;
+}
+
+.action-btn.danger:hover {
+  color: #F78989;
+  background: rgba(245, 108, 108, 0.1);
 }
 
 .arrow-icon {
@@ -1491,6 +1565,13 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 .subcategory-actions {
   display: flex;
   gap: 4px;
+}
+
+.subcategory-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
 }
 
 /* 资料内容区 */
@@ -1940,6 +2021,7 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 
   .category-sidebar {
     position: static;
+    width: 100%;
   }
 
   .category-list {
@@ -1956,6 +2038,11 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 
   .stats-row {
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .materials-list.grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1976,33 +2063,76 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
 
   .stats-row {
     gap: 16px;
+    flex-wrap: wrap;
   }
 
   .stat-item {
     padding: 16px 20px;
+    flex: 1 1 calc(50% - 8px);
+    min-width: 140px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .materials-list.grid {
+    grid-template-columns: 1fr;
   }
 
   .material-card {
     flex-direction: column;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
   }
 
-  .material-actions {
-    align-items: center;
+  .material-card .material-info {
     width: 100%;
   }
 
+  .material-card .material-actions {
+    align-items: center;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-2);
+  }
+
+  .material-name {
+    font-size: 15px;
+  }
+
+  .material-desc {
+    font-size: 13px;
+  }
+
   .toolbar {
+    flex-wrap: wrap;
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-2);
   }
 
   .search-box {
     max-width: none;
+    width: 100%;
+    order: -1;
   }
 
   .toolbar-actions {
     justify-content: space-between;
+  }
+
+  .upload-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  /* 子分类横向滚动 */
+  .subcategory-list {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
   
   /* 弹窗移动端适配 */
@@ -2031,6 +2161,7 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
   
   :deep(.el-dialog__footer .el-button) {
     flex: 1;
+    min-height: 40px;
   }
 }
 
@@ -2041,63 +2172,145 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
     margin-bottom: 0;
     border-radius: 20px;
   }
-  
+
   .hero-title {
     font-size: 24px;
   }
-  
+
   .hero-subtitle {
     font-size: 14px;
   }
-  
+
+  .hero-badge {
+    font-size: 12px;
+    padding: var(--space-1) var(--space-3);
+  }
+
+  /* 统计区域 - 单列 + 字号保障 */
   .stats-row {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
-  
+
   .stat-item {
     width: 100%;
     justify-content: center;
+    padding: 12px 16px;
   }
-  
-  .main-content {
-    padding: 0 12px 30px;
+
+  .stat-value {
+    font-size: 20px;
   }
-  
-  .category-list {
-    flex-direction: column;
-  }
-  
-  .category-item {
-    min-width: auto;
-  }
-  
-  .materials-list.grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .material-card {
-    padding: 16px;
-  }
-  
-  .material-icon {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .material-name {
-    font-size: 14px;
-  }
-  
-  .download-btn {
-    padding: 8px 16px;
+
+  .stat-label {
     font-size: 13px;
   }
-  
-  /* 小屏幕弹窗优化 - 底部弹出式 */
+
+  /* 主内容区间距压缩 */
+  .main-content {
+    padding: 0 10px 24px;
+    gap: 16px;
+  }
+
+  /* 分类侧边栏 */
+  .category-list {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .category-item {
+    min-width: auto;
+    padding: 10px 12px;
+  }
+
+  .sidebar-header {
+    padding: 14px 16px;
+  }
+
+  .sidebar-title {
+    font-size: 16px;
+  }
+
+  /* 资料卡片 */
+  .materials-list.grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .material-card {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .material-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .material-name {
+    font-size: 15px;
+  }
+
+  .material-desc {
+    font-size: 13px;
+    -webkit-line-clamp: 1;
+  }
+
+  .meta-item {
+    font-size: 11px;
+  }
+
+  /* 触控友好的按钮尺寸 */
+  .download-btn {
+    padding: 10px 18px;
+    font-size: 14px;
+    min-height: 40px;
+  }
+
+  .edit-btn,
+  .delete-btn {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
+
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+
+  .action-btn.small {
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+  }
+
+  .upload-btn {
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .toggle-btn {
+    min-height: 36px;
+    padding: 8px 12px;
+  }
+
+  .pagination-btn {
+    min-height: 36px;
+    padding: 8px 14px;
+  }
+
+  /* 搜索框 */
+  .search-input {
+    padding: 12px 14px 12px 42px;
+    font-size: 14px;
+  }
+
+  /* 弹窗底部弹出式 */
   :deep(.el-dialog) {
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: none !important;
     margin: 0 !important;
     border-radius: 20px 20px 0 0 !important;
     position: fixed !important;
@@ -2106,34 +2319,50 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
     left: 0 !important;
     right: 0 !important;
   }
-  
+
   :deep(.el-dialog__header) {
     border-radius: 20px 20px 0 0 !important;
     padding: var(--space-3) !important;
   }
-  
+
   :deep(.el-dialog__body) {
-    max-height: 55vh;
+    max-height: 60vh;
     padding: var(--space-3) !important;
   }
-  
+
   :deep(.el-dialog__footer) {
     padding: var(--space-3) !important;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
   }
-  
+
+  :deep(.el-dialog__footer button) {
+    width: 100%;
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  /* 表单间距压缩 */
   .upload-form {
-    gap: 16px;
+    gap: 14px;
   }
-  
+
   .form-group label {
     font-size: 13px;
   }
-  
+
   .text-input,
   .select-input,
   .textarea-input {
-    padding: 10px 14px;
+    padding: 11px 14px;
     font-size: 14px;
+    min-height: 40px;
+  }
+
+  .cancel-btn,
+  .submit-btn {
+    min-height: 40px;
   }
 }
 
@@ -2205,17 +2434,6 @@ watch([currentCategory, currentSubcategory, searchQuery], () => {
   .search-box {
     width: 100% !important;
     max-width: 100% !important;
-  }
-}
-
-/* Tablet optimization */
-@media (max-width: 1024px) {
-  .materials-list.grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 </style>

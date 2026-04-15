@@ -7,7 +7,7 @@ import { ElMessage } from 'element-plus'
  * - public: 公开页面，无需登录
  * - guestOnly: 仅游客可访问（登录/注册）
  * - requiresAuth: 需要登录
- * - requiresMember: 需要部员身份（有roleHistory）
+ * - requiresMember: 需要部员身份（有 roleHistory）
  * - requiresMinister: 需要部长/副部长身份
  */
 
@@ -70,7 +70,7 @@ const router = createRouter({
       path: '/ai-chat',
       name: 'AIChat',
       component: () => import('@/views/AIChat.vue'),
-      meta: { title: 'AI对话', requiresMember: true }
+      meta: { title: 'AI 对话', requiresMember: true }
     },
     {
       path: '/plan-generator',
@@ -94,7 +94,7 @@ const router = createRouter({
       path: '/rag-management',
       name: 'RagManagement',
       component: () => import('@/views/RagManagement.vue'),
-      meta: { title: 'RAG知识库管理', requiresMinister: true }
+      meta: { title: 'RAG 知识库管理', requiresMinister: true }
     },
     {
       path: '/daily-image-management',
@@ -119,10 +119,26 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   document.title = `${to.meta.title || ''} - 人力资源管理系统`
 
   const userStore = useUserStore()
+  
+  // 【修复】页面刷新时，如果有 token 但用户信息未加载，先获取用户信息
+  // 这是为了解决刷新页面后 userInfo 为空导致的权限误判问题
+  if (userStore.token && !userStore.userInfo) {
+    try {
+      await userStore.fetchUserInfo()
+    } catch (error: any) {
+      console.error('获取用户信息失败:', error)
+      // Token 可能已过期，清除登录状态并重定向到登录页
+      userStore.logout()
+      ElMessage.error('登录已过期，请重新登录')
+      return next('/login')
+    }
+  }
+  
+  // 现在用户信息已加载，可以安全地检查权限
   const isLoggedIn = userStore.isLoggedIn
   const isMember = userStore.isMember
   const isMinister = userStore.isMinister
@@ -154,7 +170,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  // 需要部员身份（有roleHistory）
+  // 需要部员身份（有 roleHistory）
   if (requiresMember) {
     if (!isLoggedIn) {
       ElMessage.warning('请先登录')
