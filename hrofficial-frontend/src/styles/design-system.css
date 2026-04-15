@@ -321,7 +321,8 @@
   --space-3: 0.75rem;      /* 12px - 小间距 */
   --space-4: 1rem;         /* 16px - 标准间距 */
   --space-5: 1.25rem;      /* 20px - 中等间距 */
-  --space-6: 1.5rem;       /* 24px - 区块间距 */
+  --space-6: 1.5rem;       /* 24px - 区块间距、页面内边距 */
+  --space-7: 1.75rem;      /* 28px - 中等区块间距 */
   --space-8: 2rem;         /* 32px - 大间距 */
   --space-10: 2.5rem;      /* 40px - 较大间距 */
   --space-12: 3rem;        /* 48px - 章节间距 */
@@ -337,6 +338,8 @@
   --spacing-xl: var(--space-8);    /* 32px - 超大间距 */
   --spacing-2xl: var(--space-12);  /* 48px - 巨大间距 */
   --spacing-3xl: var(--space-16);  /* 64px - 特大间距 */
+  --spacing-section: var(--space-12);  /* 48px - 区块间距 */
+  --spacing-section-sm: var(--space-8);  /* 32px - 小区块间距 */
 
   /* 组件内边距 */
   --padding-xs: var(--space-1) var(--space-2);    /* 4px 8px */
@@ -411,6 +414,7 @@
   
   /* 彩色阴影 - 品牌色 */
   --shadow-coral: 0 4px 20px rgba(255, 107, 74, 0.25);
+  --shadow-coral-md: 0 6px 24px rgba(255, 107, 74, 0.3);
   --shadow-coral-lg: 0 8px 32px rgba(255, 107, 74, 0.35);
   --shadow-coral-glow: 0 0 20px rgba(255, 107, 74, 0.4);
   
@@ -498,9 +502,16 @@
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-soft: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* 运行时动态变量（由 JavaScript 设置） */
+  /* --tx: 50px; 粒子爆炸 X 轴位移 */
+  /* --ty: 50px; 粒子爆炸 Y 轴位移 */
+  /* --rotateX: 0deg; 3D 卡片旋转 X 轴 */
+  /* --rotateY: 0deg; 3D 卡片旋转 Y 轴 */
 }
 
 /* ============================================================
@@ -1141,21 +1152,26 @@ p:last-child { margin-bottom: 0; }
 /* ============================================================
    辅助功能：高对比度模式
    ============================================================ */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
   :root {
     /* 高对比度模式适配 */
+    --glass-opacity-sm: 1;
+    --glass-opacity-md: 1;
+    --glass-opacity-lg: 1;
   }
 }
 
 /* ============================================================
-   辅助功能：减少透明度
+   辅助功能：减少运动
    ============================================================ */
-@media (prefers-reduced-transparency: reduce) {
-  :root {
-    --glass-opacity-sm: 1;
-    --glass-opacity-md: 1;
-    --glass-opacity-lg: 1;
-    --glass-opacity-xl: 1;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -2197,13 +2213,14 @@ p:last-child { margin-bottom: 0; }
   }
 }
 
+/* 粒子爆炸动画 - 使用 CSS 变量由 JS 动态设置位移 */
 @keyframes particleExplode {
   0% {
     transform: scale(0) translate(0, 0);
     opacity: 1;
   }
   100% {
-    transform: scale(1) translate(var(--tx, 50px), var(--ty, 50px));
+    transform: scale(1) translate(50px, 50px);
     opacity: 0;
   }
 }
@@ -2293,8 +2310,9 @@ p:last-child { margin-bottom: 0; }
   transform: perspective(1000px);
 }
 
+/* 3D 倾斜效果 - 使用 CSS 变量由 JS 动态设置旋转角度 */
 .tilt-effect:hover {
-  transform: perspective(1000px) rotateX(var(--rotateX, 0deg)) rotateY(var(--rotateY, 0deg));
+  transform: perspective(1000px) rotateX(0deg) rotateY(0deg);
 }
 
 /* ============================================================
@@ -2388,7 +2406,7 @@ p:last-child { margin-bottom: 0; }
 .text-letter-animate span:nth-child(13) { animation-delay: 0.65s; }
 .text-letter-animate span:nth-child(14) { animation-delay: 0.7s; }
 .text-letter-animate span:nth-child(15) { animation-delay: 0.75s; }
-.text-letter-animate span:nth-child(n) { animation-delay: calc(0.05s * n); }
+/* 第 n 个子元素使用通用选择器，由具体元素决定延迟 */
 
 /* ============================================================
    UI REFINEMENT - Micro-interaction Polish
