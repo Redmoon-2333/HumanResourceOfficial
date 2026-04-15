@@ -259,6 +259,20 @@ export const updateCategory = (
   return http.put<CategoryResponse>(`/api/materials/category/${categoryId}`, data)
 }
 
+/**
+ * 删除分类
+ * @param categoryId - 分类ID
+ * @returns 删除结果
+ * 
+ * @example
+ * ```typescript
+ * await deleteCategory(1)
+ * ```
+ */
+export const deleteCategory = (categoryId: number): Promise<ApiResponse<void>> => {
+  return http.delete<void>(`/api/materials/category/${categoryId}`)
+}
+
 // ============================================
 // 子分类管理
 // ============================================
@@ -319,4 +333,18 @@ export const updateSubcategory = (
   data: SubcategoryRequest
 ): Promise<ApiResponse<SubcategoryResponse>> => {
   return http.put<SubcategoryResponse>(`/api/materials/subcategory/${subcategoryId}`, data)
+}
+
+/**
+ * 删除子分类
+ * @param subcategoryId - 子分类ID
+ * @returns 删除结果
+ * 
+ * @example
+ * ```typescript
+ * await deleteSubcategory(1)
+ * ```
+ */
+export const deleteSubcategory = (subcategoryId: number): Promise<ApiResponse<void>> => {
+  return http.delete<void>(`/api/materials/subcategory/${subcategoryId}`)
 }

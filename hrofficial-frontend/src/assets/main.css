@@ -194,6 +194,11 @@
   --transition-slow: 300ms ease;
   --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
+  /* 缓动函数 */
+  --easing-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --easing-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+
   /* Z-index */
   --z-dropdown: 1000;
   --z-sticky: 1020;
