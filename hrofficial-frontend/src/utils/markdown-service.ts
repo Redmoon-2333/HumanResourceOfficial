@@ -69,16 +69,187 @@ class MarkdownService {
     return `<pre class="code-block"><code>${this.escapeHtml(code)}</code></pre>`
   }
 
+  private preprocess(text: string): string {
+    if (!text) return ''
+    
+    let processed = text
+    
+    // Rule 1 & 3: Convert malformed tables and clean debris
+    // A malformed table has debris patterns like • | or :-•
+    const lines = processed.split('\n')
+    const result: string[] = []
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const trimmed = line.trim()
+      
+      // Rule 3: Remove debris lines
+      if (/^\u2022\s*\|/.test(trimmed)) continue  // • | patterns
+      if (/^\|\s*$/.test(trimmed)) continue  // Empty pipe lines
+      if (/^[\s|:•-]+$/.test(trimmed) && /:-\u2022/.test(trimmed)) continue  // | :-• | separator
+      
+      // Rule 2: Remove standalone --- lines (preserve Setext headings)
+      if (/^[-_]{3,}$/.test(trimmed)) {
+        const prevLine = i > 0 ? lines[i - 1].trim() : ''
+        const isSetextUnderline = prevLine && !prevLine.startsWith('#') && !prevLine.startsWith('-') && prevLine.length > 0
+        if (!isSetextUnderline) continue
+      }
+      
+      result.push(line)
+    }
+    
+    return result.join('\n')
+  }
+  
+  /**
+   * Check if lines starting at index i form a malformed table
+   * Only returns true if debris patterns (• |, :-•) are found
+   */
+  private isMalformedTable(lines: string[], i: number): boolean {
+    if (!lines[i] || !lines[i].includes('|')) return false
+    
+    // Look ahead for debris patterns in next 10 lines
+    for (let j = i; j < Math.min(i + 10, lines.length); j++) {
+      const trimmed = lines[j].trim()
+      // Skip empty lines
+      if (/^\s*$/.test(trimmed)) continue
+      
+      // Has debris patterns - this is malformed
+      if (/•\s*\|/.test(trimmed)) return true
+      if (/:-•/.test(trimmed)) return true
+      if (/^\|[\s:•-]+$/.test(trimmed) && /:-•/.test(trimmed)) return true
+    }
+    
+    // No debris found - this is a standard GFM table, don't convert
+    return false
+  }
+  
+  /**
+   * Convert malformed table to list format
+   * Format: **Title** then - Header: Value for remaining columns
+   */
+  private convertMalformedTable(tableRows: string[]): string {
+    const result: string[] = []
+    let headers: string[] = []
+    
+    for (let i = 0; i < tableRows.length; i++) {
+      const row = tableRows[i]
+      const trimmed = row.trim()
+      
+      // Skip separator rows (|---|---|)
+      if (/^[\s|:-]+$/.test(trimmed)) continue
+      // Skip empty rows
+      if (!trimmed) continue
+      
+      // Extract columns from | col1 | col2 | format
+      if (trimmed.includes('|')) {
+        const columns = trimmed.split('|')
+          .map(c => c.trim())
+          .filter(c => c.length > 0)
+        
+        if (columns.length === 0) continue
+        
+        // First row is header
+        if (headers.length === 0) {
+          headers = columns
+          continue
+        }
+        
+        // Data row: first column becomes bold title
+        const title = columns[0]
+        result.push(`**${title}**`)
+        
+        // Remaining columns become "- Header: Value" list items
+        for (let j = 1; j < columns.length && j < headers.length; j++) {
+          if (columns[j]) {
+            result.push(`- ${headers[j]}: ${columns[j]}`)
+          }
+        }
+        
+        // Add empty line between entries
+        if (i < tableRows.length - 1) {
+          result.push('')
+        }
+      }
+    }
+    
+    return result.join('\n')
+  }
+  
+  private isValidTableRow(line: string, isFirstRow: boolean): boolean {
+    const trimmed = line.trim()
+    
+    // Must contain |
+    if (!trimmed.includes('|')) return false
+    
+    // First row (header) must have at least 2 columns
+    if (isFirstRow) {
+      const columns = trimmed.split('|').filter(c => c.trim().length > 0)
+      return columns.length >= 2
+    }
+    
+    // Data rows must have at least one non-empty value
+    const hasContent = /[^\s|•:-]/.test(trimmed)
+    return hasContent
+  }
+  
+  private convertTableToList(tableRows: string[]): string {
+    if (tableRows.length === 0) return ''
+    
+    // Parse header row
+    const headerLine = tableRows[0].trim()
+    const headers = headerLine.split('|')
+      .map(h => h.trim())
+      .filter(h => h.length > 0)
+    
+    if (headers.length === 0) return ''
+    
+    const converted: string[] = []
+    
+    // Process data rows
+    for (let i = 1; i < tableRows.length; i++) {
+      const dataLine = tableRows[i].trim()
+      if (!dataLine || /^[\s|:-]+$/.test(dataLine)) continue
+      
+      const columns = dataLine.split('|')
+        .map(c => c.trim())
+        .filter(c => c.length > 0)
+      
+      if (columns.length === 0) continue
+      
+      // Use first column as bold title
+      const title = columns[0]
+      converted.push(`**${title}**`)
+      
+      // Add remaining columns as list items
+      for (let j = 1; j < columns.length && j <= headers.length; j++) {
+        const headerName = headers[j] || `列${j}`
+        const value = columns[j]
+        if (value && value.trim().length > 0) {
+          converted.push(`- ${headerName}: ${value}`)
+        }
+      }
+      
+      // Add empty line between entries
+      if (i < tableRows.length - 1) {
+        converted.push('')
+      }
+    }
+    
+    return converted.join('\n')
+  }
+
   render(markdown: string): string {
     if (!markdown) return ''
 
     this.initMarkdownIt()
 
     try {
-      const html = this.md!.render(markdown)
+      const processed = this.preprocess(markdown)
+      const html = this.md!.render(processed)
       return DOMPurify.sanitize(html, MARKDOWN_SANITIZE_CONFIG)
     } catch (error) {
-      console.warn('Markdown渲染失败:', error)
+      console.warn('Markdown 渲染失败:', error)
       return this.escapeHtml(markdown).replace(/\n/g, '<br>')
     }
   }
