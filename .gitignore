@@ -241,3 +241,6 @@ MyBatis-Plus-Optimization-Report.md
 
 ### 前端测试文件 ###
 hrofficial-frontend/src/utils/__tests__/
+/FRONTEND_OPTIMIZATION_PLAN.md
+/PERMISSION_AND_403_DIAGNOSIS.md
+/docs/backend-streaming-simplification.md
