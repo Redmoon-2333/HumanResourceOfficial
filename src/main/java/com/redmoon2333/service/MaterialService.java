@@ -581,32 +581,104 @@ material.setCategoryId(categoryId);
     @Transactional
     public MaterialSubcategory updateSubcategory(Integer subcategoryId, String subcategoryName, Integer sortOrder) {
         logger.info("更新子分类信息: subcategoryId={}, subcategoryName={}", subcategoryId, subcategoryName);
-        
+
         // 检查权限（部长/副部长）
         permissionUtil.checkMinisterPermission();
-        
+
         // 检查子分类是否存在
         MaterialSubcategory subcategory = subcategoryMapper.selectById(subcategoryId);
         if (subcategory == null) {
             logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
             throw new RuntimeException("指定的子分类不存在");
         }
-        
+
         // 检查名称是否与同分类下的其他子分类重复
         MaterialSubcategory existingSubcategory = subcategoryMapper.findByNameAndCategoryId(
             subcategoryName, subcategory.getCategoryId());
         if (existingSubcategory != null && !existingSubcategory.getSubcategoryId().equals(subcategoryId)) {
-            logger.warn("该分类下已存在同名子分类: categoryId={}, subcategoryName={}", 
+            logger.warn("该分类下已存在同名子分类: categoryId={}, subcategoryName={}",
                 subcategory.getCategoryId(), subcategoryName);
             throw new RuntimeException("该分类下已存在同名子分类");
         }
-        
+
         subcategory.setSubcategoryName(subcategoryName);
         subcategory.setSortOrder(sortOrder);
         subcategoryMapper.updateById(subcategory);
-        
+
         logger.info("子分类信息更新成功: subcategoryId={}", subcategoryId);
         return subcategory;
+    }
+
+    /**
+     * 删除分类（级联删除子分类和资料）
+     * 使用MyBatis-Plus的deleteById方法
+     * @param categoryId 分类ID
+     */
+    @Transactional
+    public void deleteCategory(Integer categoryId) {
+        logger.info("删除分类: categoryId={}", categoryId);
+
+        // 检查权限（部长/副部长）
+        permissionUtil.checkMinisterPermission();
+
+        // 检查分类是否存在
+        MaterialCategory category = categoryMapper.selectById(categoryId);
+        if (category == null) {
+            logger.warn("未找到指定分类: categoryId={}", categoryId);
+            throw new RuntimeException("指定的分类不存在");
+        }
+
+        // 获取该分类下的所有子分类
+        List<MaterialSubcategory> subcategories = subcategoryMapper.findByCategoryId(categoryId);
+
+        // 删除每个子分类下的资料文件
+        for (MaterialSubcategory subcategory : subcategories) {
+            // 删除该子分类下的所有资料记录和文件
+            List<Material> materials = materialMapper.findBySubcategoryId(subcategory.getSubcategoryId());
+            for (Material material : materials) {
+                deleteMaterialFile(material.getFileUrl());
+                materialMapper.deleteById(material.getMaterialId());
+            }
+            // 删除子分类记录
+            subcategoryMapper.deleteById(subcategory.getSubcategoryId());
+        }
+
+        // 删除分类记录
+        categoryMapper.deleteById(categoryId);
+
+        logger.info("分类删除成功: categoryId={}, 级联删除了{}个子分类", categoryId, subcategories.size());
+    }
+
+    /**
+     * 删除子分类（级联删除资料）
+     * 使用MyBatis-Plus的deleteById方法
+     * @param subcategoryId 子分类ID
+     */
+    @Transactional
+    public void deleteSubcategory(Integer subcategoryId) {
+        logger.info("删除子分类: subcategoryId={}", subcategoryId);
+
+        // 检查权限（部长/副部长）
+        permissionUtil.checkMinisterPermission();
+
+        // 检查子分类是否存在
+        MaterialSubcategory subcategory = subcategoryMapper.selectById(subcategoryId);
+        if (subcategory == null) {
+            logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
+            throw new RuntimeException("指定的子分类不存在");
+        }
+
+        // 删除该子分类下的所有资料
+        List<Material> materials = materialMapper.findBySubcategoryId(subcategoryId);
+        for (Material material : materials) {
+            deleteMaterialFile(material.getFileUrl());
+            materialMapper.deleteById(material.getMaterialId());
+        }
+
+        // 删除子分类记录
+        subcategoryMapper.deleteById(subcategoryId);
+
+        logger.info("子分类删除成功: subcategoryId={}, 级联删除了{}个资料", subcategoryId, materials.size());
     }
 }
 

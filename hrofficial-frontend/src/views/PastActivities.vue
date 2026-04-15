@@ -811,7 +811,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 32px;
-  background: white;
+  background: #FFF8F5;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.1);
@@ -962,7 +962,7 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   padding: 12px 16px;
-  background: white;
+  background: #FFF8F5;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.1);
@@ -995,7 +995,7 @@ onMounted(() => {
 .filter-btn {
   padding: 6px 12px;
   border: 1px solid #E5E7EB;
-  background: white;
+  background: #FFF8F5;
   border-radius: 6px;
   font-size: 13px;
   color: #6B7280;
@@ -1027,7 +1027,7 @@ onMounted(() => {
 }
 
 .year-group {
-  margin-bottom: 60px;
+  margin-bottom: 48px;
   animation: fadeInUp 0.6s ease forwards;
   opacity: 0;
 }
@@ -1049,10 +1049,10 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 16px 28px;
-  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  background: linear-gradient(135deg, #FBBF24, #FDE68A);
   border-radius: 16px;
   color: white;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -1096,16 +1096,16 @@ onMounted(() => {
 /* 活动网格 - 增强版 */
 .activities-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .activity-card {
-  background: white;
-  border-radius: 20px;
+  background: #FFF8F5;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(245, 158, 11, 0.08);
+  border: 1.5px solid rgba(245, 158, 11, 0.12);
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   cursor: pointer;
   position: relative;
@@ -1126,13 +1126,20 @@ onMounted(() => {
 }
 
 .activity-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12), 0 2px 6px rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .activity-card:hover::before {
   opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .activity-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
 }
 
 @keyframes gradientFlow {
@@ -1681,7 +1688,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: white;
+  background: #FFF8F5;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
   font-size: 13px;
@@ -1712,7 +1719,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: #FFF8F5;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
   font-size: 13px;

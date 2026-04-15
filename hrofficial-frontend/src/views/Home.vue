@@ -639,9 +639,11 @@ const goToImageManagement = () => {
 }
 
 .hero-title {
-  font-size: clamp(1.875rem, 4vw, 2.5rem);
+  font-size: clamp(1.75rem, 4vw + 0.5rem, 2.75rem);
   line-height: 1.2;
   margin-bottom: var(--space-4);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .name-highlight {
@@ -665,10 +667,12 @@ const goToImageManagement = () => {
 
 .hero-subtitle {
   color: var(--text-secondary);
-  font-size: var(--text-lg);
-  max-width: 600px;
+  font-size: clamp(0.9375rem, 1.5vw + 0.5rem, 1.125rem);
+  max-width: min(600px, 75ch);
   margin: 0 auto;
   line-height: 1.7;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Floating Elements - 增强版 */
@@ -979,6 +983,8 @@ section {
   line-height: 2;
   margin: 0;
   text-align: justify;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .intro-features {
@@ -1102,6 +1108,8 @@ section {
   line-height: 2;
   margin: 0;
   text-align: justify;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .daily-highlights {
@@ -1181,6 +1189,7 @@ section {
 .carousel-container {
   position: relative;
   height: 380px;
+  max-width: 100%;
   perspective: 1200px;
   display: flex;
   align-items: center;
@@ -1351,6 +1360,7 @@ section {
   position: relative;
   width: 240px;
   height: 240px;
+  max-width: 90vw;
   transform-style: preserve-3d;
 }
 
@@ -1426,12 +1436,18 @@ section {
   font-weight: var(--font-bold);
   margin: 0 0 var(--space-1) 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .carousel-image-overlay p {
   font-size: var(--text-sm);
   margin: 0;
   opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 轮播控制按钮 - 增强版 + 触摸优化 */
@@ -1655,11 +1671,13 @@ section {
 @media (max-width: 1024px) {
   .carousel-container {
     height: 320px;
+    perspective: 1000px;
   }
 
   .carousel-3d {
     width: 180px;
     height: 180px;
+    max-width: 85vw;
   }
 
   .carousel-item {
@@ -1736,6 +1754,7 @@ section {
   .hero-subtitle {
     font-size: var(--text-base);
     line-height: 1.8;
+    max-width: 100%;
   }
 
   .welcome-badge {
@@ -1816,6 +1835,7 @@ section {
   .carousel-container {
     height: 320px;
     margin-top: var(--space-8);
+    perspective: 800px;
   }
 
   .management-entry {
@@ -1878,6 +1898,27 @@ section {
   .floating-elements {
     display: none;
   }
+
+  .carousel-image-overlay h4 {
+    font-size: var(--text-base);
+    white-space: normal;
+    text-overflow: clip;
+  }
+
+  .carousel-image-overlay p {
+    font-size: var(--text-xs);
+    white-space: normal;
+    text-overflow: clip;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .management-entry {
+    padding: 8px 12px;
+    gap: 6px;
+  }
   
   .section-header::after {
     width: 40px;
@@ -1925,11 +1966,13 @@ section {
   .carousel-container {
     height: 300px;
     border-radius: 20px;
+    perspective: 600px;
   }
 
   .carousel-3d {
     width: 160px;
     height: 160px;
+    max-width: 80vw;
   }
 
   .carousel-item {
@@ -1960,21 +2003,41 @@ section {
   .section-title {
     font-size: var(--text-xl);
   }
+
+  .intro-content {
+    max-width: 100%;
+  }
+
+  .intro-text {
+    font-size: var(--text-sm);
+    line-height: 1.9;
+  }
+
+  .daily-text-content p {
+    font-size: var(--text-sm);
+    line-height: 1.9;
+  }
+
+  .highlight-item {
+    min-height: 52px;
+    padding: var(--space-3) var(--space-3);
+  }
+
+  .carousel-image-overlay {
+    padding: var(--space-3);
+  }
+
+  .carousel-image-overlay h4 {
+    font-size: var(--text-sm);
+  }
+
+  .welcome-badge {
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-3);
+  }
 }
 
-/* Hero typography refinements */
-.hero-title {
-  font-size: var(--text-5xl);
-  line-height: var(--leading-sm);
-  letter-spacing: var(--tracking-tight);
-}
-
-.hero-subtitle {
-  font-size: var(--text-lg);
-  line-height: var(--leading-lg);
-  max-width: var(--max-line-length);
-  margin: var(--space-4) auto var(--space-6);
-}
+/* Hero typography - 已在上方定义，使用 clamp() 响应式字号 */
 
 /* Section spacing */
 .features-section,

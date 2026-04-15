@@ -8,6 +8,21 @@ import type { ActivityIntro, ActivityIntroRequest, ActivityImage } from '@/types
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { getFullImageUrl, getFullImageUrlList } from '@/utils/image'
+import {
+  StarFilled,
+  Search,
+  CircleClose,
+  Plus,
+  Picture,
+  Edit,
+  Delete,
+  Upload,
+  Document,
+  Star,
+  Aim,
+  List,
+  ArrowDown
+} from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 
@@ -525,7 +540,7 @@ onMounted(() => {
                 <div class="content-block">
                   <div class="block-header">
                     <div class="block-icon pur-icon">
-                      <el-icon><Target /></el-icon>
+                      <el-icon><Aim /></el-icon>
                     </div>
                     <h4 class="block-title">活动目的</h4>
                   </div>
@@ -1026,7 +1041,7 @@ onMounted(() => {
   margin-top: var(--space-6);
   margin-bottom: var(--space-6);
   padding: var(--space-4);
-  background: white;
+  background: #FFF8F5;
   border-radius: var(--radius-xl);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(249, 115, 22, 0.1);
@@ -1105,7 +1120,7 @@ onMounted(() => {
 }
 
 .search-box:focus-within {
-  background: white;
+  background: #FFF8F5;
   box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
   border-color: rgba(249, 115, 22, 0.3);
 }
@@ -1183,9 +1198,9 @@ onMounted(() => {
 
 /* Activity Card - 增强版 */
 .activity-card {
-  background: white;
+  background: #FFF8F5;
   border-radius: var(--radius-2xl);
-  border: 1px solid rgba(251, 146, 60, 0.1);
+  border: 1.5px solid rgba(251, 146, 60, 0.12);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1209,10 +1224,9 @@ onMounted(() => {
 }
 
 .activity-card:hover {
-  box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(251, 146, 60, 0.15);
-  transform: translateY(-6px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(251, 146, 60, 0.12), 0 2px 6px rgba(251, 146, 60, 0.08);
+  border-color: rgba(251, 146, 60, 0.25);
 }
 
 .activity-card:hover::before {
@@ -1310,7 +1324,7 @@ onMounted(() => {
   justify-content: center;
   border: none;
   border-radius: var(--radius-lg);
-  background: white;
+  background: #FFF8F5;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -1385,9 +1399,9 @@ onMounted(() => {
 }
 
 .pur-icon {
-  background: linear-gradient(135deg, rgba(252, 211, 77, 0.2), rgba(252, 211, 77, 0.1));
-  color: rgba(251, 191, 36, 1);
-  box-shadow: 0 2px 8px rgba(252, 211, 77, 0.15);
+  background: linear-gradient(135deg, rgba(252, 211, 77, 0.25), rgba(252, 211, 77, 0.15));
+  color: #D97706;
+  box-shadow: 0 2px 10px rgba(252, 211, 77, 0.2);
 }
 
 .proc-icon {
@@ -1766,7 +1780,7 @@ onMounted(() => {
   height: 148px;
   border-radius: var(--radius-lg);
   border: 2px dashed rgba(251, 146, 60, 0.3);
-  background: white;
+  background: #FFF8F5;
   transition: all 0.3s ease;
 }
 
@@ -1805,7 +1819,7 @@ onMounted(() => {
 
 /* Images List - 增强版 */
 .images-list-card {
-  background: white;
+  background: #FFF8F5;
   border-radius: var(--radius-xl);
   border: 1px solid rgba(251, 146, 60, 0.1);
   overflow: hidden;
@@ -1844,7 +1858,7 @@ onMounted(() => {
 
 .image-card {
   position: relative;
-  background: white;
+  background: #FFF8F5;
   border-radius: var(--radius-lg);
   border: 1px solid rgba(251, 146, 60, 0.1);
   overflow: hidden;
@@ -2199,6 +2213,11 @@ onMounted(() => {
 
   .activities-grid {
     grid-template-columns: 1fr;
+  }
+
+  .activity-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
   }
   
   /* 弹窗移动端适配 */

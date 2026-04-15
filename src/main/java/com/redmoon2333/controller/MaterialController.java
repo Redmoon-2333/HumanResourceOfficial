@@ -331,4 +331,34 @@ public class MaterialController {
             return ApiResponse.error(e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
         }
     }
+
+    /**
+     * 删除分类（级联删除子分类和资料）
+     */
+    @DeleteMapping("/category/{categoryId}")
+    @RequireMinisterRole("删除资料分类")
+    public ApiResponse<Void> deleteCategory(@PathVariable Integer categoryId) {
+        try {
+            materialService.deleteCategory(categoryId);
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            logger.error("删除分类失败: {}", e.getMessage(), e);
+            return ApiResponse.error(e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
+        }
+    }
+
+    /**
+     * 删除子分类（级联删除资料）
+     */
+    @DeleteMapping("/subcategory/{subcategoryId}")
+    @RequireMinisterRole("删除资料子分类")
+    public ApiResponse<Void> deleteSubcategory(@PathVariable Integer subcategoryId) {
+        try {
+            materialService.deleteSubcategory(subcategoryId);
+            return ApiResponse.success(null);
+        } catch (Exception e) {
+            logger.error("删除子分类失败: {}", e.getMessage(), e);
+            return ApiResponse.error(e.getMessage(), ErrorCode.SYSTEM_ERROR.getCode());
+        }
+    }
 }

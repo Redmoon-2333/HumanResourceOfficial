@@ -6,6 +6,7 @@
  */
 
 import MarkdownIt from 'markdown-it'
+import multiMdTable from 'markdown-it-multimd-table'
 import taskLists from 'markdown-it-task-lists'
 import container from 'markdown-it-container'
 import DOMPurify from 'dompurify'
@@ -38,6 +39,14 @@ class MarkdownService {
       typographer: true,
       breaks: true,
       highlight: this.highlightCode.bind(this)
+    })
+
+    // 使用多 Markdown 表格插件，支持无分隔行表格、多行表头等
+    this.md.use(multiMdTable, {
+      multiline: true,       // 支持多行单元格
+      rowspan: true,         // 支持跨行
+      colspan: true,         // 支持跨列
+      enableHeaderless: true // 支持无表头表格
     })
 
     this.md.use(taskLists, { enabled: true, label: true, lineNumber: true })
@@ -74,52 +83,26 @@ class MarkdownService {
 
     const lines = text.split('\n')
     const result: string[] = []
-    let i = 0
 
-    while (i < lines.length) {
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i] ?? ''
       const trimmed = line.trim()
 
-      // Detect table-like region (consecutive lines containing |)
-      if (trimmed.includes('|') && this.isTableLikeLine(trimmed)) {
-        const tableLines: string[] = []
-        while (i < lines.length && (lines[i] ?? '').trim() !== '') {
-          tableLines.push(lines[i] ?? '')
-          i++
-        }
-        // Skip separator rows (|---|---|) at the start
-        let startIdx = 0
-        if (tableLines.length > 0 && /^[\s|:-]+$/.test((tableLines[0] ?? '').trim())) {
-          startIdx = 1
-        }
-        const dataRows = tableLines.slice(startIdx)
-        if (dataRows.length > 0) {
-          const converted = this.convertMalformedTable(dataRows)
-          if (converted) {
-            result.push(converted)
-          } else {
-            dataRows.forEach(row => result.push(row ?? ''))
-          }
-        }
-        continue
-      }
+      // Rule 1: Remove debris lines (• | patterns, empty pipe lines)
+      if (/^\u2022\s*\|/.test(trimmed)) continue
+      if (/^\|\s*$/.test(trimmed)) continue
 
-      // Rule: Remove debris lines (• | patterns, empty pipe lines)
-      if (/^\u2022\s*\|/.test(trimmed)) { i++; continue }
-      if (/^\|\s*$/.test(trimmed)) { i++; continue }
-
-      // Rule: Remove standalone --- lines (preserve Setext headings)
+      // Rule 2: Remove standalone --- lines (preserve Setext headings)
       if (/^[-_]{3,}$/.test(trimmed)) {
         const prevLine = result.length > 0 ? (result[result.length - 1] ?? '').trim() : ''
         const isSetextUnderline = prevLine.length > 0 &&
           !prevLine.startsWith('#') &&
           !prevLine.startsWith('-') &&
           !prevLine.startsWith('*')
-        if (!isSetextUnderline) { i++; continue }
+        if (!isSetextUnderline) continue
       }
 
       result.push(line)
-      i++
     }
 
     return result.join('\n')
