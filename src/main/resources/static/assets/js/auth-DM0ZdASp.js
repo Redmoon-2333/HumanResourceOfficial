@@ -1,0 +1,1 @@
+import{s as e}from"./index-D8ghylZ2.js";const t=t=>e.post(`/api/auth/login`,t),n=t=>e.post(`/api/auth/register`,t);export{n,t};

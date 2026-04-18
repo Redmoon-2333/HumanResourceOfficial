@@ -1,0 +1,1 @@
+import{s as e}from"./index-C0RKEg6y.js";const t=t=>e.post(`/api/auth/login`,t),n=t=>e.post(`/api/auth/register`,t);export{n,t};
