@@ -29,11 +29,11 @@ services:
     container_name: hrofficial-redis
     restart: unless-stopped
     environment:
-      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD:REDACTED_REDIS_PASS}
+      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:REDACTED_REDIS_PASS}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,12 +46,12 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       DB_URL: jdbc:mysql://mysql:3306/hrofficial?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       DB_USERNAME: root
       DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:REDACTED_REDIS_PASS}
       CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api}
       CHATECNU_API_KEY: ${CHATECNU_API_KEY}
       JWT_SECRET: ${JWT_SECRET}

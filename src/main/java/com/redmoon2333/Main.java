@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @MapperScan("com.redmoon2333.mapper")
-@EnableScheduling  // 启用定时任务，用于定期清理Redis内存
+@EnableScheduling
 public class Main {
     public static void main(String[] args) {
         SpringApplication.run(Main.class, args);
