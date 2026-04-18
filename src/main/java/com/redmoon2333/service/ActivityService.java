@@ -1,6 +1,6 @@
 package com.redmoon2333.service;
 
-import com.redmoon2333.annotation.DistributedLock;
+// import com.redmoon2333.annotation.DistributedLock;
 import com.redmoon2333.entity.Activity;
 import com.redmoon2333.entity.ActivityImage;
 import com.redmoon2333.exception.BusinessException;
@@ -8,7 +8,6 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivityImageMapper;
 import com.redmoon2333.mapper.ActivityMapper;
 import com.redmoon2333.util.LocalFileUtil;
-import com.redmoon2333.util.MQSender;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +39,7 @@ public class ActivityService {
     @Autowired
     private LocalFileUtil localFileUtil;
 
-    private final MQSender mqSender;
-
-    @DistributedLock(key = "'activity:create:' + #activity.activityName", waitTime = 5, leaseTime = 30)
+    // @DistributedLock(key = "'activity:create:' + #activity.activityName", waitTime = 5, leaseTime = 30)
     @CacheEvict(value = "activity:list", key = "'all'")
     public Activity createActivity(Activity activity) {
         logger.info("开始创建活动: {}", activity.getActivityName());
@@ -51,13 +48,12 @@ public class ActivityService {
         activityMapper.insert(activity);
         logger.info("活动创建成功，活动ID: {}", activity.getActivityId());
 
-n        // 发送活动创建事件到 MQ
-        mqSender.send("activity.exchange", "activity.created", Map.of(
-            "activityId", activity.getActivityId(),
-            "activityName", activity.getActivityName(),
-            "startTime", activity.getStartTime()
-        ));
-        logger.info("已发送活动创建 MQ 事件：activityId={}", activity.getActivityId());
+        // TODO: MQ 已暂时禁用，启用后发送活动创建事件
+        // mqSender.send("activity.exchange", "activity.created", Map.of(
+        //     "activityId", activity.getActivityId(),
+        //     "activityName", activity.getActivityName(),
+        //     "startTime", activity.getStartTime()
+        // ));
         return activity;
     }
 
@@ -93,7 +89,7 @@ n        // 发送活动创建事件到 MQ
         }
     }
 
-    @DistributedLock(key = "'activity:edit:' + #activityId", waitTime = 5, leaseTime = 30)
+    // @DistributedLock(key = "'activity:edit:' + #activityId", waitTime = 5, leaseTime = 30)
     @CacheEvict(value = {"activity", "activity:list"}, key = "#activityId")
     public Activity updateActivity(Integer activityId, Activity activityDetails) {
         logger.info("开始更新活动: ID={}", activityId);
