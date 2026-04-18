@@ -29,11 +29,11 @@ services:
     container_name: hrofficial-redis
     restart: unless-stopped
     environment:
-      - REDIS_ARGS=--requirepass RedMoon
+      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD:RedMoon}
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "RedMoon", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:RedMoon}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,7 +51,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: RedMoon
+      REDIS_PASSWORD: ${REDIS_PASSWORD:RedMoon}
       CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api}
       CHATECNU_API_KEY: ${CHATECNU_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
