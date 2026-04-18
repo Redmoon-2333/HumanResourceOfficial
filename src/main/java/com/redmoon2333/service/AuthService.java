@@ -10,6 +10,9 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivationCodeMapper;
 import com.redmoon2333.mapper.UserMapper;
 import com.redmoon2333.util.JwtUtil;
+// import com.redmoon2333.util.MQSender;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 认证服务类
@@ -27,22 +31,25 @@ import java.util.Map;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AuthService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
-    
+
     @Autowired
     private UserMapper userMapper;
-    
+
     @Autowired
     private ActivationCodeMapper activationCodeMapper;
-    
+
     @Autowired
     private PasswordEncoder passwordEncoder;
-    
+
     @Autowired
     private JwtUtil jwtUtil;
-    
+
+    // private final MQSender mqSender; // MQ 已暂时禁用
+
     /**
      * 用户登录
      * @param loginRequest 登录请求参数
@@ -125,7 +132,10 @@ public class AuthService {
         activationCode.setUserId(newUser.getUserId());
         activationCode.setUseTime(LocalDateTime.now());
         activationCodeMapper.updateById(activationCode);
-        
+
+        // TODO: MQ 已暂时禁用，启用后发送用户注册事件
+        // mqSender.send("user.exchange", "user.registered", Map.of(...));
+
         return newUser;
     }
     

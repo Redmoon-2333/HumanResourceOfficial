@@ -1,5 +1,6 @@
 package com.redmoon2333.service;
 
+// import com.redmoon2333.annotation.DistributedLock;
 import com.redmoon2333.entity.Activity;
 import com.redmoon2333.entity.ActivityImage;
 import com.redmoon2333.exception.BusinessException;
@@ -7,19 +8,24 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivityImageMapper;
 import com.redmoon2333.mapper.ActivityMapper;
 import com.redmoon2333.util.LocalFileUtil;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ActivityService {
 
     private static final Logger logger = LoggerFactory.getLogger(ActivityService.class);
@@ -33,6 +39,8 @@ public class ActivityService {
     @Autowired
     private LocalFileUtil localFileUtil;
 
+    // @DistributedLock(key = "'activity:create:' + #activity.activityName", waitTime = 5, leaseTime = 30)
+    @CacheEvict(value = "activity:list", key = "'all'")
     public Activity createActivity(Activity activity) {
         logger.info("开始创建活动: {}", activity.getActivityName());
 
@@ -40,9 +48,16 @@ public class ActivityService {
         activityMapper.insert(activity);
         logger.info("活动创建成功，活动ID: {}", activity.getActivityId());
 
+        // TODO: MQ 已暂时禁用，启用后发送活动创建事件
+        // mqSender.send("activity.exchange", "activity.created", Map.of(
+        //     "activityId", activity.getActivityId(),
+        //     "activityName", activity.getActivityName(),
+        //     "startTime", activity.getStartTime()
+        // ));
         return activity;
     }
 
+    @Cacheable(value = "activity:list", key = "'all'")
     public List<Activity> getAllActivities() {
         logger.info("获取所有活动列表");
         try {
@@ -55,6 +70,7 @@ public class ActivityService {
         }
     }
 
+    @Cacheable(value = "activity", key = "#activityId", unless = "#result == null")
     public Activity getActivityById(Integer activityId) {
         logger.info("根据ID获取活动详情: ID={}", activityId);
         try {
@@ -73,6 +89,8 @@ public class ActivityService {
         }
     }
 
+    // @DistributedLock(key = "'activity:edit:' + #activityId", waitTime = 5, leaseTime = 30)
+    @CacheEvict(value = {"activity", "activity:list"}, key = "#activityId")
     public Activity updateActivity(Integer activityId, Activity activityDetails) {
         logger.info("开始更新活动: ID={}", activityId);
 
@@ -108,6 +126,7 @@ public class ActivityService {
         }
     }
 
+    @CacheEvict(value = {"activity", "activity:list"}, key = "#activityId")
     public void deleteActivity(Integer activityId) {
         logger.info("开始删除活动: ID={}", activityId);
 
