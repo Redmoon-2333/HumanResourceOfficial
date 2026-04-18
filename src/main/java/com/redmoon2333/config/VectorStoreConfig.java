@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.JedisClientConfig;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 
 @Configuration
 public class VectorStoreConfig {
@@ -27,9 +30,19 @@ public class VectorStoreConfig {
     @Value("${spring.data.redis.port:6379}")
     private int redisPort;
 
+    @Value("${spring.data.redis.password:}")
+    private String redisPassword;
+
     @Bean
     public JedisPooled jedisPooled() {
-        return new JedisPooled(redisHost, redisPort);
+        // 如果有密码则使用密码，否则不使用
+        if (redisPassword != null && !redisPassword.isEmpty()) {
+            JedisClientConfig config = DefaultJedisClientConfig.builder()
+                .password(redisPassword)
+                .build();
+            return new JedisPooled(new HostAndPort(redisHost, redisPort), config);
+        }
+        return new JedisPooled(new HostAndPort(redisHost, redisPort));
     }
 
     @Bean
