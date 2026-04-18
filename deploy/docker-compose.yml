@@ -29,11 +29,11 @@ services:
     container_name: hrofficial-redis
     restart: unless-stopped
     environment:
-      - REDIS_ARGS=--requirepass REDACTED_REDIS_PASS
+      - REDIS_ARGS=--requirepass ${REDIS_PASSWORD:REDACTED_REDIS_PASS}
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "REDACTED_REDIS_PASS", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:REDACTED_REDIS_PASS}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,7 +51,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: REDACTED_REDIS_PASS
+      REDIS_PASSWORD: ${REDIS_PASSWORD:REDACTED_REDIS_PASS}
       CHATECNU_BASE_URL: ${CHATECNU_BASE_URL:-https://chat.ecnu.edu.cn/open/api}
       CHATECNU_API_KEY: ${CHATECNU_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
