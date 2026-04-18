@@ -8,7 +8,7 @@ spring:
     name: HumanResourceOfficial
 
   profiles:
-    active: dev
+    active: dev,rabbitmq
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -91,7 +91,11 @@ mybatis-plus:
 
 jwt:
   secret: ${JWT_SECRET:YourJWTSecretKeyMustBeAtLeast256BitsLongForHS256Algorithm}
-  expiration: ${JWT_EXPIRATION:604800000}
+  expiration: ${JWT_EXPIRATION:604800000}  # 7 天（毫秒）
+  # Token 自动刷新阈值（分钟），当剩余有效期低于此值时自动刷新
+  # 推荐值：expiration 的 10%-20%，即 10-20 分钟
+  refresh:
+    threshold: ${JWT_REFRESH_THRESHOLD:30}
 
 aliyun:
   oss:
