@@ -166,7 +166,7 @@ wait_for_ready() {
     # 等待Redis
     echo "等待Redis就绪..."
     for i in {1..30}; do
-        if docker-compose exec -T redis redis-cli ping &> /dev/null; then
+        if docker-compose exec -T redis redis-cli -a "${REDIS_PASSWORD:-RedMoon}" ping &> /dev/null; then
             echo -e "${GREEN}✓ Redis已就绪${NC}"
             break
         fi
