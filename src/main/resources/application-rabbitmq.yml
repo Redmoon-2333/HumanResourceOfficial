@@ -1,0 +1,30 @@
+# ============================================================
+# RabbitMQ 配置文件
+# ============================================================
+
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+
+    # 消费者配置
+    listener:
+      simple:
+        acknowledge-mode: manual  # 手动 ACK
+        prefetch: 10  # 每次预取 10 条消息
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+
+    # 生产者配置
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        max-interval: 10000
