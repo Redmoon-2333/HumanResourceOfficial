@@ -1,0 +1,37 @@
+# ============================================================
+# 生产环境配置
+# ============================================================
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/hrofficial?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:REDACTED_REDIS_PASS}
+      timeout: 10000ms
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    root: WARN
+    com.redmoon2333: INFO
+    org.springframework.ai: WARN
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+
+server:
+  port: 8080
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
