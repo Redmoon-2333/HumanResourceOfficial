@@ -4,6 +4,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -11,11 +12,18 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * RabbitMQ 配置类
  * 定义交换机、队列、绑定关系
+ *
+ * 已禁用：如需启用，请：
+ * 1. 将 @Profile("rabbitmq-disabled") 改为 @Profile("rabbitmq")
+ * 2. 在 application.yml 中添加 rabbitmq profile
+ * 3. 启动 RabbitMQ Docker 容器
  */
+@Profile("rabbitmq-disabled")  // 已禁用，改为 "rabbitmq" 可启用
 @Configuration
 public class RabbitMQConfig {
 
