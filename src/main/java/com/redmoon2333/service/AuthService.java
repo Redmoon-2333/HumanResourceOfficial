@@ -10,7 +10,7 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivationCodeMapper;
 import com.redmoon2333.mapper.UserMapper;
 import com.redmoon2333.util.JwtUtil;
-import com.redmoon2333.util.MQSender;
+// import com.redmoon2333.util.MQSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -48,8 +48,8 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    private final MQSender mqSender;
-    
+    // private final MQSender mqSender; // MQ 已暂时禁用
+
     /**
      * 用户登录
      * @param loginRequest 登录请求参数
@@ -133,14 +133,8 @@ public class AuthService {
         activationCode.setUseTime(LocalDateTime.now());
         activationCodeMapper.updateById(activationCode);
 
-        // 发送用户注册事件到 MQ
-        mqSender.send("user.exchange", "user.registered", Map.of(
-            "userId", newUser.getUserId(),
-            "username", newUser.getUsername(),
-            "name", newUser.getName(),
-            "email", newUser.getEmail()
-        ));
-        logger.info("已发送用户注册 MQ 事件：userId={}", newUser.getUserId());
+        // TODO: MQ 已暂时禁用，启用后发送用户注册事件
+        // mqSender.send("user.exchange", "user.registered", Map.of(...));
 
         return newUser;
     }
