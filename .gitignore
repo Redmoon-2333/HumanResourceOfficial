@@ -257,3 +257,16 @@ hrofficial-frontend/src/utils/__tests__/
 /.qoder/
 /.promptx/
 /intent-recognition-demo/
+
+### 面试宝典和 Superpowers 计划 ###
+# 面试宝典文档（个人学习笔记，不提交）
+docs/面试宝典/
+docs/面试宝典/**
+
+# Superpowers 生成的计划文件（临时文件）
+docs/superpowers/
+docs/superpowers/**
+
+# eval 目录（测试评估脚本）
+eval/
+eval/**
