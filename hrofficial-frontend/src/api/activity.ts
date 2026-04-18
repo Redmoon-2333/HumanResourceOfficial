@@ -192,20 +192,6 @@ export const getAllActivityImages = (): Promise<ApiResponse<Record<number, Activ
 }
 
 /**
- * 批量获取所有活动的图片
- * @returns Map<activityId, 图片列表>
- * 
- * @example
- * ```typescript
- * const allImages = await getAllActivityImages()
- * // allImages.data = { 1: [...], 2: [...], 3: [...] }
- * ```
- */
-export const getAllActivityImages = (): Promise<ApiResponse<Record<number, ActivityImageDTO[]>>> => {
-  return http.get<Record<number, ActivityImageDTO[]>>('/api/activities/images/batch')
-}
-
-/**
  * 更新活动图片信息
  * @param imageId - 图片ID
  * @param description - 新描述（可选）

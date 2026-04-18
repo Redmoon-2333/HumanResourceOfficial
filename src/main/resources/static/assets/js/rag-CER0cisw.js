@@ -1,0 +1,1 @@
+import{s as e}from"./index-BZTMds7N.js";const t=(t={})=>e.post(`/api/rag/initialize`,t),n=()=>e.get(`/api/rag/stats`);export{t as n,n as t};

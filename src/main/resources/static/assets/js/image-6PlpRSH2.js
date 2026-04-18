@@ -1,0 +1,1 @@
+var e=`http://81.70.218.85:8080`;function t(t){if(!t)return``;if(t.startsWith(`http://`)||t.startsWith(`https://`))return t;let n=t.startsWith(`/`)?t:`/${t}`;return`${e.endsWith(`/`)?e.slice(0,-1):e}${n}`}function n(e){return e.map(e=>t(e))}export{n,t};
