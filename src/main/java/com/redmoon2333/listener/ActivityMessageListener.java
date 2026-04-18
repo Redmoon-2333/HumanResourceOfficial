@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.context.annotation.Profile;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +14,11 @@ import java.io.IOException;
 /**
  * 活动消息监听器
  * 监听活动相关事件
+ * 仅在 rabbitmq profile 激活时加载
  */
 @Slf4j
 @Component
+@Profile("rabbitmq")
 @RequiredArgsConstructor
 public class ActivityMessageListener {
 
