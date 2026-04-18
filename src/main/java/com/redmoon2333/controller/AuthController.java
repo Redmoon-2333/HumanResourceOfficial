@@ -1,5 +1,6 @@
 package com.redmoon2333.controller;
 
+import com.redmoon2333.annotation.RateLimit;
 import com.redmoon2333.dto.ApiResponse;
 import com.redmoon2333.dto.LoginRequest;
 import com.redmoon2333.dto.RegisterRequest;
@@ -8,6 +9,7 @@ import com.redmoon2333.entity.User;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.service.AuthService;
 import com.redmoon2333.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ public class AuthController {
      * @return 登录结果，包含JWT令牌和用户信息
      */
     @PostMapping("/login")
+    @RateLimit(key = "'auth:login:' + #loginRequest.username", maxRequests = 5, windowSize = 60)
     public ApiResponse<Map<String, Object>> login(@Valid @RequestBody LoginRequest loginRequest,
                                                  BindingResult bindingResult) {
         try {
@@ -69,14 +72,19 @@ public class AuthController {
      * @return 注册结果
      */
     @PostMapping("/register")
+    @RateLimit(key = "'auth:register:ip:' + #request.getRemoteAddr()", maxRequests = 3, windowSize = 3600)
     public ApiResponse<Map<String, Object>> register(@Valid @RequestBody RegisterRequest registerRequest,
-                                                    BindingResult bindingResult) {
+                                                    BindingResult bindingResult,
+                                                    HttpServletRequest request) {
         try {
             // 参数验证
             if (bindingResult.hasErrors()) {
                 return ApiResponse.error(bindingResult.getAllErrors().get(0).getDefaultMessage());
             }
-            
+
+            // 设置 IP 地址
+            registerRequest.setIp(request.getRemoteAddr());
+
             // 执行注册
             User user = authService.register(registerRequest);
             

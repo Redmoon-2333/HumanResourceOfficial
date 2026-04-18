@@ -11,11 +11,18 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * RabbitMQ 配置类
  * 定义交换机、队列、绑定关系
+ *
+ * 已禁用：如需启用，请：
+ * 1. 将 @Profile("rabbitmq-disabled") 改为 @Profile("rabbitmq")
+ * 2. 在 application.yml 中添加 rabbitmq profile
+ * 3. 启动 RabbitMQ Docker 容器
  */
+@Profile("rabbitmq-disabled")  // 已禁用，改为 "rabbitmq" 可启用
 @Configuration
 public class RabbitMQConfig {
 
@@ -127,9 +134,7 @@ public class RabbitMQConfig {
         rabbitTemplate.setMessageConverter(jsonMessageConverter);
         // 开启发送确认
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
-            if (!ack) {
-                // 消息发送失败，记录日志或重试
-            }
+            // 消息发送失败时处理
         });
         return rabbitTemplate;
     }

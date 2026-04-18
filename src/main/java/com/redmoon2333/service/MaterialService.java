@@ -13,6 +13,8 @@ import com.redmoon2333.util.PermissionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -264,6 +266,7 @@ public class MaterialService {
      * @return 创建的分类对象
      */
     @Transactional
+    @CacheEvict(value = "material:categories", key = "'all'")
     public MaterialCategory createCategory(String categoryName, Integer sortOrder) {
         logger.info("创建分类: categoryName={}", categoryName);
         
@@ -292,6 +295,7 @@ public class MaterialService {
      * @return 创建的子分类对象
      */
     @Transactional
+    @CacheEvict(value = "material:subcategories", key = "'category:' + #categoryId")
     public MaterialSubcategory createSubcategory(Integer categoryId, String subcategoryName, Integer sortOrder) {
         logger.info("创建子分类: categoryId={}, subcategoryName={}", categoryId, subcategoryName);
         
@@ -323,6 +327,7 @@ public class MaterialService {
      * 获取所有分类
      * @return 分类列表
      */
+    @Cacheable(value = "material:categories", key = "'all'")
     public List<MaterialCategory> getAllCategories() {
         logger.info("获取所有分类");
         
@@ -339,6 +344,7 @@ public class MaterialService {
      * @param categoryId 分类ID
      * @return 子分类列表
      */
+    @Cacheable(value = "material:subcategories", key = "'category:' + #categoryId")
     public List<MaterialSubcategory> getSubcategoriesByCategoryId(Integer categoryId) {
         logger.info("获取分类下的所有子分类: categoryId={}", categoryId);
         

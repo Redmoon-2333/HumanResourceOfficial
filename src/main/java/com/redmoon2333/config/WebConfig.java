@@ -1,12 +1,53 @@
 package com.redmoon2333.config;
 
+import com.redmoon2333.interceptor.AuthInterceptor;
+import com.redmoon2333.interceptor.TokenRefreshInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private TokenRefreshInterceptor tokenRefreshInterceptor;
+
+    @Autowired
+    private AuthInterceptor authInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        // 注册 Token 刷新拦截器（先执行）
+        registry.addInterceptor(tokenRefreshInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                    "/api/auth/login",
+                    "/api/auth/register",
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/v2/**",
+                    "/swagger-ui/**",
+                    "/doc.html"
+                )
+                .order(1);
+
+        // 注册鉴权拦截器（后执行）
+        registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                    "/api/auth/login",
+                    "/api/auth/register",
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/v2/**",
+                    "/swagger-ui/**",
+                    "/doc.html"
+                )
+                .order(2);
+    }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {

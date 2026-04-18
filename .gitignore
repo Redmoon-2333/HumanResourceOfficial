@@ -244,3 +244,16 @@ hrofficial-frontend/src/utils/__tests__/
 /FRONTEND_OPTIMIZATION_PLAN.md
 /PERMISSION_AND_403_DIAGNOSIS.md
 /docs/backend-streaming-simplification.md
+
+### Redis 优化文档 ###
+/redis-optimize/
+
+### MyBatis-Plus 优化文档 ###
+/mybatis-plus-optimize/
+/.claude/
+/other-optimize/
+/org/
+/intent-recognition-demo/
+/.qoder/
+/.promptx/
+/intent-recognition-demo/

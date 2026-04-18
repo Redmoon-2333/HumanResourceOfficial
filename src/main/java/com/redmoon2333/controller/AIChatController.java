@@ -1,5 +1,6 @@
 package com.redmoon2333.controller;
 
+import com.redmoon2333.annotation.RateLimit;
 import com.redmoon2333.annotation.RequireMemberRole;
 import com.redmoon2333.config.RedisChatMemory;
 import com.redmoon2333.dto.ApiResponse;
@@ -49,6 +50,7 @@ public class AIChatController {
      * @return 聊天响应
      */
     @PostMapping("/chat")
+    @RateLimit(key = "'ai:chat:' + #httpRequest.getAttribute('userId')", maxRequests = 10, windowSize = 60)
     @RequireMemberRole("使用AI对话功能")
     public ApiResponse<ChatResponse> chat(
             @RequestBody ChatRequest request,
@@ -89,6 +91,7 @@ public class AIChatController {
      */
     @PostMapping(value = "/chat-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RequireMemberRole("使用AI流式对话功能")
+    @RateLimit(key = "'ai:chat-stream:' + #httpRequest.getAttribute('userId')", maxRequests = 10, windowSize = 60)
     public Flux<String> chatStream(
             @RequestBody ChatRequest request,
             HttpServletRequest httpRequest) {
@@ -232,6 +235,7 @@ public class AIChatController {
      * @return 流式响应
      */
     @PostMapping(value = "/chat-with-rag", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(key = "'ai:rag:' + #httpRequest.getAttribute('userId')", maxRequests = 10, windowSize = 60)
     @RequireMemberRole("使用RAG增强对话")
     public Flux<String> chatWithRag(
             @RequestBody RagChatRequest request,

@@ -5,13 +5,17 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.annotation.Profile;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * 消息队列监控接口
+ *
+ * 已禁用：如需启用，将 @Profile("rabbitmq-disabled") 改为 @Profile("rabbitmq")
  */
+@Profile("rabbitmq-disabled")
 @RestController
 @RequestMapping("/api/mq")
 @RequiredArgsConstructor

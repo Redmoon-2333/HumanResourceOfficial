@@ -5,11 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 /**
  * 消息队列发送器
  * 封装通用的消息发送逻辑
+ *
+ * 已禁用：如需启用，将 @Profile("rabbitmq-disabled") 改为 @Profile("rabbitmq")
  */
+@Profile("rabbitmq-disabled")
 @Slf4j
 @Component
 @RequiredArgsConstructor

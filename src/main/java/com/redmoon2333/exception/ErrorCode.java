@@ -56,16 +56,23 @@ public enum ErrorCode {
     // 请求参数相关错误 4000-4999
     INVALID_REQUEST_PARAMETER(4001, "请求参数不正确"),
     VALIDATION_FAILED(4002, "数据验证失败"),
+    RATE_LIMIT_EXCEEDED(4003, "请求过于频繁，请稍后再试", 429),
     
     // 系统错误 5000-5999
     SYSTEM_ERROR(5000, "系统内部错误");
     
     private final int code;
     private final String message;
+    private final int httpStatus;
     
     ErrorCode(int code, String message) {
+        this(code, message, 400);
+    }
+    
+    ErrorCode(int code, String message, int httpStatus) {
         this.code = code;
         this.message = message;
+        this.httpStatus = httpStatus;
     }
     
     public int getCode() {
@@ -74,5 +81,9 @@ public enum ErrorCode {
     
     public String getMessage() {
         return message;
+    }
+    
+    public int getHttpStatus() {
+        return httpStatus;
     }
 }

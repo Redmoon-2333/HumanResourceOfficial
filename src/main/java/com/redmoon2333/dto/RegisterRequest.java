@@ -26,7 +26,10 @@ public class RegisterRequest {
     @ValidRoleHistory
     @NotBlank(message = "角色历史不能为空")
     private String roleHistory;
-    
+
+    // IP 地址（用于限流）
+    private String ip;
+
     // 无参构造函数
     public RegisterRequest() {}
     
@@ -94,5 +97,13 @@ public class RegisterRequest {
     
     public void setRoleHistory(String roleHistory) {
         this.roleHistory = roleHistory;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
     }
 }

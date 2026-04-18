@@ -10,6 +10,7 @@ import com.redmoon2333.mapper.UserMapper;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -487,5 +488,29 @@ public class UserService {
             logger.error("获取所有用户信息时发生异常（调试模式）", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "获取用户信息失败", e);
         }
+    }
+
+    /**
+     * 根据用户名获取用户（带缓存）
+     *
+     * @param username 用户名
+     * @return 用户对象，不存在返回 null
+     */
+    @Cacheable(value = "user", key = "#username", unless = "#result == null")
+    public User getUserByUsername(String username) {
+        logger.debug("根据用户名查询用户：{}", username);
+        return userMapper.findByUsername(username);
+    }
+
+    /**
+     * 根据 ID 获取用户（带缓存）
+     *
+     * @param userId 用户 ID
+     * @return 用户对象，不存在返回 null
+     */
+    @Cacheable(value = "user", key = "#userId.toString()", unless = "#result == null")
+    public User getUserById(Integer userId) {
+        logger.debug("根据 ID 查询用户：{}", userId);
+        return userMapper.selectById(userId);
     }
 }

@@ -8,7 +8,9 @@ spring:
     name: HumanResourceOfficial
 
   profiles:
-    active: dev,rabbitmq
+    active: dev
+    # rabbitmq 已暂时注释，如需启用请添加 RabbitMQ Docker 容器
+    # - rabbitmq
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

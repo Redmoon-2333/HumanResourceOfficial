@@ -7,13 +7,17 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import java.io.IOException;
 
 /**
  * 用户消息监听器
  * 监听用户相关事件
+ *
+ * 已禁用：如需启用，将 @Profile("rabbitmq-disabled") 改为 @Profile("rabbitmq")
  */
+@Profile("rabbitmq-disabled")
 @Slf4j
 @Component
 @RequiredArgsConstructor
