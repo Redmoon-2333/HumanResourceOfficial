@@ -38,6 +38,24 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: hrofficial-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: ${DOCKER_IMAGE:-redmoon2333/hrofficial-backend:latest}
     container_name: hrofficial-backend
@@ -45,7 +63,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: prod,rabbitmq
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -73,3 +91,4 @@ services:
 volumes:
   mysql-data:
   redis-data:
+  rabbitmq-data:
