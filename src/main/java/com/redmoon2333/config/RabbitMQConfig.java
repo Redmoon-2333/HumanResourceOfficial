@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Profile;
  * 2. 在 application.yml 中添加 rabbitmq profile
  * 3. 启动 RabbitMQ Docker 容器
  */
-@Profile("rabbitmq-disabled")  // 已禁用，改为 "rabbitmq" 可启用
+@Profile("rabbitmq")
 @Configuration
 public class RabbitMQConfig {
 

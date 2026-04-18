@@ -243,22 +243,16 @@ public class ActivityService {
         }
     }
 
+    @Cacheable(value = "activity:images", key = "#activityId", unless = "#result == null || #result.isEmpty()")
     public List<ActivityImage> getImagesByActivityId(Integer activityId) {
         logger.info("获取活动的图片列表: 活动ID={}", activityId);
 
         try {
-            // 检查活动是否存在
-            Activity activity = activityMapper.selectById(activityId);
-            if (activity == null) {
-                logger.warn("尝试获取不存在的活动的图片列表: 活动ID={}", activityId);
-                throw new BusinessException(ErrorCode.ACTIVITY_NOT_FOUND);
-            }
-
             List<ActivityImage> images = activityImageMapper.findByActivityId(activityId);
             logger.info("成功获取活动图片列表: 活动ID={}, 图片数量={}", activityId, images.size());
             return images;
         } catch (BusinessException e) {
-            throw e; // 重新抛出业务异常
+            throw e;
         } catch (Exception e) {
             logger.error("获取活动图片列表时发生异常: 活动ID={}, 错误: {}", activityId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_LIST_FAILED);
