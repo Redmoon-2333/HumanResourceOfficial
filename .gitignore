@@ -244,3 +244,29 @@ hrofficial-frontend/src/utils/__tests__/
 /FRONTEND_OPTIMIZATION_PLAN.md
 /PERMISSION_AND_403_DIAGNOSIS.md
 /docs/backend-streaming-simplification.md
+
+### 面试宝典和 Superpowers 计划 ###
+# 面试宝典文档（个人学习笔记，不提交）
+docs/面试宝典/
+docs/面试宝典/**
+
+# Superpowers 生成的计划文件（临时文件）
+docs/superpowers/
+docs/superpowers/**
+
+# eval 目录（测试评估脚本）
+eval/
+eval/**
+
+### 临时文件 ###
+/temp/
+temp/
+*.tmp
+*.temp
+
+### Claude Code 和本地配置 ###
+.claude/
+
+### 优化文档（个人学习笔记）###
+/redis-optimize/
+/other-optimize/
