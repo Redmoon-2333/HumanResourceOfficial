@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import Layout from '@/components/Layout.vue'
 import OrganicBlob from '@/components/OrganicBlob.vue'
 import SparkleEffect from '@/components/SparkleEffect.vue'
-import { getActivities, createActivity, updateActivity, deleteActivity, getActivityImages } from '@/api/activity'
+import { getActivities, createActivity, updateActivity, deleteActivity, getAllActivityImages, getActivityImages } from '@/api/activity'
 import type { ActivityIntro, ActivityIntroRequest, ActivityImage } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
@@ -81,42 +81,42 @@ const loadActivities = async () => {
   try {
     const res = await getActivities()
     if (res.code === 200 && res.data) {
-      // 处理分页数据
       const dataList = Array.isArray(res.data) ? res.data : (res.data as any).content || (res.data as any).list || []
 
-      // 后端返回的字段需要映射
-      const activitiesWithImages = await Promise.all(
-        dataList.map(async (act: any) => {
-          const activity: ActivityIntro = {
-            id: act.activityId,
-            activityName: act.activityName,
-            background: act.background,
-            significance: act.significance,
-            purpose: act.purpose,
-            process: act.process,
-            createTime: act.createTime,
-            updateTime: act.updateTime,
-            images: []
-          }
+      // 批量获取所有活动的图片（一次请求代替N次）
+      let imagesMap: Record<number, any[]> = {}
+      try {
+        const imagesRes = await getAllActivityImages()
+        if (imagesRes.code === 200 && imagesRes.data) {
+          imagesMap = imagesRes.data
+        }
+      } catch (error) {
+        console.warn('批量加载活动图片失败，将回退到逐个加载:', error)
+      }
 
-          // 加载该活动的图片
-          try {
-            const imageRes = await getActivityImages(act.activityId)
-            if (imageRes.code === 200 && imageRes.data) {
-              activity.images = imageRes.data.map(img => ({
-                ...img,
-                displayOrder: img.sortOrder
-              })) as ActivityImage[]
-            }
-          } catch (error) {
-            console.warn(`加载活动 ${act.activityId} 的图片失败:`, error)
-          }
+      // 处理分页数据并合并图片
+      activities.value = dataList.map((act: any) => {
+        const activity: ActivityIntro = {
+          id: act.activityId,
+          activityName: act.activityName,
+          background: act.background,
+          significance: act.significance,
+          purpose: act.purpose,
+          process: act.process,
+          createTime: act.createTime,
+          updateTime: act.updateTime,
+          images: []
+        }
 
-          return activity
-        })
-      )
+        // 从批量结果中获取图片
+        const images = imagesMap[act.activityId] || []
+        activity.images = images.map(img => ({
+          ...img,
+          displayOrder: img.sortOrder
+        })) as ActivityImage[]
 
-      activities.value = activitiesWithImages
+        return activity
+      })
     }
   } catch (error: any) {
     console.error('加载活动失败:', error)

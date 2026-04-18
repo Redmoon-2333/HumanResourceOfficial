@@ -24,7 +24,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -269,25 +272,25 @@ public class ActivityController {
     @GetMapping("/{activityId}/images")
     public ResponseEntity<ApiResponse<List<ActivityImageDTO>>> getImagesByActivityId(@PathVariable Integer activityId) {
         logger.debug("公开查询活动的图片列表: 活动ID={}", activityId);
-        
+
         try {
             List<ActivityImage> images = activityService.getImagesByActivityId(activityId);
-            
+
             // 转换为DTO列表，并将相对路径转换为完整URL
             List<ActivityImageDTO> responseList = images.stream().map(image -> {
                 ActivityImageDTO dto = new ActivityImageDTO();
                 BeanUtils.copyProperties(image, dto);
-                
+
                 // 将相对路径转换为完整URL
                 if (dto.getImageUrl() != null && !dto.getImageUrl().startsWith("http")) {
                     // 确保路径以 / 开头
                     String path = dto.getImageUrl().startsWith("/") ? dto.getImageUrl() : "/" + dto.getImageUrl();
                     dto.setImageUrl(fileBaseUrl + path);
                 }
-                
+
                 return dto;
             }).collect(Collectors.toList());
-            
+
             logger.debug("成功查询活动的图片列表: 活动ID={}, 图片数量={}", activityId, responseList.size());
             return ResponseEntity.ok(ApiResponse.success("查询成功", responseList));
         } catch (BusinessException e) {
@@ -296,6 +299,46 @@ public class ActivityController {
         } catch (Exception e) {
             logger.error("查询活动图片列表时发生异常: 活动ID={}, 错误: {}", activityId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "查询图片列表失败");
+        }
+    }
+
+    /**
+     * 批量获取所有活动的图片
+     * 公开接口，无需鉴权
+     * 返回格式: Map<activityId, List<ActivityImageDTO>>
+     */
+    @GetMapping("/images/batch")
+    public ResponseEntity<ApiResponse<Map<Integer, List<ActivityImageDTO>>>> getAllActivityImages() {
+        logger.debug("批量查询所有活动的图片列表");
+
+        try {
+            List<Activity> activities = activityService.getAllActivities();
+            Map<Integer, List<ActivityImageDTO>> result = new HashMap<>();
+
+            for (Activity activity : activities) {
+                List<ActivityImage> images = activityService.getImagesByActivityId(activity.getActivityId());
+
+                List<ActivityImageDTO> imageDtos = images.stream().map(image -> {
+                    ActivityImageDTO dto = new ActivityImageDTO();
+                    BeanUtils.copyProperties(image, dto);
+
+                    // 将相对路径转换为完整URL
+                    if (dto.getImageUrl() != null && !dto.getImageUrl().startsWith("http")) {
+                        String path = dto.getImageUrl().startsWith("/") ? dto.getImageUrl() : "/" + dto.getImageUrl();
+                        dto.setImageUrl(fileBaseUrl + path);
+                    }
+
+                    return dto;
+                }).collect(Collectors.toList());
+
+                result.put(activity.getActivityId(), imageDtos);
+            }
+
+            logger.debug("成功批量查询活动图片列表: 活动数量={}", result.size());
+            return ResponseEntity.ok(ApiResponse.success("查询成功", result));
+        } catch (Exception e) {
+            logger.error("批量查询活动图片列表时发生异常: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "批量查询图片列表失败");
         }
     }
     
