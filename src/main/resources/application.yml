@@ -12,6 +12,10 @@ spring:
     # rabbitmq 已暂时注释，如需启用请添加 RabbitMQ Docker 容器
     # - rabbitmq
 
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStoreAutoConfiguration
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL:jdbc:mysql://localhost:3306/hrofficial?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
