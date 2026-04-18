@@ -10,6 +10,9 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivationCodeMapper;
 import com.redmoon2333.mapper.UserMapper;
 import com.redmoon2333.util.JwtUtil;
+import com.redmoon2333.util.MQSender;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 认证服务类
@@ -27,21 +31,24 @@ import java.util.Map;
  */
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class AuthService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
-    
+
     @Autowired
     private UserMapper userMapper;
-    
+
     @Autowired
     private ActivationCodeMapper activationCodeMapper;
-    
+
     @Autowired
     private PasswordEncoder passwordEncoder;
-    
+
     @Autowired
     private JwtUtil jwtUtil;
+
+    private final MQSender mqSender;
     
     /**
      * 用户登录
@@ -125,7 +132,16 @@ public class AuthService {
         activationCode.setUserId(newUser.getUserId());
         activationCode.setUseTime(LocalDateTime.now());
         activationCodeMapper.updateById(activationCode);
-        
+
+        // 发送用户注册事件到 MQ
+        mqSender.send("user.exchange", "user.registered", Map.of(
+            "userId", newUser.getUserId(),
+            "username", newUser.getUsername(),
+            "name", newUser.getName(),
+            "email", newUser.getEmail()
+        ));
+        logger.info("已发送用户注册 MQ 事件：userId={}", newUser.getUserId());
+
         return newUser;
     }
     
