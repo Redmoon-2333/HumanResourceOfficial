@@ -83,4 +83,16 @@
         WHERE activity_id = #{activityId}
     </delete>
 
+    <!-- 根据活动 ID 批量查找图片列表 -->
+    <select id="findByActivityIds" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM activity_image
+        WHERE activity_id IN
+        <foreach collection="activityIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY activity_id ASC, sort_order ASC, upload_time ASC
+    </select>
+
 </mapper>

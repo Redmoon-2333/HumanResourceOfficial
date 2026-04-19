@@ -13,6 +13,8 @@ import com.redmoon2333.util.PermissionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -324,9 +327,10 @@ public class MaterialService {
      * 获取所有分类
      * @return 分类列表
      */
+    @Cacheable(value = "material:categories", key = "'all'", unless = "#result == null || #result.isEmpty()")
     public List<MaterialCategory> getAllCategories() {
         logger.info("获取所有分类");
-        
+
         // 检查权限（部员及以上）
         permissionUtil.checkMemberPermission();
 
@@ -340,6 +344,7 @@ public class MaterialService {
      * @param categoryId 分类ID
      * @return 子分类列表
      */
+        @Cacheable(value = "material:subcategories", key = "#categoryId", unless = "#result == null || #result.isEmpty()")
     public List<MaterialSubcategory> getSubcategoriesByCategoryId(Integer categoryId) {
         logger.info("获取分类下的所有子分类: categoryId={}", categoryId);
         
@@ -544,6 +549,7 @@ material.setCategoryId(categoryId);
      * @return 更新后的分类对象
      */
     @Transactional
+    @CacheEvict(value = "material:categories", allEntries = true)
     public MaterialCategory updateCategory(Integer categoryId, String categoryName, Integer sortOrder) {
         logger.info("更新分类信息: categoryId={}, categoryName={}", categoryId, categoryName);
         
@@ -580,6 +586,7 @@ material.setCategoryId(categoryId);
      * @return 更新后的子分类对象
      */
     @Transactional
+    @CacheEvict(value = "material:subcategories", allEntries = true)
     public MaterialSubcategory updateSubcategory(Integer subcategoryId, String subcategoryName, Integer sortOrder) {
         logger.info("更新子分类信息: subcategoryId={}, subcategoryName={}", subcategoryId, subcategoryName);
 
@@ -616,6 +623,7 @@ material.setCategoryId(categoryId);
      * @param categoryId 分类ID
      */
     @Transactional
+    @CacheEvict(value = {"material:categories", "material:subcategories"}, allEntries = true)
     public void deleteCategory(Integer categoryId) {
         logger.info("删除分类: categoryId={}", categoryId);
 
@@ -632,15 +640,45 @@ material.setCategoryId(categoryId);
         // 获取该分类下的所有子分类
         List<MaterialSubcategory> subcategories = subcategoryMapper.findByCategoryId(categoryId);
 
-        // 删除每个子分类下的资料文件
-        for (MaterialSubcategory subcategory : subcategories) {
-            // 删除该子分类下的所有资料记录和文件
-            List<Material> materials = materialMapper.findBySubcategoryId(subcategory.getSubcategoryId());
-            for (Material material : materials) {
-                deleteMaterialFile(material.getFileUrl());
-                materialMapper.deleteById(material.getMaterialId());
+        // 批量获取所有子分类 ID
+        List<Integer> subcategoryIds = subcategories.stream()
+            .map(MaterialSubcategory::getSubcategoryId)
+            .toList();
+
+        if (!subcategoryIds.isEmpty()) {
+            // 一次性获取所有关联资料
+            List<Material> allMaterials = materialMapper.findBySubcategoryIds(subcategoryIds);
+
+            if (allMaterials != null && !allMaterials.isEmpty()) {
+                // 批量删除 OSS 文件
+                List<String> ossPaths = allMaterials.stream()
+                    .map(Material::getFileUrl)
+                    .filter(Objects::nonNull)
+                    .filter(p -> !p.isEmpty())
+                    .map(this::extractOssFilePath)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+                if (!ossPaths.isEmpty() && ossUtil != null) {
+                    try {
+                        for (String path : ossPaths) {
+                            ossUtil.deleteFile(path);
+                        }
+                        logger.info("批量删除 OSS 文件成功，数量：{}", ossPaths.size());
+                    } catch (Exception e) {
+                        logger.warn("批量删除 OSS 文件部分失败：{}", e.getMessage());
+                    }
+                }
             }
-            // 删除子分类记录
+
+            // 批量删除资料记录
+            materialMapper.batchDeleteBySubcategoryIds(subcategoryIds);
+            logger.info("批量删除资料成功，子分类数：{}，资料数：{}", subcategoryIds.size(),
+                allMaterials != null ? allMaterials.size() : 0);
+        }
+
+        // 批量删除子分类记录
+        for (MaterialSubcategory subcategory : subcategories) {
             subcategoryMapper.deleteById(subcategory.getSubcategoryId());
         }
 
@@ -656,6 +694,7 @@ material.setCategoryId(categoryId);
      * @param subcategoryId 子分类ID
      */
     @Transactional
+    @CacheEvict(value = "material:subcategories", allEntries = true)
     public void deleteSubcategory(Integer subcategoryId) {
         logger.info("删除子分类: subcategoryId={}", subcategoryId);
 

@@ -26,5 +26,10 @@ public interface ActivityImageMapper extends BaseMapper<ActivityImage> {
      * @return 删除的记录数
      */
     int deleteByActivityId(@Param("activityId") Integer activityId);
-    
+
+    /**
+     * 根据活动 ID 批量查找图片列表
+     */
+    List<ActivityImage> findByActivityIds(@Param("activityIds") List<Integer> activityIds);
+
 }

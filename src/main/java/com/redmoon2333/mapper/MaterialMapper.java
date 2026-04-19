@@ -54,4 +54,14 @@ public interface MaterialMapper extends BaseMapper<Material> {
      * 根据子分类 ID 删除所有资料
      */
     int deleteBySubcategoryId(@Param("subcategoryId") Integer subcategoryId);
+
+    /**
+     * 根据子分类 ID 批量查找资料列表
+     */
+    List<Material> findBySubcategoryIds(@Param("subcategoryIds") List<Integer> subcategoryIds);
+
+    /**
+     * 根据子分类 ID 批量删除资料
+     */
+    int batchDeleteBySubcategoryIds(@Param("subcategoryIds") List<Integer> subcategoryIds);
 }

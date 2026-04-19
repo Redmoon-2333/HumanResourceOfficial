@@ -153,4 +153,24 @@
         WHERE subcategory_id = #{subcategoryId}
     </delete>
 
+    <!-- 根据子分类 ID 批量查找资料列表 -->
+    <select id="findBySubcategoryIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM material
+        WHERE subcategory_id IN
+        <foreach collection="subcategoryIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY upload_time DESC
+    </select>
+
+    <!-- 根据子分类 ID 批量删除资料 -->
+    <delete id="batchDeleteBySubcategoryIds">
+        DELETE FROM material
+        WHERE subcategory_id IN
+        <foreach collection="subcategoryIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
 </mapper>

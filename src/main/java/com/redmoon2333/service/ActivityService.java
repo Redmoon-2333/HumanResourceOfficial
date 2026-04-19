@@ -40,7 +40,7 @@ public class ActivityService {
     private LocalFileUtil localFileUtil;
 
     // @DistributedLock(key = "'activity:create:' + #activity.activityName", waitTime = 5, leaseTime = 30)
-    @CacheEvict(value = "activity:list", key = "'all'")
+    @CacheEvict(value = "activity:list", allEntries = true)
     public Activity createActivity(Activity activity) {
         logger.info("开始创建活动: {}", activity.getActivityName());
 
@@ -90,7 +90,7 @@ public class ActivityService {
     }
 
     // @DistributedLock(key = "'activity:edit:' + #activityId", waitTime = 5, leaseTime = 30)
-    @CacheEvict(value = {"activity", "activity:list"}, key = "#activityId")
+    @CacheEvict(value = {"activity", "activity:list"}, allEntries = true)
     public Activity updateActivity(Integer activityId, Activity activityDetails) {
         logger.info("开始更新活动: ID={}", activityId);
 
@@ -126,7 +126,7 @@ public class ActivityService {
         }
     }
 
-    @CacheEvict(value = {"activity", "activity:list"}, key = "#activityId")
+    @CacheEvict(value = {"activity", "activity:list"}, allEntries = true)
     public void deleteActivity(Integer activityId) {
         logger.info("开始删除活动: ID={}", activityId);
 
@@ -142,19 +142,19 @@ public class ActivityService {
             List<ActivityImage> images = activityImageMapper.findByActivityId(activityId);
             logger.info("找到{}张关联图片需要删除", images.size());
 
-            for (ActivityImage image : images) {
-                // 从本地服务器删除图片文件
-                String imageUrl = image.getImageUrl();
-                logger.debug("准备删除图片文件: {}", imageUrl);
-
-                try {
-                    localFileUtil.deleteFile(imageUrl);
-                } catch (Exception e) {
-                    logger.warn("删除本地文件失败: {}", imageUrl, e);
+            if (!images.isEmpty()) {
+                // 批量删除本地文件
+                for (ActivityImage image : images) {
+                    try {
+                        localFileUtil.deleteFile(image.getImageUrl());
+                    } catch (Exception e) {
+                        logger.warn("删除本地文件失败：{}", image.getImageUrl(), e);
+                    }
                 }
 
-                // 删除数据库记录
-                activityImageMapper.deleteById(image.getImageId());
+                // 批量删除数据库记录
+                activityImageMapper.deleteByActivityId(activityId);
+                logger.info("批量删除活动图片成功：活动 ID={}, 图片数={}", activityId, images.size());
             }
 
             // 删除活动
@@ -186,6 +186,7 @@ public class ActivityService {
         return imageUrl;
     }
 
+    @CacheEvict(value = "activity:images", key = "#activityId")
     public ActivityImage addImageToActivity(Integer activityId, ActivityImage activityImage) {
         logger.info("为活动添加图片: 活动ID={}, 图片描述={}", activityId, activityImage.getDescription());
 
@@ -212,12 +213,15 @@ public class ActivityService {
 
             logger.info("图片添加成功: 图片ID={}, 图片URL={}", activityImage.getImageId(), activityImage.getImageUrl());
             return activityImage;
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("为活动添加图片时发生异常: 活动ID={}, 错误: {}", activityId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_SAVE_FAILED);
         }
     }
 
+    @CacheEvict(value = "activity:images", key = "#activityId")
     public void deleteActivityImagesByActivityId(Integer activityId) {
         logger.info("删除活动的所有图片: 活动ID={}", activityId);
 
@@ -270,6 +274,9 @@ public class ActivityService {
                 throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_NOT_FOUND);
             }
 
+            // 保存activityId用于清除缓存
+            Integer activityId = existingImage.getActivityId();
+
             // 更新图片信息
             existingImage.setDescription(imageDetails.getDescription());
             existingImage.setSortOrder(imageDetails.getSortOrder());
@@ -277,6 +284,8 @@ public class ActivityService {
             int result = activityImageMapper.updateById(existingImage);
 
             if (result > 0) {
+                // 清除缓存
+                evictActivityImagesCache(activityId);
                 logger.info("活动图片更新成功：图片 ID={}", imageId);
                 return existingImage;
             } else {
@@ -302,6 +311,9 @@ public class ActivityService {
                 throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_NOT_FOUND);
             }
 
+            // 清除缓存（在删除前清除）
+            Integer activityId = existingImage.getActivityId();
+
             // 从本地服务器删除图片文件
             String imageUrl = existingImage.getImageUrl();
 
@@ -315,6 +327,8 @@ public class ActivityService {
             int result = activityImageMapper.deleteById(imageId);
 
             if (result > 0) {
+                // 清除图片缓存
+                evictActivityImagesCache(activityId);
                 logger.info("活动图片删除成功: 图片ID={}", imageId);
             } else {
                 logger.error("活动图片删除失败: 图片ID={}", imageId);
@@ -326,6 +340,11 @@ public class ActivityService {
             logger.error("删除活动图片时发生异常: 图片ID={}, 错误: {}", imageId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_DELETE_FAILED);
         }
+    }
+
+    @CacheEvict(value = "activity:images", key = "#activityId")
+    public void evictActivityImagesCache(Integer activityId) {
+        // 仅用于清除活动图片缓存
     }
 
     public String getImageUrlById(Integer imageId) {

@@ -13,9 +13,10 @@ spring:
     # - rabbitmq
 
   autoconfigure:
-    exclude:
-      - org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStoreAutoConfiguration
-      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+    exclude: []
+    # 说明: Redis Vector Store 自动配置已启用,无需排除
+    # 如遇到问题,可取消下面注释(适用于 Spring AI 1.0.0+):
+    #   - org.springframework.ai.vectorstore.redis.autoconfigure.RedisVectorStoreAutoConfiguration
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver

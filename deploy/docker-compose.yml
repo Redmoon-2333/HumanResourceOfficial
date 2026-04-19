@@ -67,6 +67,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
       DB_URL: jdbc:mysql://mysql:3306/hrofficial?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       DB_USERNAME: root
       DB_PASSWORD: ${DB_PASSWORD}
