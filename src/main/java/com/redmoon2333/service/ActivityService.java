@@ -12,9 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -38,6 +41,20 @@ public class ActivityService {
 
     @Autowired
     private LocalFileUtil localFileUtil;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    /**
+     * 直接清除活动图片缓存（不依赖 AOP，避免自调用陷阱）
+     */
+    private void evictActivityImagesCacheDirectly(Integer activityId) {
+        Cache cache = cacheManager.getCache("activity:images");
+        if (cache != null) {
+            cache.evict(activityId);
+            logger.info("已直接清除活动图片缓存: activityId={}", activityId);
+        }
+    }
 
     // @DistributedLock(key = "'activity:create:' + #activity.activityName", waitTime = 5, leaseTime = 30)
     @CacheEvict(value = "activity:list", allEntries = true)
@@ -126,7 +143,8 @@ public class ActivityService {
         }
     }
 
-    @CacheEvict(value = {"activity", "activity:list"}, allEntries = true)
+    @CacheEvict(value = {"activity", "activity:list", "activity:images"}, allEntries = true)
+    @Transactional(rollbackFor = Exception.class)
     public void deleteActivity(Integer activityId) {
         logger.info("开始删除活动: ID={}", activityId);
 
@@ -222,10 +240,18 @@ public class ActivityService {
     }
 
     @CacheEvict(value = "activity:images", key = "#activityId")
+    @Transactional(rollbackFor = Exception.class)
     public void deleteActivityImagesByActivityId(Integer activityId) {
         logger.info("删除活动的所有图片: 活动ID={}", activityId);
 
         try {
+            // 校验活动是否存在
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                logger.warn("尝试删除不存在的活动的图片: ID={}", activityId);
+                throw new BusinessException(ErrorCode.ACTIVITY_NOT_FOUND);
+            }
+
             List<ActivityImage> images = activityImageMapper.findByActivityId(activityId);
             logger.info("找到{}张图片需要删除", images.size());
 
@@ -284,8 +310,8 @@ public class ActivityService {
             int result = activityImageMapper.updateById(existingImage);
 
             if (result > 0) {
-                // 清除缓存
-                evictActivityImagesCache(activityId);
+                // 直接清除缓存（不依赖 AOP，避免自调用陷阱）
+                evictActivityImagesCacheDirectly(activityId);
                 logger.info("活动图片更新成功：图片 ID={}", imageId);
                 return existingImage;
             } else {
@@ -300,6 +326,7 @@ public class ActivityService {
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void deleteActivityImage(Integer imageId) {
         logger.info("删除活动图片: 图片ID={}", imageId);
 
@@ -314,21 +341,20 @@ public class ActivityService {
             // 清除缓存（在删除前清除）
             Integer activityId = existingImage.getActivityId();
 
-            // 从本地服务器删除图片文件
-            String imageUrl = existingImage.getImageUrl();
-
-            try {
-                localFileUtil.deleteFile(imageUrl);
-            } catch (Exception e) {
-                logger.warn("删除本地文件失败: {}", imageUrl, e);
-            }
-
-            // 删除数据库记录
+            // 从数据库删除记录（优先）
             int result = activityImageMapper.deleteById(imageId);
 
             if (result > 0) {
-                // 清除图片缓存
-                evictActivityImagesCache(activityId);
+                // 数据库删除成功后，再删除物理文件
+                String imageUrl = existingImage.getImageUrl();
+                try {
+                    localFileUtil.deleteFile(imageUrl);
+                } catch (Exception e) {
+                    logger.warn("删除本地文件失败: {}", imageUrl, e);
+                }
+
+                // 直接清除图片缓存（不依赖 AOP，避免自调用陷阱）
+                evictActivityImagesCacheDirectly(activityId);
                 logger.info("活动图片删除成功: 图片ID={}", imageId);
             } else {
                 logger.error("活动图片删除失败: 图片ID={}", imageId);
@@ -340,11 +366,6 @@ public class ActivityService {
             logger.error("删除活动图片时发生异常: 图片ID={}, 错误: {}", imageId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ACTIVITY_IMAGE_DELETE_FAILED);
         }
-    }
-
-    @CacheEvict(value = "activity:images", key = "#activityId")
-    public void evictActivityImagesCache(Integer activityId) {
-        // 仅用于清除活动图片缓存
     }
 
     public String getImageUrlById(Integer imageId) {

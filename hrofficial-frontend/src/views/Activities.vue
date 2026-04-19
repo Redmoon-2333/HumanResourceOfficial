@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import Layout from '@/components/Layout.vue'
 import OrganicBlob from '@/components/OrganicBlob.vue'
 import SparkleEffect from '@/components/SparkleEffect.vue'
-import { getActivities, createActivity, updateActivity, deleteActivity, getAllActivityImages, getActivityImages } from '@/api/activity'
+import { getActivities, createActivity, updateActivity, deleteActivity, getAllActivityImages, getActivityImages, deleteActivityImage } from '@/api/activity'
 import type { ActivityIntro, ActivityIntroRequest, ActivityImage } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
@@ -244,17 +244,9 @@ const handleManageImages = async (activity: ActivityIntro) => {
 // 加载活动图片
 const loadActivityImages = async (activityId: number) => {
   try {
-    const token = localStorage.getItem('token')
-    const response = await fetch(`/api/activities/${activityId}/images`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-
-    const result = await response.json()
-    if (result.code === 200 && result.data) {
-      activityImages.value = result.data
+    const response = await getActivityImages(activityId)
+    if (response.code === 200 && response.data) {
+      activityImages.value = response.data
     }
   } catch (error: any) {
     console.error('加载图片失败:', error)
@@ -334,22 +326,14 @@ const deleteImage = async (imageId: number) => {
       type: 'warning'
     })
 
-    const token = localStorage.getItem('token')
-    const response = await fetch(`/api/activities/images/${imageId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-
-    const result = await response.json()
-    if (result.code === 200) {
+    const res = await deleteActivityImage(imageId)
+    if (res.code === 200) {
       ElMessage.success('删除成功')
       if (currentActivityForImages.value) {
         await loadActivityImages(currentActivityForImages.value.id)
       }
     } else {
-      ElMessage.error(result.message || '删除失败')
+      ElMessage.error(res.message || '删除失败')
     }
   } catch (error: any) {
     if (error !== 'cancel') {

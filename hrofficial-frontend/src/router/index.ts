@@ -138,6 +138,16 @@ router.beforeEach(async (to, from, next) => {
     }
   }
   
+  // 获取用户信息后，如果 token 存在但登录状态仍为 false，说明 token 被后端撤销
+  // 此时清除登录状态并仅在非公开页面重定向
+  if (userStore.token && !userStore.isLoggedIn) {
+    userStore.logout()
+    if (!to.meta.public) {
+      ElMessage.error('登录已过期，请重新登录')
+      return next('/login')
+    }
+  }
+  
   // 现在用户信息已加载，可以安全地检查权限
   const isLoggedIn = userStore.isLoggedIn
   const isMember = userStore.isMember

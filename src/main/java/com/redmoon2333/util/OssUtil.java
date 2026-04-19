@@ -3,12 +3,14 @@ package com.redmoon2333.util;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.GeneratePresignedUrlRequest;
+import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.PutObjectRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Date;
 import java.util.UUID;
@@ -248,6 +250,40 @@ public class OssUtil {
         logger.debug("构建文件URL: {}", fileUrl);
         return fileUrl;
     }
-    
+
+    /**
+     * 通过 OSS SDK 直接获取文件流（服务端代理下载，绕过浏览器 Origin/Referer 策略）
+     * @param filePath 文件路径
+     * @return OSSObject 包含文件流和元数据
+     */
+    public OSSObject getFileStream(String filePath) {
+        logger.info("通过OSS SDK获取文件流: {}", filePath);
+
+        if (ossClient == null) {
+            tryCreateOssClient();
+        }
+
+        if (ossClient == null) {
+            String errorMessage = String.format(
+                "OSS客户端未配置或创建失败。配置检查: endpoint=%s, accessKeyId=%s, accessKeySecret=%s, bucketName=%s。",
+                endpoint != null ? endpoint : "未配置",
+                accessKeyId != null ? maskSensitiveInfo(accessKeyId) : "未配置",
+                accessKeySecret != null ? maskSensitiveInfo(accessKeySecret) : "未配置",
+                bucketName != null ? bucketName : "未配置"
+            );
+            logger.error(errorMessage);
+            throw new IllegalStateException(errorMessage);
+        }
+
+        try {
+            OSSObject ossObject = ossClient.getObject(bucketName, filePath);
+            logger.info("OSS文件流获取成功: {}, 大小: {}", filePath, ossObject.getObjectMetadata().getContentLength());
+            return ossObject;
+        } catch (Exception e) {
+            logger.error("OSS文件流获取失败: {}", filePath, e);
+            throw new RuntimeException("文件获取失败: " + e.getMessage(), e);
+        }
+    }
+
     // OSS客户端由配置类管理，无需手动关闭
 }

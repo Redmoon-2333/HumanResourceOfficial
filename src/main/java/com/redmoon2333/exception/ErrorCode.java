@@ -57,6 +57,9 @@ public enum ErrorCode {
     INVALID_REQUEST_PARAMETER(4001, "请求参数不正确"),
     VALIDATION_FAILED(4002, "数据验证失败"),
     
+    // 冲突相关错误 4100-4199
+    CONFLICT(4101, "资源冲突"),
+    
     // 系统错误 5000-5999
     SYSTEM_ERROR(5000, "系统内部错误");
     

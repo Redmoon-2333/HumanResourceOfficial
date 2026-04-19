@@ -1,4 +1,5 @@
 import type { ApiResponse } from '@/types'
+import { useUserStore } from '@/stores/user'
 
 // 开发环境使用代理，生产环境使用实际地址
 const API_BASE_URL = import.meta.env.PROD
@@ -56,17 +57,14 @@ class HttpClient {
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Token过期或未登录，清除token并提示登录
-          const wasLoggedIn = !!localStorage.getItem('token')
-          localStorage.removeItem('token')
-          localStorage.removeItem('userInfo')
+          const userStore = useUserStore()
+          const wasLoggedIn = userStore.isLoggedIn
+          userStore.logout()
 
           if (wasLoggedIn) {
-            // 如果之前是登录状态，token过期后自动退出
             window.location.href = '/login?expired=1'
             throw new Error('登录已过期，请重新登录')
           } else {
-            // 如果未登录，提示需要登录
             throw new Error('请先登录')
           }
         }
@@ -149,6 +147,11 @@ class HttpClient {
         if (xhr.status >= 200 && xhr.status < 300) {
           const data = JSON.parse(xhr.responseText)
           resolve(data)
+        } else if (xhr.status === 401) {
+          const userStore = useUserStore()
+          userStore.logout()
+          window.location.href = '/login?expired=1'
+          reject(new Error('登录已过期，请重新登录'))
         } else {
           reject(new Error(`上传失败: ${xhr.statusText}`))
         }

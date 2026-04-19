@@ -67,7 +67,7 @@ public class MaterialService {
      * @param description 资料描述
      * @return 保存的资料对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Material uploadMaterial(MultipartFile file, Integer categoryId, Integer subcategoryId, 
                                  String materialName, String description) throws IOException {
         try {
@@ -112,7 +112,7 @@ public class MaterialService {
             return material;
         } catch (Exception e) {
             logger.error("文件上传失败: {}", e.getMessage(), e);
-            throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_ERROR, e);
         }
     }
 
@@ -126,7 +126,7 @@ public class MaterialService {
      * @param uploaderId 上传者ID
      * @return 保存的资料对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Material uploadMaterial(Integer categoryId, Integer subcategoryId, 
                                   String materialName, String description, 
                                   MultipartFile file, Integer uploaderId) throws IOException {
@@ -222,7 +222,7 @@ public class MaterialService {
         Material material = materialMapper.selectById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料：materialId={}", materialId);
-            throw new RuntimeException("指定的资料不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的资料不存在");
         }
         logger.info("成功获取资料详情：materialId={}", materialId);
         return material;
@@ -248,7 +248,7 @@ public class MaterialService {
      * 增加资料下载次数
      * @param materialId 资料ID
      */
-    private void incrementDownloadCount(Integer materialId) {
+    public void incrementDownloadCount(Integer materialId) {
         logger.info("统计资料下载次数: materialId={}", materialId);
 
         Material material = materialMapper.selectById(materialId);
@@ -267,7 +267,8 @@ public class MaterialService {
      * @param sortOrder 排序
      * @return 创建的分类对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "material:categories", allEntries = true)
     public MaterialCategory createCategory(String categoryName, Integer sortOrder) {
         logger.info("创建分类: categoryName={}", categoryName);
         
@@ -278,7 +279,7 @@ public class MaterialService {
         MaterialCategory existingCategory = categoryMapper.findByName(categoryName);
         if (existingCategory != null) {
             logger.warn("分类已存在: categoryName={}", categoryName);
-            throw new RuntimeException("该分类已存在");
+            throw new BusinessException(ErrorCode.CONFLICT, "该分类已存在");
         }
 
         MaterialCategory category = new MaterialCategory(categoryName, sortOrder);
@@ -295,7 +296,8 @@ public class MaterialService {
      * @param sortOrder 排序
      * @return 创建的子分类对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = {"material:categories", "material:subcategories"}, allEntries = true)
     public MaterialSubcategory createSubcategory(Integer categoryId, String subcategoryName, Integer sortOrder) {
         logger.info("创建子分类: categoryId={}, subcategoryName={}", categoryId, subcategoryName);
         
@@ -306,14 +308,14 @@ public class MaterialService {
         MaterialCategory category = categoryMapper.selectById(categoryId);
         if (category == null) {
             logger.warn("指定的分类不存在: categoryId={}", categoryId);
-            throw new RuntimeException("指定的分类不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的分类不存在");
         }
 
         // 检查子分类是否已存在
         MaterialSubcategory existingSubcategory = subcategoryMapper.findByNameAndCategoryId(subcategoryName, categoryId);
         if (existingSubcategory != null) {
             logger.warn("该分类下已存在同名子分类: categoryId={}, subcategoryName={}", categoryId, subcategoryName);
-            throw new RuntimeException("该分类下已存在同名子分类");
+            throw new BusinessException(ErrorCode.CONFLICT, "该分类下已存在同名子分类");
         }
 
         MaterialSubcategory subcategory = new MaterialSubcategory(categoryId, subcategoryName, sortOrder);
@@ -412,7 +414,7 @@ public class MaterialService {
      * @param description 描述
      * @return 更新后的资料对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Material updateMaterial(Integer materialId, Integer categoryId, Integer subcategoryId, 
                                    String materialName, String description) {
         logger.info("更新资料信息: materialId={}", materialId);
@@ -423,7 +425,7 @@ public class MaterialService {
         Material material = materialMapper.selectById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料: materialId={}", materialId);
-            throw new RuntimeException("指定的资料不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的资料不存在");
         }
 
 material.setCategoryId(categoryId);
@@ -440,7 +442,8 @@ material.setCategoryId(categoryId);
      * 删除资料
      * @param materialId 资料 ID
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = {"material:categories", "material:subcategories"}, allEntries = true)
     public void deleteMaterial(Integer materialId) {
         logger.info("删除资料: materialId={}", materialId);
         
@@ -450,7 +453,7 @@ material.setCategoryId(categoryId);
         Material material = materialMapper.selectById(materialId);
         if (material == null) {
             logger.warn("未找到指定资料: materialId={}", materialId);
-            throw new RuntimeException("指定的资料不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的资料不存在");
         }
 
         // 删除文件
@@ -471,7 +474,6 @@ material.setCategoryId(categoryId);
      * @param expirationSeconds 过期时间（秒），默认1小时
      * @return 预签名URL
      */
-    @Transactional
     public String generateDownloadUrl(Integer materialId, Long expirationSeconds) {
         logger.info("为资料生成预签名URL: materialId={}, 过期时间={}s", materialId, expirationSeconds);
         
@@ -485,6 +487,8 @@ material.setCategoryId(categoryId);
         String cachedUrl = stringRedisTemplate.opsForValue().get(cacheKey);
         if (cachedUrl != null && !cachedUrl.isEmpty()) {
             logger.info("从Redis缓存中获取预签名URL: materialId={}", materialId);
+            // 缓存命中时也统计下载次数
+            incrementDownloadCount(materialId);
             return cachedUrl;
         }
         
@@ -524,6 +528,22 @@ material.setCategoryId(categoryId);
     }
     
     /**
+     * 根据资料ID获取完整的资料对象（供下载代理使用，不重复鉴权）
+     * @param materialId 资料ID
+     * @return 资料对象
+     */
+    public Material getMaterialForDownload(Integer materialId) {
+        if (materialId == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "资料ID不能为空");
+        }
+        Material material = materialMapper.selectById(materialId);
+        if (material == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "未找到指定的资料");
+        }
+        return material;
+    }
+
+    /**
      * 获取资料文件URL（保留原有接口兼容性）
      * @param materialId 资料ID
      * @return 文件URL
@@ -548,7 +568,7 @@ material.setCategoryId(categoryId);
      * @param sortOrder 排序
      * @return 更新后的分类对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "material:categories", allEntries = true)
     public MaterialCategory updateCategory(Integer categoryId, String categoryName, Integer sortOrder) {
         logger.info("更新分类信息: categoryId={}, categoryName={}", categoryId, categoryName);
@@ -560,14 +580,14 @@ material.setCategoryId(categoryId);
         MaterialCategory category = categoryMapper.selectById(categoryId);
         if (category == null) {
             logger.warn("未找到指定分类: categoryId={}", categoryId);
-            throw new RuntimeException("指定的分类不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的分类不存在");
         }
         
         // 检查名称是否与其他分类重复
         MaterialCategory existingCategory = categoryMapper.findByName(categoryName);
         if (existingCategory != null && !existingCategory.getCategoryId().equals(categoryId)) {
             logger.warn("分类名称已存在: categoryName={}", categoryName);
-            throw new RuntimeException("该分类名称已存在");
+            throw new BusinessException(ErrorCode.CONFLICT, "该分类名称已存在");
         }
         
         category.setCategoryName(categoryName);
@@ -585,7 +605,7 @@ material.setCategoryId(categoryId);
      * @param sortOrder 排序
      * @return 更新后的子分类对象
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = "material:subcategories", allEntries = true)
     public MaterialSubcategory updateSubcategory(Integer subcategoryId, String subcategoryName, Integer sortOrder) {
         logger.info("更新子分类信息: subcategoryId={}, subcategoryName={}", subcategoryId, subcategoryName);
@@ -597,7 +617,7 @@ material.setCategoryId(categoryId);
         MaterialSubcategory subcategory = subcategoryMapper.selectById(subcategoryId);
         if (subcategory == null) {
             logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
-            throw new RuntimeException("指定的子分类不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的子分类不存在");
         }
 
         // 检查名称是否与同分类下的其他子分类重复
@@ -606,7 +626,7 @@ material.setCategoryId(categoryId);
         if (existingSubcategory != null && !existingSubcategory.getSubcategoryId().equals(subcategoryId)) {
             logger.warn("该分类下已存在同名子分类: categoryId={}, subcategoryName={}",
                 subcategory.getCategoryId(), subcategoryName);
-            throw new RuntimeException("该分类下已存在同名子分类");
+            throw new BusinessException(ErrorCode.CONFLICT, "该分类下已存在同名子分类");
         }
 
         subcategory.setSubcategoryName(subcategoryName);
@@ -622,7 +642,7 @@ material.setCategoryId(categoryId);
      * 使用MyBatis-Plus的deleteById方法
      * @param categoryId 分类ID
      */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = {"material:categories", "material:subcategories"}, allEntries = true)
     public void deleteCategory(Integer categoryId) {
         logger.info("删除分类: categoryId={}", categoryId);
@@ -634,7 +654,7 @@ material.setCategoryId(categoryId);
         MaterialCategory category = categoryMapper.selectById(categoryId);
         if (category == null) {
             logger.warn("未找到指定分类: categoryId={}", categoryId);
-            throw new RuntimeException("指定的分类不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的分类不存在");
         }
 
         // 获取该分类下的所有子分类
@@ -693,8 +713,8 @@ material.setCategoryId(categoryId);
      * 使用MyBatis-Plus的deleteById方法
      * @param subcategoryId 子分类ID
      */
-    @Transactional
-    @CacheEvict(value = "material:subcategories", allEntries = true)
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = {"material:categories", "material:subcategories"}, allEntries = true)
     public void deleteSubcategory(Integer subcategoryId) {
         logger.info("删除子分类: subcategoryId={}", subcategoryId);
 
@@ -705,14 +725,40 @@ material.setCategoryId(categoryId);
         MaterialSubcategory subcategory = subcategoryMapper.selectById(subcategoryId);
         if (subcategory == null) {
             logger.warn("未找到指定子分类: subcategoryId={}", subcategoryId);
-            throw new RuntimeException("指定的子分类不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "指定的子分类不存在");
         }
 
-        // 删除该子分类下的所有资料
+        // 批量获取该子分类下的所有资料
         List<Material> materials = materialMapper.findBySubcategoryId(subcategoryId);
-        for (Material material : materials) {
-            deleteMaterialFile(material.getFileUrl());
-            materialMapper.deleteById(material.getMaterialId());
+        
+        if (!materials.isEmpty()) {
+            // 批量获取 OSS 文件路径
+            List<String> ossPaths = materials.stream()
+                .map(Material::getFileUrl)
+                .filter(Objects::nonNull)
+                .filter(p -> !p.isEmpty())
+                .map(this::extractOssFilePath)
+                .filter(Objects::nonNull)
+                .toList();
+
+            // 批量删除 OSS 文件
+            if (!ossPaths.isEmpty() && ossUtil != null) {
+                try {
+                    for (String path : ossPaths) {
+                        ossUtil.deleteFile(path);
+                    }
+                    logger.info("批量删除 OSS 文件成功，数量：{}", ossPaths.size());
+                } catch (Exception e) {
+                    logger.warn("批量删除 OSS 文件部分失败：{}", e.getMessage());
+                }
+            }
+
+            // 批量删除资料记录
+            List<Integer> materialIds = materials.stream()
+                .map(Material::getMaterialId)
+                .toList();
+            materialMapper.deleteBatchIds(materialIds);
+            logger.info("批量删除资料记录成功，数量：{}", materialIds.size());
         }
 
         // 删除子分类记录

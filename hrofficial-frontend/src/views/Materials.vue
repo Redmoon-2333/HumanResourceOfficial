@@ -251,10 +251,18 @@ const handleSubcategoryClick = async (subcategoryId: number) => {
 const handleDownload = async (material: Material) => {
   try {
     const response = await getDownloadUrl(material.materialId)
-    if (response.code === 200) {
-      window.open(response.data as string, '_blank')
-      ElMessage.success('开始下载')
-    }
+    const downloadUrl = response.data
+    const ext = material.fileType || ''
+    const filename = (material.materialName || 'download') + ext
+
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    ElMessage.success('开始下载')
   } catch (error: any) {
     ElMessage.error(error.message || '下载失败')
   }
@@ -415,7 +423,8 @@ const handleDelete = async (material: Material) => {
       {
         confirmButtonText: '确定删除',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
       }
     )
     

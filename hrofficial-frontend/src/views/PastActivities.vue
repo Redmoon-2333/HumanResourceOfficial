@@ -227,13 +227,16 @@ const handleDelete = async (activity: Activity, event: Event) => {
         type: 'warning'
       }
     )
+    loading.value = true
     await deletePastActivity(activity.id)
     ElMessage.success('删除成功')
-    fetchActivities()
+    await fetchActivities()
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除失败')
     }
+  } finally {
+    loading.value = false
   }
 }
 
