@@ -367,7 +367,7 @@ public class DailyImageController {
     public ApiResponse<Void> deleteImageWithFile(@PathVariable Integer id) {
         logger.info("删除图片及本地文件，ID: {}", id);
         try {
-            dailyImageService.deleteImageWithFile(id);
+            dailyImageService.deleteImage(id);
             return ApiResponse.success(null);
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(e.getMessage(), 400);

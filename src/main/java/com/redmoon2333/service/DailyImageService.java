@@ -118,27 +118,79 @@ public class DailyImageService {
 
     /**
      * 删除图片
+     * 先校验图片存在性，再删除本地文件，最后删除数据库记录
      *
      * @param imageId 图片ID
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteImage(Integer imageId) {
-        logger.info("删除图片，ID: {}", imageId);
+        logger.info("删除图片及本地文件，ID: {}", imageId);
+
+        // 1. 查询图片信息并校验存在性
+        DailyImage image = dailyImageMapper.selectById(imageId);
+        if (image == null) {
+            throw new IllegalArgumentException("图片不存在，ID: " + imageId);
+        }
+
+        // 2. 删除本地文件
+        String imageUrl = image.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                localFileUtil.deleteFile(imageUrl);
+                logger.info("本地文件删除成功: {}", imageUrl);
+            } catch (Exception e) {
+                logger.warn("删除本地文件失败: {}", imageUrl, e);
+                // 继续删除数据库记录，不阻断流程
+            }
+        }
+
+        // 3. 删除数据库记录
         dailyImageMapper.deleteById(imageId);
+        logger.info("图片记录删除成功，ID: {}", imageId);
     }
 
     /**
      * 批量删除图片
+     * 先批量查询图片信息，再批量删除本地文件，最后批量删除数据库记录
      *
      * @param imageIds 图片ID列表
      */
     @Transactional(rollbackFor = Exception.class)
     public void batchDeleteImages(List<Integer> imageIds) {
         if (imageIds == null || imageIds.isEmpty()) {
-            return;
+            throw new IllegalArgumentException("图片ID列表不能为空");
         }
-        logger.info("批量删除图片，数量: {}", imageIds.size());
+
+        logger.info("批量删除图片及本地文件，数量: {}", imageIds.size());
+
+        // 1. 批量查询图片信息
+        List<DailyImage> images = dailyImageMapper.selectBatchIds(imageIds);
+        if (images.isEmpty()) {
+            throw new IllegalArgumentException("所有图片均不存在");
+        }
+
+        // 2. 批量删除本地文件
+        for (DailyImage image : images) {
+            String imageUrl = image.getImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                try {
+                    localFileUtil.deleteFile(imageUrl);
+                    logger.info("本地文件删除成功: {}", imageUrl);
+                } catch (Exception e) {
+                    logger.warn("删除本地文件失败: {}", imageUrl, e);
+                    // 继续处理其他文件
+                }
+            }
+        }
+
+        // 3. 批量删除数据库记录
         dailyImageMapper.batchDelete(imageIds);
+
+        // 4. 校验实际删除数量
+        if (images.size() < imageIds.size()) {
+            logger.warn("部分图片不存在，预期删除: {}, 实际删除: {}", imageIds.size(), images.size());
+        }
+        logger.info("批量删除完成，实际删除数量: {}", images.size());
     }
 
     /**
@@ -230,38 +282,6 @@ public class DailyImageService {
 
         logger.info("日常活动图片文件上传成功: URL={}", imageUrl);
         return imageUrl;
-    }
-
-    /**
-     * 删除图片并删除本地文件
-     *
-     * @param imageId 图片ID
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteImageWithFile(Integer imageId) {
-        logger.info("删除图片及本地文件，ID: {}", imageId);
-
-        // 1. 获取图片信息
-        DailyImage image = dailyImageMapper.selectById(imageId);
-        if (image == null) {
-            throw new IllegalArgumentException("图片不存在，ID: " + imageId);
-        }
-
-        // 2. 删除本地文件
-        String imageUrl = image.getImageUrl();
-        if (imageUrl != null && !imageUrl.isEmpty()) {
-            try {
-                localFileUtil.deleteFile(imageUrl);
-                logger.info("本地文件删除成功: {}", imageUrl);
-            } catch (Exception e) {
-                logger.warn("删除本地文件失败: {}", imageUrl, e);
-                // 继续删除数据库记录，不阻断流程
-            }
-        }
-
-        // 3. 删除数据库记录
-        dailyImageMapper.deleteById(imageId);
-        logger.info("图片记录删除成功，ID: {}", imageId);
     }
 
     /**

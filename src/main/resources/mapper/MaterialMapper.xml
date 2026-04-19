@@ -61,8 +61,16 @@
         ORDER BY upload_time DESC
     </select>
 
-    <!-- 根据资料名称模糊查询 -->
+    <!-- 根据资料名称模糊查询（包含） -->
     <select id="findByNameLike" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM material
+        WHERE material_name LIKE CONCAT('%', #{materialName}, '%')
+        ORDER BY upload_time DESC
+    </select>
+
+    <!-- 根据资料名称模糊查询（包含，findByNameContaining 别名） -->
+    <select id="findByNameContaining" parameterType="java.lang.String" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM material
         WHERE material_name LIKE CONCAT('%', #{materialName}, '%')

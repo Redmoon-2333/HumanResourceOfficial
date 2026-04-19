@@ -30,7 +30,6 @@ import java.util.Objects;
  * 提供用户认证相关服务，包括登录、注册、生成激活码和获取用户信息
  */
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class AuthService {
 
@@ -86,6 +85,7 @@ public class AuthService {
      * @return 注册的用户信息
      * @throws BusinessException 注册失败时抛出异常
      */
+    @Transactional(rollbackFor = Exception.class)
     public User register(RegisterRequest registerRequest) {
         // 验证密码确认
         if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
@@ -175,6 +175,7 @@ public class AuthService {
      * @return 生成的激活码
      * @throws BusinessException 权限不足或令牌无效时抛出异常
      */
+    @Transactional(rollbackFor = Exception.class)
     public ActivationCode generateActivationCode(String token, int expireDays) {
         // 验证令牌
         if (!jwtUtil.validateToken(token)) {

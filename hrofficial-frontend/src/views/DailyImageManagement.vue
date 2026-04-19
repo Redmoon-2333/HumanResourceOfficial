@@ -29,13 +29,26 @@
 
       <!-- 图片列表 -->
       <div class="images-list">
+        <div v-if="selectedImages.length > 0" class="batch-actions">
+          <el-alert
+            :title="`已选中 ${selectedImages.length} 项`"
+            type="warning"
+            :closable="false"
+            show-icon
+          />
+          <el-button type="danger" :icon="Delete" @click="batchDeleteSelected">
+            批量删除
+          </el-button>
+        </div>
         <el-table
           :data="images"
           v-loading="loading"
           row-key="imageId"
           default-expand-all
           :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+          @selection-change="handleSelectionChange"
         >
+          <el-table-column type="selection" width="55" />
           <el-table-column prop="imageId" label="ID" width="80" />
           <el-table-column prop="title" label="标题" min-width="150">
             <template #default="{ row }">
@@ -266,12 +279,12 @@ import {
   getAllImages,
   addImage,
   updateImage,
-  deleteImage as deleteImageAPI,
   updateImageStatus,
   uploadDailyImage,
   uploadDailyImageFile,
   deleteDailyImageWithFile,
   deleteDailyImageFileOnly,
+  batchDeleteImages,
   type DailyImage
 } from '@/api/dailyImage'
 import { getFullImageUrl, getFullImageUrlList } from '@/utils/image'
@@ -280,6 +293,7 @@ import { getFullImageUrl, getFullImageUrlList } from '@/utils/image'
 const loading = ref(false)
 const submitting = ref(false)
 const images = ref<DailyImage[]>([])
+const selectedImages = ref<DailyImage[]>([])
 const showAddDialog = ref(false)
 const editingImage = ref<DailyImage | null>(null)
 const formRef = ref()
@@ -587,6 +601,47 @@ const cancelReplaceImage = () => {
 onMounted(() => {
   loadImages()
 })
+
+// 处理表格选择变化
+const handleSelectionChange = (selection: DailyImage[]) => {
+  selectedImages.value = selection
+}
+
+// 批量删除选中的图片
+const batchDeleteSelected = async () => {
+  if (selectedImages.value.length === 0) {
+    ElMessage.warning('请先选择要删除的图片')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedImages.value.length} 张图片吗？此操作不可恢复`,
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'error'
+      }
+    )
+
+    const imageIds = selectedImages.value.map(img => img.imageId)
+    const res = await batchDeleteImages(imageIds)
+    if (res.code === 200) {
+      ElMessage.success('批量删除成功')
+      selectedImages.value = []
+      loadImages()
+    } else {
+      ElMessage.error(res.message || '批量删除失败')
+    }
+  } catch (error: unknown) {
+    if (error !== 'cancel') {
+      console.error('批量删除失败:', error)
+      const errMsg = error instanceof Error ? error.message : '批量删除失败'
+      ElMessage.error(errMsg)
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -700,6 +755,17 @@ onMounted(() => {
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid #f3f4f6;
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
 }
 
 .text-muted {

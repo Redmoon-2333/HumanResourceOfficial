@@ -9,6 +9,8 @@ import com.redmoon2333.entity.PastActivity;
 import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.PastActivityMapper;
+import com.redmoon2333.util.LocalFileUtil;
+import com.redmoon2333.util.PermissionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +26,18 @@ import java.util.List;
  * 往届活动服务
  */
 @Service
-@Transactional
 public class PastActivityService {
     
     private static final Logger logger = LoggerFactory.getLogger(PastActivityService.class);
     
     @Autowired
     private PastActivityMapper pastActivityMapper;
+    
+    @Autowired
+    private PermissionUtil permissionUtil;
+    
+    @Autowired
+    private LocalFileUtil localFileUtil;
     
     @org.springframework.beans.factory.annotation.Value("${file.base-url:http://localhost:8080}")
     private String fileBaseUrl;
@@ -128,6 +135,7 @@ public class PastActivityService {
      * @param request 往届活动请求
      * @return 创建的往届活动
      */
+    @Transactional(rollbackFor = Exception.class)
     public PastActivityResponse createPastActivity(PastActivityRequest request) {
         logger.info("创建往届活动 - 标题: {}", request.getTitle());
         logger.info("请求参数详情 - coverImage: {}, pushUrl: {}, year: {}", 
@@ -178,6 +186,7 @@ public class PastActivityService {
      * @param request 更新请求
      * @return 更新后的往届活动
      */
+    @Transactional(rollbackFor = Exception.class)
     public PastActivityResponse updatePastActivity(Integer pastActivityId, PastActivityRequest request) {
         logger.info("更新往届活动 - ID: {}", pastActivityId);
         
@@ -231,10 +240,14 @@ public class PastActivityService {
      * 删除往届活动
      * @param pastActivityId 往届活动ID
      */
+    @Transactional(rollbackFor = Exception.class)
     public void deletePastActivity(Integer pastActivityId) {
         logger.info("删除往届活动 - ID: {}", pastActivityId);
         
         try {
+            // 检查权限（部长/副部长）
+            permissionUtil.checkMinisterPermission();
+            
             // 参数校验
             if (pastActivityId == null || pastActivityId <= 0) {
                 throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER, "往届活动ID不能为空且必须大于0");
@@ -243,6 +256,18 @@ public class PastActivityService {
             PastActivity existingActivity = pastActivityMapper.selectById(pastActivityId);
             if (existingActivity == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND, "往届活动不存在");
+            }
+            
+            // 删除封面图片本地文件（如果有）
+            String coverImage = existingActivity.getCoverImage();
+            if (coverImage != null && !coverImage.isEmpty()) {
+                try {
+                    localFileUtil.deleteFile(coverImage);
+                    logger.info("封面图片本地文件删除成功: {}", coverImage);
+                } catch (Exception e) {
+                    logger.warn("删除封面图片本地文件失败: {}", coverImage, e);
+                    // 继续删除数据库记录，不阻断流程
+                }
             }
             
             int result = pastActivityMapper.deleteById(pastActivityId);

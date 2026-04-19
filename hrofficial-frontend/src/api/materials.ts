@@ -131,6 +131,15 @@ export const getDownloadUrl = (
   return http.get<string>(`/api/materials/download-url/${materialId}`, { expirationSeconds })
 }
 
+/**
+ * 获取资料下载链接（服务端代理，解决 OSS Referer 策略问题）
+ * @param materialId - 资料ID
+ * @returns 后端代理下载 URL
+ */
+export const getDownloadProxyUrl = (materialId: number): string => {
+  return `/api/oss/download/material/${materialId}`
+}
+
 // ============================================
 // 分类管理
 // ============================================

@@ -1,5 +1,6 @@
 package com.redmoon2333.controller;
 
+import com.redmoon2333.annotation.RequireMinisterRole;
 import com.redmoon2333.dto.ActivationCodeResponse;
 import com.redmoon2333.dto.ActivationCodeListResponse;
 import com.redmoon2333.dto.ActivationCodeStatsResponse;
@@ -40,44 +41,6 @@ public class UserController {
     
     @Autowired(required = false)
     private RedisMemoryCleanupTask redisMemoryCleanupTask;
-    
-    /**
-     * 调试接口：获取所有用户信息
-     * 用于排查数据库数据问题
-     * 
-     * @return 所有用户的详细信息
-     */
-    @GetMapping("/debug/all")
-    public ApiResponse<?> getAllUsersDebug() {
-        try {
-            logger.info("收到调试请求：获取所有用户信息");
-            
-            // 获取用户总数
-            int userCount = userService.getUserCount();
-            logger.info("数据库中用户总数: {}", userCount);
-            
-            // 获取所有用户详细信息
-            List<User> allUsers = userService.getAllUsersDebug();
-            logger.info("实际查询到的用户数: {}", allUsers.size());
-            
-            // 输出每个用户的详细信息
-            for (com.redmoon2333.entity.User user : allUsers) {
-                logger.info("用户详情 - ID: {}, 用户名: {}, 姓名: {}, 角色历史: '{}'", 
-                    user.getUserId(), user.getUsername(), user.getName(), user.getRoleHistory());
-            }
-            
-            Map<String, Object> debugInfo = new HashMap<>();
-            debugInfo.put("totalCount", userCount);
-            debugInfo.put("actualUsers", allUsers);
-            debugInfo.put("usersWithRoleHistory", 
-                allUsers.stream().filter(u -> u.getRoleHistory() != null && !u.getRoleHistory().trim().isEmpty()).count());
-            
-            return ApiResponse.success("调试信息获取成功", debugInfo);
-        } catch (Exception e) {
-            logger.error("获取调试信息时发生异常", e);
-            return ApiResponse.error("获取调试信息失败: " + e.getMessage(), 500);
-        }
-    }
 
 
     /**
@@ -217,6 +180,7 @@ public class UserController {
      * 
      * @return 清理结果
      */
+    @RequireMinisterRole("清理Redis内存")
     @PostMapping("/cleanup-memory")
     public ApiResponse<Map<String, Object>> cleanupRedisMemory() {
         try {

@@ -312,8 +312,8 @@ public class UserService {
      */
     public int getUserCount() {
         try {
-            List<User> users = userMapper.selectList(null);
-            return users.size();
+            Long count = userMapper.selectCount(null);
+            return count != null ? count.intValue() : 0;
         } catch (Exception e) {
             logger.error("获取用户总数时发生异常", e);
             return 0;
