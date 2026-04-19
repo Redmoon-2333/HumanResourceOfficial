@@ -3,6 +3,7 @@ import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
 import AnimatedCounter from '@/components/AnimatedCounter.vue'
 import { ref, computed, onMounted, watch } from 'vue'
+import { debounce } from 'lodash-es'
 import {
   getCategories,
   getSubcategories,
@@ -207,12 +208,12 @@ const fetchMaterials = async () => {
   }
 }
 
-const handleSearch = async () => {
+const executeSearch = async () => {
   if (!searchQuery.value.trim()) {
     await fetchMaterials()
     return
   }
-  
+
   loading.value = true
   try {
     const response = await searchMaterials(searchQuery.value.trim())
@@ -225,6 +226,9 @@ const handleSearch = async () => {
     loading.value = false
   }
 }
+
+// 300ms 防抖
+const handleSearch = debounce(executeSearch, 300)
 
 const handleCategoryClick = async (categoryId?: number) => {
   currentCategory.value = categoryId ?? null
