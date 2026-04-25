@@ -26,6 +26,10 @@ public class RegisterRequest {
     @ValidRoleHistory
     @NotBlank(message = "角色历史不能为空")
     private String roleHistory;
+
+    @NotBlank(message = "学号不能为空")
+    @Size(min = 11, max = 20, message = "学号长度必须在11-20之间")
+    private String studentId;
     
     // 无参构造函数
     public RegisterRequest() {}
@@ -94,5 +98,13 @@ public class RegisterRequest {
     
     public void setRoleHistory(String roleHistory) {
         this.roleHistory = roleHistory;
+    }
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
     }
 }

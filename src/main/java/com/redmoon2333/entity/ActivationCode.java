@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.redmoon2333.enums.ActivationStatus;
 import java.time.LocalDateTime;
 
@@ -21,7 +20,6 @@ public class ActivationCode {
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @TableField(typeHandler = JacksonTypeHandler.class)
     private ActivationStatus status = ActivationStatus.未使用;
     
     private Integer userId;

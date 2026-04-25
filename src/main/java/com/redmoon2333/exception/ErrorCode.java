@@ -61,7 +61,30 @@ public enum ErrorCode {
     CONFLICT(4101, "资源冲突"),
     
     // 系统错误 5000-5999
-    SYSTEM_ERROR(5000, "系统内部错误");
+    SYSTEM_ERROR(5000, "系统内部错误"),
+
+    // 任务相关错误 9001-9099
+    TASK_NOT_FOUND(9001, "任务不存在"),
+    TASK_ASSIGNMENT_NOT_FOUND(9002, "任务指派记录不存在"),
+    TASK_ALREADY_DONE(9003, "任务已完成"),
+    TASK_NOT_CREATOR(9004, "非任务创建者，无权操作"),
+    TASK_EDIT_FIELD_DENIED(9005, "该字段不可修改"),
+    REMIND_COOLDOWN_ACTIVE(9010, "催促冷却中"),
+    ASSIGNEE_YEAR_MISMATCH(9011, "被指派人届别不匹配"),
+    ASSIGNEE_ALREADY_ASSIGNED(9012, "该部员已被指派此任务"),
+
+    // 站内信相关错误 9101-9199
+    MESSAGE_NOT_FOUND(9101, "站内信不存在"),
+    MESSAGE_NOT_OWNED(9102, "无权操作该站内信"),
+
+    // 角色管理相关错误 9201-9299
+    ROLE_INVALID(9201, "非法角色值"),
+    ROLE_MINISTER_UNIQUE_VIOLATION(9202, "该届已存在部长"),
+    ROLE_DEPUTY_CANNOT_APPOINT_MINISTER(9203, "副部长无权任命部长"),
+    ROLE_HISTORY_PARSE_ERROR(9204, "角色历史解析失败"),
+    ROLE_SELF_DEMOTE_NO_MINISTER(9205, "同届必须有至少1位部长，无法自我降级"),
+    STUDENT_ID_DUPLICATE(9206, "学号已存在"),
+    STUDENT_ID_FORMAT_INVALID(9207, "学号格式不正确");
     
     private final int code;
     private final String message;

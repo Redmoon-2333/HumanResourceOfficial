@@ -143,8 +143,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/users/search/name/**").permitAll()
                 // 允许调试接口访问
                 .requestMatchers("/api/users/debug/**").permitAll()
+                // 允许MQ健康检查接口公开访问
+                .requestMatchers("/api/mq/health").permitAll()
                 // AI接口允许（会验证JWT，权限检查由AOP处理）
                 .requestMatchers("/api/ai/**").permitAll()
+                // 任务接口 - 需要认证（权限由注解控制）
+                .requestMatchers("/api/tasks/**").authenticated()
+                // 站内信接口 - 需要认证
+                .requestMatchers("/api/messages/**").authenticated()
+                // 角色管理接口 - 需要认证（权限由注解控制）
+                .requestMatchers("/api/roles/**").authenticated()
                 // 其他请求需要认证
                 .anyRequest().authenticated()
             )

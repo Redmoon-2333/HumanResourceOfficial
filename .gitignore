@@ -271,9 +271,23 @@ temp/
 /redis-optimize/
 /other-optimize/
 
+### 静态资源构建产物 ###
+src/main/resources/static/css/
+src/main/resources/static/js/
+src/main/resources/static/assets/
+
+### 临时测试脚本 ###
+test_backend.log
+test_mq.py
+test_yunwu.py
+test_api_auto.py
+
 ### 其他个人学习笔记 ###
 /intent-recognition-demo/
+/docs/interview-guide/
+/docs/interview-guide/**
 /docs/interview-guide/INDEX.md
 /docs/performance-optimization-plan.md
 /docs/performance-optimization-report.md
 /docs/SYSTEM_DESIGN.md
+/docs/interview-guide/

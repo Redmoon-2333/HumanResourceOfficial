@@ -9,11 +9,12 @@
         <result column="password" property="password" jdbcType="VARCHAR"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="role_history" property="roleHistory" jdbcType="LONGVARCHAR"/>
+        <result column="student_id" property="studentId" jdbcType="VARCHAR"/>
     </resultMap>
 
     <!-- SQL片段 -->
     <sql id="Base_Column_List">
-        user_id, username, password, name, role_history
+        user_id, username, password, name, role_history, student_id
     </sql>
 
     <!-- 根据用户ID查找用户 -->
@@ -79,12 +80,14 @@
             username,
             password,
             name,
-            role_history
+            role_history,
+            student_id
         ) VALUES (
             #{username},
             #{password},
             #{name},
-            #{roleHistory}
+            #{roleHistory},
+            #{studentId}
         )
     </insert>
 
@@ -103,6 +106,9 @@
             </if>
             <if test="roleHistory != null">
                 role_history = #{roleHistory},
+            </if>
+            <if test="studentId != null">
+                student_id = #{studentId},
             </if>
         </set>
         WHERE user_id = #{userId}

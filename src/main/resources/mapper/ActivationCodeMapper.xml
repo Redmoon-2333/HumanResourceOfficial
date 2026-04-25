@@ -4,14 +4,14 @@
 
     <!-- 结果映射 -->
     <resultMap id="BaseResultMap" type="com.redmoon2333.entity.ActivationCode">
-        <id column="code_id" property="codeId" jdbcType="INTEGER"/>
-        <result column="code" property="code" jdbcType="VARCHAR"/>
-        <result column="creator_id" property="creatorId" jdbcType="INTEGER"/>
-        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
-        <result column="status" property="status" jdbcType="VARCHAR" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
-        <result column="user_id" property="userId" jdbcType="INTEGER"/>
-        <result column="use_time" property="useTime" jdbcType="TIMESTAMP"/>
-        <result column="expire_time" property="expireTime" jdbcType="TIMESTAMP"/>
+        <id column="code_id" property="codeId"/>
+        <result column="code" property="code"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="status" property="status"/>
+        <result column="user_id" property="userId"/>
+        <result column="use_time" property="useTime"/>
+        <result column="expire_time" property="expireTime"/>
     </resultMap>
 
     <!-- SQL片段 -->
@@ -103,5 +103,13 @@
         DELETE FROM activation_code
         WHERE code_id = #{codeId}
     </delete>
+
+    <!-- 批量更新过期激活码状态 -->
+    <update id="updateExpiredCodes">
+        UPDATE activation_code
+        SET status = #{toStatus}
+        WHERE status = #{fromStatus}
+          AND expire_time &lt; #{now}
+    </update>
 
 </mapper>

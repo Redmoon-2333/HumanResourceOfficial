@@ -13,6 +13,7 @@ const registerForm = ref({
   username: '',
   password: '',
   name: '',
+  studentId: '',
   activationCode: '',
   confirmPassword: ''
 })
@@ -51,6 +52,10 @@ const rules = {
   ],
   name: [
     { required: true, message: '请输入姓名', trigger: 'blur' }
+  ],
+  studentId: [
+    { required: true, message: '请输入学号', trigger: 'blur' },
+    { pattern: /^\d{11}$/, message: '学号必须为 11 位数字', trigger: 'blur' }
   ],
   activationCode: [
     { required: true, message: '请输入激活码', trigger: 'blur' }
@@ -98,6 +103,7 @@ const handleRegister = async () => {
       password: registerForm.value.password,
       confirmPassword: registerForm.value.confirmPassword,
       name: registerForm.value.name,
+      studentId: registerForm.value.studentId,
       activationCode: registerForm.value.activationCode,
       roleHistory: roleHistory
     }
@@ -188,6 +194,16 @@ const goToLogin = () => {
                     placeholder="请输入真实姓名"
                     :prefix-icon="User"
                     size="large"
+                  />
+                </el-form-item>
+
+                <el-form-item label="学号" prop="studentId" class="custom-form-item">
+                  <el-input
+                    v-model="registerForm.studentId"
+                    placeholder="请输入 11 位学号（将用于生成校园邮箱）"
+                    :prefix-icon="UserFilled"
+                    size="large"
+                    maxlength="11"
                   />
                 </el-form-item>
 
@@ -608,12 +624,17 @@ const goToLogin = () => {
 .form-title {
   font-size: var(--text-2xl);
   font-weight: var(--font-bold);
-  color: var(--text-primary);
+  color: var(--coral-500);
   margin: 0 0 var(--space-2) 0;
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .form-title {
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 .form-subtitle {

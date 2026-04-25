@@ -1,12 +1,25 @@
 package com.redmoon2333.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@EnableAsync
 public class WebConfig implements WebMvcConfigurer {
+
+    /**
+     * 配置异步请求支持
+     * Why: SSE 流式接口需要较长的超时时间，默认 30 秒会导致 AI 响应被截断
+     */
+    @Override
+    public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
+        // Why: 设置 10 分钟超时，足够 AI 模型完成推理
+        configurer.setDefaultTimeout(600000);
+    }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {

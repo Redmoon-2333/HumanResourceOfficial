@@ -2,7 +2,7 @@
 import Layout from '@/components/Layout.vue'
 import GlassPanel from '@/components/GlassPanel.vue'
 import AnimatedCounter from '@/components/AnimatedCounter.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getActivationCodes, generateActivationCode, deleteActivationCode } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -26,6 +26,7 @@ interface ActivationCode {
   id: number
   code: string
   used: boolean
+  expired?: boolean
   usedBy?: number
   usedByName?: string
   usedTime?: string
@@ -35,9 +36,10 @@ interface ActivationCode {
 
 const codes = ref<ActivationCode[]>([])
 const loading = ref(false)
+const refreshing = ref(false)
 const generating = ref(false)
 const searchQuery = ref('')
-const filterStatus = ref<'all' | 'unused' | 'used'>('all')
+const filterStatus = ref<'all' | 'unused' | 'used' | 'expired'>('all')
 const backendStats = ref<{
   totalCount: number
   unusedCount: number
@@ -92,6 +94,25 @@ try {
     ElMessage.error(error.message || '获取激活码失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 手动刷新激活码列表（用于更新过期状态）
+const handleRefresh = async () => {
+  if (refreshing.value) return
+  refreshing.value = true
+  try {
+    // 先调用后端 API 刷新过期激活码状态，再重新获取列表
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users/activation-codes/refresh-expired`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    await fetchCodes()
+    ElMessage.success('刷新成功')
+  } catch (error: any) {
+    ElMessage.error(error.message || '刷新失败')
+  } finally {
+    refreshing.value = false
   }
 }
 
@@ -164,16 +185,25 @@ const filteredCodes = computed(() => {
       c.usedByName?.toLowerCase().includes(query)
     )
   }
-  
+
   // 状态过滤
   if (filterStatus.value === 'unused') {
-    result = result.filter(c => !c.used)
+    result = result.filter(c => !c.used && !c.expired)
   } else if (filterStatus.value === 'used') {
     result = result.filter(c => c.used)
+  } else if (filterStatus.value === 'expired') {
+    result = result.filter(c => c.expired)
   }
-  
+
   return result
 })
+
+// 判断激活码是否过期
+const isExpired = (code: ActivationCode) => {
+  if (code.used) return false
+  if (!code.expireTime) return false
+  return new Date(code.expireTime) < new Date()
+}
 
 // 统计数据（直接使用后端数据）
 const stats = computed(() => {
@@ -306,11 +336,17 @@ onMounted(() => {
 
       <!-- 操作栏 -->
       <div class="action-bar">
-        <button class="generate-btn" @click="handleGenerate" :disabled="generating">
-          <el-icon v-if="!generating" :size="18"><Plus /></el-icon>
-          <el-icon v-else class="animate-spin"><Refresh /></el-icon>
-          <span>{{ generating ? '生成中...' : '生成激活码' }}</span>
-        </button>
+        <div class="action-left">
+          <button class="generate-btn" @click="handleGenerate" :disabled="generating">
+            <el-icon v-if="!generating" :size="18"><Plus /></el-icon>
+            <el-icon v-else class="animate-spin"><Refresh /></el-icon>
+            <span>{{ generating ? '生成中...' : '生成激活码' }}</span>
+          </button>
+          <button class="refresh-btn" @click="handleRefresh" :disabled="refreshing">
+            <el-icon :class="{ 'animate-spin': refreshing }" :size="18"><Refresh /></el-icon>
+            <span>{{ refreshing ? '刷新中...' : '刷新状态' }}</span>
+          </button>
+        </div>
         
         <div class="filter-group">
           <div class="search-box">
@@ -345,6 +381,13 @@ onMounted(() => {
             >
               已使用
             </button>
+            <button
+              class="filter-tab"
+              :class="{ active: filterStatus === 'expired' }"
+              @click="filterStatus = 'expired'"
+            >
+              已过期
+            </button>
           </div>
         </div>
       </div>
@@ -368,15 +411,16 @@ onMounted(() => {
                 <tr
                   v-for="code in filteredCodes"
                   :key="code.id"
-                  :class="{ used: code.used }"
+                  :class="{ used: code.used, expired: isExpired(code) }"
                 >
                   <td class="col-status">
-                    <div class="status-badge" :class="code.used ? 'used' : 'unused'">
+                    <div class="status-badge" :class="code.used ? 'used' : isExpired(code) ? 'expired' : 'unused'">
                       <el-icon :size="14">
-                        <Check v-if="!code.used" />
-                        <Close v-else />
+                        <Check v-if="!code.used && !isExpired(code)" />
+                        <Close v-else-if="code.used" />
+                        <Warning v-else />
                       </el-icon>
-                      <span>{{ code.used ? '已使用' : '未使用' }}</span>
+                      <span>{{ code.used ? '已使用' : isExpired(code) ? '已过期' : '未使用' }}</span>
                     </div>
                   </td>
                   <td class="col-code">
@@ -783,6 +827,12 @@ onMounted(() => {
   gap: 16px;
 }
 
+.action-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .generate-btn {
   display: flex;
   align-items: center;
@@ -805,6 +855,32 @@ onMounted(() => {
 }
 
 .generate-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+}
+
+.refresh-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+}
+
+.refresh-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
@@ -972,6 +1048,15 @@ onMounted(() => {
   color: #A8A29E;
 }
 
+.codes-table tr.expired {
+  opacity: 0.6;
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.codes-table tr.expired .code-text {
+  color: #A8A29E;
+}
+
 .col-status {
   width: 100px;
 }
@@ -994,6 +1079,11 @@ onMounted(() => {
 .status-badge.used {
   background: rgba(239, 68, 68, 0.1);
   color: #EF4444;
+}
+
+.status-badge.expired {
+  background: rgba(245, 158, 11, 0.1);
+  color: #D97706;
 }
 
 .col-code {

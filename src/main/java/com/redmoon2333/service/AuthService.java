@@ -10,11 +10,9 @@ import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.mapper.ActivationCodeMapper;
 import com.redmoon2333.mapper.UserMapper;
 import com.redmoon2333.util.JwtUtil;
+import com.redmoon2333.util.RoleHistoryParser;
 // import com.redmoon2333.util.MQSender;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -30,10 +29,8 @@ import java.util.Objects;
  * 提供用户认证相关服务，包括登录、注册、生成激活码和获取用户信息
  */
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class AuthService {
-
-    private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private UserMapper userMapper;
@@ -96,6 +93,16 @@ public class AuthService {
         if (userMapper.countByUsername(registerRequest.getUsername()) > 0) {
             throw new BusinessException(ErrorCode.USERNAME_EXISTS);
         }
+
+        // 检查学号是否已存在
+        if (registerRequest.getStudentId() != null && !registerRequest.getStudentId().isBlank()) {
+            Long count = userMapper.selectCount(
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<User>()
+                    .eq("student_id", registerRequest.getStudentId()));
+            if (count > 0) {
+                throw new BusinessException(ErrorCode.STUDENT_ID_DUPLICATE);
+            }
+        }
         
         // 验证激活码
         ActivationCode activationCode = activationCodeMapper.findByCode(registerRequest.getActivationCode());
@@ -122,8 +129,9 @@ public class AuthService {
         newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         newUser.setName(registerRequest.getName()); // 确保设置了姓名
         newUser.setRoleHistory(registerRequest.getRoleHistory());
+        newUser.setStudentId(registerRequest.getStudentId());
         
-        logger.info("Registering user with name: {}", registerRequest.getName());
+        log.info("Registering user with name: {}", registerRequest.getName());
         
         userMapper.insert(newUser);
         
@@ -189,9 +197,16 @@ public class AuthService {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         
-        // 检查用户是否具有管理员权限（通过角色历史检查是否包含"部长"关键词，包括副部长）
+        // 检查用户是否具有管理员权限（通过角色历史检查是否包含"部长"或"副部长"）
         String roleHistory = user.getRoleHistory();
-        if (roleHistory == null || !roleHistory.contains("部长")) {
+        if (roleHistory == null) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_PERMISSIONS);
+        }
+        // 使用 RoleHistoryParser 解析，自动兼容旧格式并统一输出
+        List<String> roles = RoleHistoryParser.parseRoleHistory(roleHistory);
+        boolean hasMinisterRole = roles.stream()
+                .anyMatch(role -> role.contains("副部长") || role.endsWith("部长"));
+        if (!hasMinisterRole) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_PERMISSIONS);
         }
         

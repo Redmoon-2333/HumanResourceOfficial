@@ -4,6 +4,20 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
 
+  mail:
+    host: smtp.163.com
+    port: 465
+    username: REDACTED_EMAIL
+    password: REDACTED_MAIL_PASS
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: "true"
+        transport:
+          protocol: smtps
+
   data:
     redis:
       host: localhost

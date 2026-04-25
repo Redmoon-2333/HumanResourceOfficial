@@ -64,15 +64,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // 创建权限列表
                     List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                     
-                    // 根据身份历史添加权限
+                    // 根据身份历史添加权限（兼容旧格式，自动去除空格）
                     if (roleHistory != null && !roleHistory.trim().isEmpty()) {
-                        String[] roles = roleHistory.split("&");
+                        String cleanedRoleHistory = roleHistory.replace(" ", "");
+                        String[] roles = cleanedRoleHistory.split("&");
                         for (String role : roles) {
                             role = role.trim();
-                            if (role.contains("部长")) {
+                            if (role.contains("副部长") || role.endsWith("部长")) {
                                 authorities.add(new SimpleGrantedAuthority("ROLE_MINISTER"));
                             }
-                            if (role.contains("部员")) {
+                            if (role.endsWith("部员")) {
                                 authorities.add(new SimpleGrantedAuthority("ROLE_MEMBER"));
                             }
                             // 根据年级添加权限

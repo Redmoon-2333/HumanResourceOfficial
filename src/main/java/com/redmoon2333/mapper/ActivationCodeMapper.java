@@ -40,4 +40,15 @@ public interface ActivationCodeMapper extends BaseMapper<ActivationCode> {
      * @return 激活码列表
      */
     List<ActivationCode> findByCreatorId(@Param("creatorId") Integer creatorId);
+
+    /**
+     * 批量更新过期激活码状态
+     * @param fromStatus 原状态（未使用）
+     * @param toStatus 新状态（已过期）
+     * @param now 当前时间，用于判断过期
+     * @return 更新数量
+     */
+    int updateExpiredCodes(@Param("fromStatus") ActivationStatus fromStatus,
+                           @Param("toStatus") ActivationStatus toStatus,
+                           @Param("now") LocalDateTime now);
 }

@@ -10,6 +10,7 @@ import com.redmoon2333.exception.BusinessException;
 import com.redmoon2333.exception.ErrorCode;
 import com.redmoon2333.service.ActivityService;
 import com.redmoon2333.dto.ApiResponse;
+import com.redmoon2333.mapper.ActivityImageMapper;
 import com.redmoon2333.util.PermissionUtil;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -41,7 +42,10 @@ public class ActivityController {
     
     @Autowired
     private PermissionUtil permissionUtil;
-    
+
+    @Autowired
+    private ActivityImageMapper activityImageMapper;
+
     @Value("${file.base-url:http://localhost:8080}")
     private String fileBaseUrl;
     
@@ -313,10 +317,25 @@ public class ActivityController {
 
         try {
             List<Activity> activities = activityService.getAllActivities();
-            Map<Integer, List<ActivityImageDTO>> result = new HashMap<>();
+            if (activities.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success("查询成功", Map.of()));
+            }
 
+            // 批量查询优化：1 次查活动 + 1 次批量查图片 = 2 次 SQL
+            List<Integer> activityIds = activities.stream()
+                .map(Activity::getActivityId)
+                .collect(Collectors.toList());
+
+            List<ActivityImage> allImages = activityImageMapper.findByActivityIds(activityIds);
+
+            // 按 activityId 分组
+            Map<Integer, List<ActivityImage>> imagesByActivityId = allImages.stream()
+                .collect(Collectors.groupingBy(ActivityImage::getActivityId));
+
+            Map<Integer, List<ActivityImageDTO>> result = new HashMap<>();
+            // 构建结果
             for (Activity activity : activities) {
-                List<ActivityImage> images = activityService.getImagesByActivityId(activity.getActivityId());
+                List<ActivityImage> images = imagesByActivityId.getOrDefault(activity.getActivityId(), new ArrayList<>());
 
                 List<ActivityImageDTO> imageDtos = images.stream().map(image -> {
                     ActivityImageDTO dto = new ActivityImageDTO();

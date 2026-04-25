@@ -1,0 +1,4 @@
+-- Flyway baseline placeholder
+-- This file intentionally left empty.
+-- Flyway will mark V1 as already executed (baseline-on-migrate=true)
+-- so that existing tables created by init.sql are not affected.

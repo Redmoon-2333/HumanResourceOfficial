@@ -115,7 +115,6 @@ let animationFrameId: number | null = null
 const initOrbitNodes = () => {
   orbitNodes.value = []
   
-  const ministerList = ministers.value
   const viceList = viceMinisters.value
   const memberList = members.value
   
@@ -130,28 +129,15 @@ const initOrbitNodes = () => {
     scaleFactor = 0.8 // 中等屏幕缩小到 80%
   }
   
-  ministerList.forEach((member, index) => {
-    const total = ministerList.length || 1
-    const startAngle = (index / total) * Math.PI * 2
-    orbitNodes.value.push({
-      member,
-      angle: startAngle,
-      speed: 0.0003,
-      orbitA: 210 * scaleFactor,
-      orbitB: 75 * scaleFactor,
-      reverse: false
-    })
-  })
-
   viceList.forEach((member, index) => {
     const total = viceList.length || 1
     const startAngle = (index / total) * Math.PI * 2
     orbitNodes.value.push({
       member,
       angle: startAngle,
-      speed: 0.0002,
-      orbitA: 325 * scaleFactor,
-      orbitB: 112 * scaleFactor,
+      speed: 0.00018,
+      orbitA: 280 * scaleFactor,
+      orbitB: 96 * scaleFactor,
       reverse: true
     })
   })
@@ -163,8 +149,8 @@ const initOrbitNodes = () => {
       member,
       angle: startAngle,
       speed: 0.0001,
-      orbitA: 440 * scaleFactor,
-      orbitB: 150 * scaleFactor,
+      orbitA: 480 * scaleFactor,
+      orbitB: 165 * scaleFactor,
       reverse: false
     })
   })
@@ -203,56 +189,15 @@ const getNodeStyle = (memberId: number) => {
 // 高对比度配色方案 - 突破主色系限制，增强视觉层次
 // 设计理念：部长/副部长使用暖金/橙色系，部员使用全色谱增加活力
 const ROLE_COLORS = {
-  // 部长 - 尊贵金色系（高饱和度）
-  minister: [
-    '#F59E0B', // 琥珀金
-    '#D97706', // 深琥珀
-    '#B45309', // 棕金
-    '#FBBF24', // 亮金黄
-  ],
-  // 副部长 - 活力橙红色系
-  viceMinister: [
-    '#F97316', // 活力橙
-    '#EA580C', // 深橙
-    '#DC2626', // 红橙
-    '#FB923C', // 浅橙
-  ],
-  // 部员 - 全色谱高对比（突破暖色限制，增加视觉活力）
-  member: [
-    // 暖色系
-    '#F59E0B', // 琥珀金
-    '#F97316', // 活力橙
-    '#EF4444', // 鲜红
-    '#EC4899', // 粉红
-    '#D946EF', // 紫红
-    // 冷色系（对比色，增加层次）
-    '#8B5CF6', // 紫色
-    '#6366F1', // 靛蓝
-    '#3B82F6', // 蓝色
-    '#06B6D4', // 青色
-    '#14B8A6', // 青绿
-    // 中性色
-    '#10B981', // 翠绿
-    '#84CC16', // 黄绿
-  ]
+  minister: '#FBBF24',
+  viceMinister: '#F59E0B',
+  member: '#F97316'
 }
 
 const getAvatarColor = (name: string, role: string) => {
-  // 使用名字生成稳定的哈希值
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const index = Math.abs(hash)
-
-  if (role === '部长') {
-    return ROLE_COLORS.minister[index % ROLE_COLORS.minister.length]
-  }
-  if (role === '副部长') {
-    return ROLE_COLORS.viceMinister[index % ROLE_COLORS.viceMinister.length]
-  }
-  // 部员使用全色谱高对比颜色
-  return ROLE_COLORS.member[index % ROLE_COLORS.member.length]
+  if (role === '部长') return ROLE_COLORS.minister
+  if (role === '副部长') return ROLE_COLORS.viceMinister
+  return ROLE_COLORS.member
 }
 
 const stats = computed(() => ({
@@ -465,29 +410,25 @@ watch([ministers, viceMinisters, members], () => {
           <!-- 成员星河图 -->
           <div class="galaxy-container" :class="{ 'is-transitioning': isTransitioning }">
             <!-- 轨道环 - 静止不动 -->
-            <div class="orbit-ring ring-1"></div>
-            <div class="orbit-ring ring-2"></div>
-            <div class="orbit-ring ring-3"></div>
+            <div class="orbit-ring ring-vice"></div>
+            <div class="orbit-ring ring-member"></div>
 
-            <!-- 中心 -->
-            <div class="galaxy-center">
-              <div class="center-core">
-                <span class="core-text">HR</span>
-              </div>
-            </div>
+            <!-- 身份标签 -->
+            <div class="orbit-label label-vice">部门骨干</div>
 
-            <!-- 部长 - 内圈轨道 -->
-            <div
-              v-for="member in ministers"
-              :key="'m-' + member.id"
-              class="member-node minister-node"
-              :style="getNodeStyle(member.id)"
-            >
+            <!-- 中心部长 - 固定在中心不旋转 -->
+            <div class="center-ministers">
               <div
-                class="node-content"
-                :style="{ background: `linear-gradient(135deg, ${getAvatarColor(member.name, member.role)} 0%, ${getAvatarColor(member.name, member.role)}dd 100%)` }"
+                v-for="member in ministers"
+                :key="'center-m-' + member.id"
+                class="center-minister"
               >
-                <span class="node-name">{{ member.name }}</span>
+                <div
+                  class="center-minister-content"
+                  :style="{ background: getAvatarColor(member.name, member.role) }"
+                >
+                  <span class="center-minister-name">{{ member.name }}</span>
+                </div>
               </div>
             </div>
 
@@ -783,7 +724,7 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 左侧列 */
 .left-column {
-  width: 220px;
+  width: 180px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -897,17 +838,17 @@ watch([ministers, viceMinisters, members], () => {
    面板标题 - 暖金黄毛玻璃标签风格
    ============================================ */
 .panel-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #1F2937;
-  margin-bottom: 12px;
-  padding: 6px 12px;
+  margin-bottom: 10px;
+  padding: 5px 10px;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(251, 191, 36, 0.2);
-  border-radius: 8px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   box-shadow: 0 2px 8px rgba(251, 191, 36, 0.1);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -915,8 +856,8 @@ watch([ministers, viceMinisters, members], () => {
 
 .panel-title::before {
   content: '';
-  width: 3px;
-  height: 14px;
+  width: 2px;
+  height: 12px;
   background: linear-gradient(180deg, #FBBF24, #F59E0B);
   border-radius: 2px;
 }
@@ -926,7 +867,7 @@ watch([ministers, viceMinisters, members], () => {
   background: white;
   border: 1px solid rgba(251, 191, 36, 0.12);
   border-radius: 16px;
-  padding: 16px;
+  padding: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
   position: relative;
@@ -1053,7 +994,7 @@ watch([ministers, viceMinisters, members], () => {
   background: white;
   border: 1px solid rgba(251, 191, 36, 0.12);
   border-radius: 16px;
-  padding: 16px;
+  padding: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
   position: relative;
@@ -1144,12 +1085,12 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 部员图例使用彩虹渐变表示多样性 */
 .legend-dot.member {
-  background: conic-gradient(from 0deg, #8B5CF6, #6366F1, #3B82F6, #06B6D4, #10B981, #84CC16, #F59E0B, #F97316, #EF4444, #EC4899, #8B5CF6);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #F97316, #EA580C);
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
 }
 
 .legend-dot.member::after {
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.3), transparent);
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.3), transparent);
 }
 
 .legend-text {
@@ -1181,8 +1122,9 @@ watch([ministers, viceMinisters, members], () => {
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-  overflow: auto;
-  min-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 450px;
 }
 
 /* 展示区域顶部渐变装饰线 */
@@ -1301,7 +1243,7 @@ watch([ministers, viceMinisters, members], () => {
   width: 100%;
   max-width: 1000px;
   height: 100%;
-  min-height: 300px;
+  min-height: 500px;
   flex: 1;
   overflow: visible;
 }
@@ -1365,70 +1307,97 @@ watch([ministers, viceMinisters, members], () => {
   pointer-events: none;
 }
 
-/* 内圈轨道 - 部长（长方形） */
-.ring-1 {
-  width: 420px;
-  height: 150px;
-  border: 1.5px dashed rgba(245, 158, 11, 0.35);
-  background: radial-gradient(ellipse at center, transparent 60%, rgba(245, 158, 11, 0.03) 100%);
-  border-radius: 75px;
+/* 中圈轨道 - 副部长 */
+.ring-vice {
+  width: 560px;
+  height: 192px;
+  border: 1px dashed rgba(245, 158, 11, 0.25);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(245, 158, 11, 0.02) 100%);
 }
 
-/* 中圈轨道 - 副部长（长方形） */
-.ring-2 {
-  width: 650px;
-  height: 225px;
-  border: 1px dashed rgba(249, 115, 22, 0.28);
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(249, 115, 22, 0.02) 100%);
-  border-radius: 112px;
+/* 外圈轨道 - 部员 */
+.ring-member {
+  width: 960px;
+  height: 330px;
+  border: 1px dashed rgba(249, 115, 22, 0.18);
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(249, 115, 22, 0.02) 100%);
 }
 
-/* 外圈轨道 - 部员（长方形） */
-.ring-3 {
-  width: 880px;
-  height: 300px;
-  border: 1px dashed rgba(99, 102, 241, 0.2);
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(99, 102, 241, 0.02) 100%);
-  border-radius: 150px;
+/* 身份标签 */
+.orbit-label {
+  position: absolute;
+  font-size: 12px;
+  color: rgba(107, 114, 128, 0.4);
+  font-weight: 500;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
-/* 中心核心 - 暖金黄 */
-.galaxy-center {
+.label-vice {
+  top: calc(50% - 96px - 25px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 中心部长 - 固定在中心 */
+.center-ministers {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 50;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
-.center-core {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #FBBF24, #F59E0B);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+.center-minister {
+  cursor: pointer;
+}
+
+.center-minister-content {
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    0 0 0 4px rgba(251, 191, 36, 0.15),
-    0 0 0 8px rgba(251, 191, 36, 0.08),
-    0 0 30px rgba(251, 191, 36, 0.4),
-    0 8px 24px rgba(251, 191, 36, 0.3);
-  animation: corePulse 3s ease-in-out infinite;
-}
-
-@keyframes corePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-}
-
-.core-text {
-  font-size: 18px;
-  font-weight: 900;
   color: white;
-  letter-spacing: 1px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 0 0 4px rgba(251, 191, 36, 0.2),
+    0 0 0 8px rgba(251, 191, 36, 0.1),
+    0 8px 24px rgba(251, 191, 36, 0.4);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.center-minister-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent);
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
+}
+
+.center-minister:hover .center-minister-content {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 5px rgba(251, 191, 36, 0.3),
+    0 0 0 10px rgba(251, 191, 36, 0.15),
+    0 12px 32px rgba(251, 191, 36, 0.5);
+}
+
+.center-minister-name {
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
 }
 
 /* ============================================
@@ -1517,35 +1486,12 @@ watch([ministers, viceMinisters, members], () => {
   font-size: 11px;
 }
 
-/* 不同角色的节点尺寸与样式 - 动态暖色主题 - 从大到小排列 */
-/* 部长 - 最大尺寸 */
-.minister-node .node-content {
-  width: 52px;
-  height: 52px;
-  box-shadow: 
-    0 4px 16px rgba(251, 191, 36, 0.4),
-    0 0 0 2px rgba(255, 220, 150, 0.3),
-    0 0 15px rgba(251, 191, 36, 0.3),
-    inset 0 1px 3px rgba(255, 255, 255, 0.4);
-}
-
-.minister-node .node-name {
-  font-size: 13px;
-}
-
-.minister-node:hover .node-content {
-  box-shadow: 
-    0 8px 24px rgba(251, 191, 36, 0.5),
-    0 0 0 3px rgba(255, 220, 150, 0.4),
-    0 0 30px rgba(251, 191, 36, 0.5),
-    inset 0 1px 3px rgba(255, 255, 255, 0.4);
-}
-
+/* 不同角色的节点尺寸与样式 - 动态暖色主题 */
 /* 副部长 - 中等尺寸 */
 .vice-node .node-content {
-  width: 44px;
-  height: 44px;
-  box-shadow: 
+  width: 46px;
+  height: 46px;
+  box-shadow:
     0 4px 12px rgba(252, 211, 77, 0.35),
     0 0 0 2px rgba(255, 235, 150, 0.25),
     0 0 10px rgba(252, 211, 77, 0.25),
@@ -1553,11 +1499,11 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .vice-node .node-name {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .vice-node:hover .node-content {
-  box-shadow: 
+  box-shadow:
     0 6px 20px rgba(251, 191, 36, 0.45),
     0 0 0 2px rgba(255, 235, 150, 0.35),
     0 0 20px rgba(252, 211, 77, 0.4),
@@ -1566,9 +1512,9 @@ watch([ministers, viceMinisters, members], () => {
 
 /* 部员 - 最小尺寸 */
 .member-circle .node-content {
-  width: 36px;
-  height: 36px;
-  box-shadow: 
+  width: 40px;
+  height: 40px;
+  box-shadow:
     0 3px 10px rgba(249, 115, 22, 0.3),
     0 0 0 1px rgba(255, 200, 150, 0.2),
     0 0 8px rgba(249, 115, 22, 0.2),
@@ -1576,11 +1522,11 @@ watch([ministers, viceMinisters, members], () => {
 }
 
 .member-circle .node-name {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .member-circle:hover .node-content {
-  box-shadow: 
+  box-shadow:
     0 4px 16px rgba(249, 115, 22, 0.4),
     0 0 0 2px rgba(255, 200, 150, 0.3),
     0 0 18px rgba(249, 115, 22, 0.35),
@@ -1620,26 +1566,18 @@ watch([ministers, viceMinisters, members], () => {
   }
 
   .left-column {
-    width: 200px;
+    width: 160px;
   }
 
   /* 轨道环 ×0.8 */
-  .orbit-ring.ring-1 {
-    width: 336px;
-    height: 120px;
-    border-radius: 60px;
+  .orbit-ring.ring-vice {
+    width: 448px;
+    height: 154px;
   }
 
-  .orbit-ring.ring-2 {
-    width: 520px;
-    height: 180px;
-    border-radius: 90px;
-  }
-
-  .orbit-ring.ring-3 {
-    width: 704px;
-    height: 240px;
-    border-radius: 120px;
+  .orbit-ring.ring-member {
+    width: 768px;
+    height: 264px;
   }
 
   /* 光晕 ×0.8 */
@@ -1752,7 +1690,7 @@ watch([ministers, viceMinisters, members], () => {
     min-height: 280px;
   }
 
-  /* 轨道环 ×0.6 — 与 JS scaleFactor 对齐 */
+  /* 轨道环 ×0.6 */
   .galaxy-container {
     min-height: 240px;
   }
@@ -1762,49 +1700,23 @@ watch([ministers, viceMinisters, members], () => {
     height: 168px;
   }
 
-  .orbit-ring.ring-1 {
-    width: 252px;
-    height: 90px;
-    border-radius: 45px;
+  .orbit-ring.ring-vice {
+    width: 336px;
+    height: 116px;
   }
 
-  .orbit-ring.ring-2 {
-    width: 390px;
-    height: 135px;
-    border-radius: 67px;
-  }
-
-  .orbit-ring.ring-3 {
-    width: 528px;
-    height: 180px;
-    border-radius: 90px;
-  }
-
-  .center-core {
-    width: 50px;
-    height: 50px;
-  }
-
-  .core-text {
-    font-size: 15px;
-  }
-
-  .minister-node .node-content {
-    width: 46px;
-    height: 46px;
-  }
-
-  .minister-node .node-name {
-    font-size: max(11px, 2.8vw);
+  .orbit-ring.ring-member {
+    width: 576px;
+    height: 198px;
   }
 
   .vice-node .node-content {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
   }
 
   .vice-node .node-name {
-    font-size: max(9.5px, 2.4vw);
+    font-size: 11px;
   }
 
   .member-circle .node-content {
@@ -1813,7 +1725,16 @@ watch([ministers, viceMinisters, members], () => {
   }
 
   .member-circle .node-name {
-    font-size: max(9px, 2.2vw);
+    font-size: 10px;
+  }
+
+  .center-minister-content {
+    width: 56px;
+    height: 56px;
+  }
+
+  .center-minister-name {
+    font-size: 13px;
   }
 }
 
@@ -1920,58 +1841,41 @@ watch([ministers, viceMinisters, members], () => {
     background-size: 80px 80px;
   }
 
-  .orbit-ring.ring-1 {
-    width: 148px;
-    height: 53px;
-    border-radius: 27px;
+  .orbit-ring.ring-vice {
+    width: 196px;
+    height: 68px;
   }
 
-  .orbit-ring.ring-2 {
-    width: 228px;
-    height: 79px;
-    border-radius: 40px;
-  }
-
-  .orbit-ring.ring-3 {
-    width: 308px;
-    height: 105px;
-    border-radius: 53px;
-  }
-
-  .center-core {
-    width: 38px;
-    height: 38px;
-  }
-
-  .core-text {
-    font-size: 13px;
-  }
-
-  .minister-node .node-content {
-    width: 34px;
-    height: 34px;
-  }
-
-  .minister-node .node-name {
-    font-size: max(9px, 2.4vw);
+  .orbit-ring.ring-member {
+    width: 336px;
+    height: 116px;
   }
 
   .vice-node .node-content {
+    width: 36px;
+    height: 36px;
+  }
+
+  .vice-node .node-name {
+    font-size: 10px;
+  }
+
+  .member-circle .node-content {
     width: 28px;
     height: 28px;
   }
 
-  .vice-node .node-name {
-    font-size: max(9px, 2.2vw);
-  }
-
-  .member-circle .node-content {
-    width: 24px;
-    height: 24px;
-  }
-
   .member-circle .node-name {
-    font-size: max(9px, 2vw);
+    font-size: 9px;
+  }
+
+  .center-minister-content {
+    width: 48px;
+    height: 48px;
+  }
+
+  .center-minister-name {
+    font-size: 12px;
   }
 
   .year-display {

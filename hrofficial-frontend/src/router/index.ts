@@ -102,6 +102,30 @@ const router = createRouter({
       component: () => import('@/views/DailyImageManagement.vue'),
       meta: { title: '日常图片管理', requiresMinister: true }
     },
+    {
+      path: '/tasks',
+      name: 'TaskBoard',
+      component: () => import('@/views/TaskBoard.vue'),
+      meta: { title: '我的任务', requiresMember: true }
+    },
+    {
+      path: '/task-management',
+      name: 'TaskManagement',
+      component: () => import('@/views/TaskManagement.vue'),
+      meta: { title: '任务管理', requiresMinister: true }
+    },
+    {
+      path: '/people-management',
+      name: 'PeopleManagement',
+      component: () => import('@/views/PeopleManagement.vue'),
+      meta: { title: '人员管理', requiresMinister: true }
+    },
+    {
+      path: '/messages',
+      name: 'MessageCenter',
+      component: () => import('@/views/MessageCenter.vue'),
+      meta: { title: '站内信', requiresAuth: true }
+    },
 
     {
       path: '/:pathMatch(.*)*',

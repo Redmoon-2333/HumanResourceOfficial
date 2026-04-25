@@ -56,7 +56,16 @@ export const useUserStore = defineStore('user', () => {
   const isMinister = computed(() => {
     if (!userInfo.value) return false
     const role = userInfo.value.roleHistory
-    return role.includes('部长') || role.includes('副部长')
+    // 清理 JSON 数组格式，兼容旧格式，自动去除空格
+    const cleaned = role
+      .replace(/^\[/, '')
+      .replace(/\]$/, '')
+      .replace(/"/g, '')
+      .replace(/'/g, '')
+      .replace(/ /g, '')
+      .trim()
+    const roles = cleaned.split(/[&,]/).map(r => r.trim())
+    return roles.some(r => r.includes('副部长') || r.endsWith('部长'))
   })
   const isMember = computed(() => {
     if (!userInfo.value) return false

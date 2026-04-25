@@ -34,6 +34,9 @@ public class OssUtil {
     @Value("${aliyun.oss.bucketName:}")
     private String bucketName;
 
+    @Value("${aliyun.oss.path-prefix:}")
+    private String pathPrefix; // OSS 存储路径前缀，用于按业务分类
+
     private OSS ossClient;
     
     // 通过依赖注入获取OSS客户端
@@ -101,16 +104,18 @@ public class OssUtil {
         String extension = originalFilename != null ? originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
         String uniqueFilename = UUID.randomUUID().toString() + extension;
         
-        logger.debug("生成唯一文件名: {}", uniqueFilename);
+        // 添加路径前缀：按业务分类存储
+        String ossKey = (pathPrefix != null && !pathPrefix.isEmpty() ? pathPrefix + "/" : "") + uniqueFilename;
+        logger.debug("生成 OSS 存储路径：{}", ossKey);
 
         // 创建PutObjectRequest
-        PutObjectRequest request = new PutObjectRequest(bucketName, uniqueFilename, file.getInputStream());
+        PutObjectRequest request = new PutObjectRequest(bucketName, ossKey, file.getInputStream());
 
         // 上传文件
         ossClient.putObject(request);
         
         // 构建并返回文件URL
-        String fileUrl = buildFileUrl(uniqueFilename);
+        String fileUrl = buildFileUrl(ossKey);
         logger.info("文件上传成功，URL: {}", fileUrl);
         
         return fileUrl;

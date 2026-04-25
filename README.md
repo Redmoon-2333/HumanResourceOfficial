@@ -10,10 +10,11 @@
 [![MyBatis-Plus](https://img.shields.io/badge/MyBatis%20Plus-3.5.12-BF2A2A)](https://baomidou.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql)](https://www.mysql.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.0+-DC382D?logo=redis)](https://redis.io/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.12+-FF6600?logo=rabbitmq)](https://www.rabbitmq.com/)
 
 **基于 Spring Boot + Vue3 + Spring AI 的智能化学生会人力资源管理系统**
 
-集成 RAG 知识库问答、AI 智能助手、流式对话输出等先进功能
+集成 RAG 知识库问答、AI 智能助手、流式对话输出、任务管理、消息通知等先进功能
 
 [快速开始](#快速开始) · [功能特性](#功能特性) · [技术架构](#技术架构) · [部署指南](#部署指南)
 
@@ -23,7 +24,7 @@
 
 ## 📖 项目概述
 
-人力资源中心官网是一个面向学生会组织的数字化管理平台，采用前后端分离架构，基于 Spring AI 接入 ECNU AI（华东师范大学 AI 平台），提供智能化的成员管理、活动管理、资料管理和 AI 辅助决策能力。
+人力资源中心官网是一个面向学生会组织的数字化管理平台，采用前后端分离架构，基于 Spring AI 接入 ECNU AI（华东师范大学 AI 平台），提供智能化的成员管理、活动管理、任务管理、消息通知和 AI 辅助决策能力。
 
 ### 核心能力
 
@@ -31,6 +32,8 @@
 - 📚 **RAG 知识库** - 检索增强生成，基于 Redis Vector Store 的语义检索与智能回答
 - 👥 **成员管理** - 多角色权限体系，支持往届成员追溯与激活码注册
 - 📋 **活动管理** - 活动全生命周期管理，支持策划案 AI 生成（HTML 格式 + 沙箱渲染）
+- ✅ **任务管理** - 任务创建、分配、催促、完成全流程，支持邮件+站内信通知
+- 💬 **消息中心** - 站内信系统，支持系统通知、任务提醒、已读管理
 - 📁 **资料管理** - 三级分类体系，阿里云 OSS 预签名 URL 安全下载
 - 🏛️ **历史档案** - 往届活动和成员档案管理
 
@@ -44,10 +47,14 @@
 |---------|---------|------|
 | **认证授权** | JWT + Spring Security | 无状态认证，Redis 存储 Token 黑名单 |
 | **角色体系** | 注解 + AOP | 游客/部员/部长三级权限，自定义注解声明式控制 |
+| **任务管理** | MyBatis-Plus + 逻辑删除 | 任务创建/分配/催促/完成，24小时催促冷却 |
+| **消息通知** | RabbitMQ 异步 | 站内信 + 邮件通知，MQ 解耦保证最终一致性 |
+| **角色变更审计** | role_change_log | 角色任命/变更全记录，支持历史追溯 |
 | **AI 对话** | Spring AI + OpenAI 兼容接口 | ECNU AI 流式输出，支持上下文记忆与工具调用 |
 | **RAG 问答** | Redis Vector Store | 向量检索 + 语义增强回答，智能文本分块 |
 | **文件管理** | 本地存储 + 阿里云 OSS | 预签名 URL 安全下载，支持多场景上传 |
 | **数据访问** | MyBatis-Plus | 内置分页、逻辑删除、自动填充 |
+| **数据库迁移** | Flyway | 8个版本迁移脚本，版本化Schema演进 |
 | **性能监控** | 自定义监控服务 | 内存、向量索引、RAG 状态监控，Redis 内存清理 |
 | **异常处理** | 全局异常处理器 | 统一错误码体系，业务/系统异常分离 |
 
@@ -64,6 +71,7 @@
 | **HTML 渲染** | iframe 沙箱 | 策划案 HTML 安全渲染 |
 | **构建工具** | rolldown-vite | 基于 Rust 的高性能构建 |
 | **权限控制** | 路由守卫 + composables | usePermission 组合式函数，五级权限检查 |
+| **错误处理** | 统一错误码映射 | errorCodeMap + errorHandler，全局异常拦截 |
 | **视觉设计** | CSS 变量设计系统 | 毛玻璃效果、渐变卡片、响应式断点 |
 
 ---
@@ -83,23 +91,31 @@ graph TB
     end
 
     subgraph 服务层["服务层 Spring Boot"]
-        C[Controller 接口层]
-        D[Service 业务层]
+        C[Controller 接口层 14个]
+        D[Service 业务层 16个]
         E[AI 服务层]
         F[文件服务层]
-        G[性能监控层]
+        G[消息队列层]
+        H[性能监控层]
     end
 
     subgraph 数据层["数据层"]
-        H[(MySQL 业务数据)]
-        I[(Redis 缓存/向量)]
-        J[本地文件 / 阿里云 OSS]
+        I[(MySQL 业务数据)]
+        J[(Redis 缓存/向量)]
+        K[本地文件 / 阿里云 OSS]
+    end
+
+    subgraph MQ层["消息队列 RabbitMQ"]
+        L[NotifyProducer]
+        M[EmailConsumer]
+        N[InAppMsgConsumer]
+        O[TaskRemindConsumer]
     end
 
     subgraph AI 层["AI 层 Spring AI"]
-        K[ECNU AI ecnu-plus/ecnu-max]
-        L[ecnu-embedding-small]
-        M[Vector Store 检索]
+        P[ECNU AI ecnu-plus/ecnu-max]
+        Q[ecnu-embedding-small]
+        R[Vector Store 检索]
     end
 
     A --> B
@@ -110,11 +126,16 @@ graph TB
     D --> G
     D --> H
     D --> I
-    F --> J
-    E --> K
-    E --> L
+    D --> J
+    F --> K
+    G --> L
     L --> M
-    M --> I
+    L --> N
+    L --> O
+    E --> P
+    E --> Q
+    Q --> R
+    R --> J
 ```
 
 ### 技术栈版本
@@ -128,9 +149,12 @@ graph TB
 | Spring AI OpenAI | 由 BOM 管理 | OpenAI 兼容接口（ECNU AI） |
 | Spring AI Redis Vector Store | 由 BOM 管理 | 向量存储与检索 |
 | Spring Security | 6.x | 安全认证授权 |
+| Spring AMQP | 3.x | RabbitMQ 消息队列 |
 | MyBatis-Plus | 3.5.12 | ORM 框架（内置分页、逻辑删除） |
+| Flyway | 由 Spring Boot 管理 | 数据库版本化迁移 |
 | MySQL Connector | 8.0.33 | 关系型数据库驱动 |
 | Redis + Lettuce | 7.x | 缓存 + 向量存储 + 对话记忆 |
+| RabbitMQ | 3.12+ | 异步消息通知（邮件/站内信/任务催促） |
 | JWT (jjwt) | 0.11.5 | 令牌认证 |
 | Hutool | 5.8.22 | Java 工具库 |
 | Lombok | 1.18.38 | 代码简化 |
@@ -138,6 +162,7 @@ graph TB
 | Apache POI | 5.2.5 | Word 文档解析（RAG 知识库） |
 | PDFBox | 2.0.30 | PDF 文档解析（RAG 知识库） |
 | SnakeYAML | 2.2 | 提示词 YAML 配置 |
+| Jakarta Mail | 由 Spring Boot 管理 | 邮件发送 |
 
 #### 前端技术栈
 
@@ -168,18 +193,30 @@ HumanResourceOfficial/
 ├── src/main/java/com/redmoon2333/          # 后端源码
 │   ├── annotation/                          # 自定义注解（权限控制）
 │   ├── aspect/                              # AOP 切面
-│   ├── config/                              # 配置类（16个）
-│   ├── controller/                          # 控制器层（10个）
-│   ├── dto/                                 # 数据传输对象（28个）
-│   ├── entity/                              # 实体类（9个）
+│   ├── config/                              # 配置类（17个）
+│   ├── controller/                          # 控制器层（14个）
+│   ├── dto/                                 # 数据传输对象（34个）
+│   ├── entity/                              # 实体类（14个）
 │   ├── enums/                               # 枚举类
 │   ├── exception/                           # 异常处理
-│   ├── mapper/                              # MyBatis-Plus 映射器（9个）
-│   ├── service/                             # 业务服务层（12个）
+│   ├── mapper/                              # MyBatis-Plus 映射器（14个）
+│   ├── mq/                                  # 消息队列
+│   │   ├── producer/                        #   NotifyProducer 通知生产者
+│   │   └── consumer/                        #   EmailConsumer / InAppMsgConsumer / TaskRemindConsumer
+│   ├── service/                             # 业务服务层（16个）
 │   ├── util/                                # 工具类（10个）
 │   ├── validation/                          # 自定义校验
 │   └── Main.java                            # 启动类
 ├── src/main/resources/
+│   ├── db/migration/                        # Flyway 迁移脚本（8个版本）
+│   │   ├── V1__baseline.sql                 #   基线建表
+│   │   ├── V2__add_user_student_id.sql      #   学号字段
+│   │   ├── V3__seed_student_id.sql          #   学号填充
+│   │   ├── V4__create_message_table.sql     #   消息表
+│   │   ├── V5__create_task_tables.sql       #   任务相关表
+│   │   ├── V6__add_role_audit_log.sql       #   角色变更审计
+│   │   ├── V7__update_v_user_roles_view.sql #   视图更新
+│   │   └── V8__fix_activation_code.sql      #   激活码状态修复
 │   ├── mapper/                              # MyBatis XML（8个）
 │   ├── prompttemplate/                      # AI 提示词模板
 │   ├── rag-knowledge-base/                  # RAG 知识库文档（8类27文件）
@@ -187,7 +224,7 @@ HumanResourceOfficial/
 │   └── application-dev.yml                  # 开发环境配置
 ├── hrofficial-frontend/                     # 前端项目
 │   ├── src/
-│   │   ├── api/                             # API 接口定义（11个模块）
+│   │   ├── api/                             # API 接口定义（14个模块）
 │   │   ├── components/                      # 公共组件（9个）
 │   │   ├── composables/                     # 组合式函数
 │   │   ├── directives/                      # 自定义指令
@@ -226,6 +263,7 @@ HumanResourceOfficial/
 - **Node.js**: ^20.19.0 或 >=22.12.0
 - **MySQL**: 8.0+
 - **Redis**: 7.0+ (推荐 Redis Stack，需支持 RediSearch 向量检索)
+- **RabbitMQ**: 3.12+ (可选，不启动时消息通知功能降级为同步)
 
 ### 1. 克隆项目
 
@@ -247,6 +285,8 @@ CREATE DATABASE hrofficial
 ```bash
 mysql -u root -p hrofficial < deploy/init/init.sql
 ```
+
+> **注意**：应用启动时 Flyway 会自动执行 `src/main/resources/db/migration/` 下的迁移脚本，无需手动执行。
 
 ### 3. 环境变量配置
 
@@ -276,6 +316,13 @@ cp deploy/.env.example .env
 | `REDIS_HOST` | `localhost` | Redis 主机 |
 | `REDIS_PORT` | `6379` | Redis 端口 |
 | `REDIS_PASSWORD` | (空) | Redis 密码 |
+| `RABBITMQ_HOST` | `localhost` | RabbitMQ 主机 |
+| `RABBITMQ_PORT` | `5672` | RabbitMQ 端口 |
+| `RABBITMQ_USERNAME` | `guest` | RabbitMQ 用户名 |
+| `RABBITMQ_PASSWORD` | `guest` | RabbitMQ 密码 |
+| `MAIL_HOST` | `smtp.qq.com` | 邮件 SMTP 主机 |
+| `MAIL_USERNAME` | (空) | 邮件发送账号 |
+| `MAIL_PASSWORD` | (空) | 邮件授权码 |
 | `ALIYUN_OSS_ENDPOINT` | `oss-cn-beijing.aliyuncs.com` | OSS Endpoint |
 | `ALIYUN_OSS_ACCESS_KEY_ID` | (空) | OSS AccessKey ID |
 | `ALIYUN_OSS_ACCESS_KEY_SECRET` | (空) | OSS AccessKey Secret |
@@ -387,8 +434,8 @@ AI 可根据输入参数生成 HTML 格式的活动策划案，前端通过 ifra
 | 角色 | 权限范围 |
 |------|---------|
 | **游客** | 查看活动介绍、往届活动、往届成员 |
-| **部员** | 游客权限 + 资料查看/下载、AI 对话、策划案生成、文件上传 |
-| **部长** | 部员权限 + 所有管理功能（增删改）、RAG 管理、激活码管理、每日一图管理 |
+| **部员** | 游客权限 + 资料查看/下载、AI 对话、策划案生成、文件上传、查看/完成个人任务、消息中心 |
+| **部长** | 部员权限 + 所有管理功能（增删改）、任务管理、角色管理、RAG 管理、激活码管理、每日一图管理 |
 
 ### 权限注解使用
 
@@ -418,103 +465,187 @@ public ResponseEntity<?> deleteActivity(@PathVariable Long id) { }
 
 ### 认证接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/auth/register` | 用户注册（需激活码） |
-| POST | `/api/auth/login` | 用户登录 |
-| POST | `/api/auth/logout` | 用户登出 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/auth/register` | 公开 | 用户注册（需激活码） |
+| POST | `/api/auth/login` | 公开 | 用户登录 |
+| POST | `/api/auth/logout` | 登录 | 用户登出 |
+| GET | `/api/auth/current-user` | 登录 | 获取当前用户信息 |
+| PUT | `/api/auth/update-profile` | 登录 | 更新个人资料 |
+| POST | `/api/auth/generate-code` | 部长 | 生成激活码 |
+
+### 消息接口
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/messages` | 登录 | 分页获取消息列表（支持 type/isRead 筛选） |
+| GET | `/api/messages/unread-count` | 登录 | 获取未读消息数 |
+| POST | `/api/messages/{id}/read` | 登录 | 标记消息已读 |
+| POST | `/api/messages/read-all` | 登录 | 标记全部已读 |
+| DELETE | `/api/messages/{id}` | 登录 | 删除消息 |
+| POST | `/api/messages` | 登录 | 发送站内信 |
+
+### 角色管理接口
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/roles/users` | 部长 | 分页获取用户列表 |
+| PUT | `/api/roles/users/{userId}` | 部长 | 更新用户角色（含变更原因） |
+| POST | `/api/roles/users/{userId}/appoint-minister` | 部长 | 任命部长 |
+| POST | `/api/roles/users/{userId}/appoint-deputy` | 部长 | 任命副部长 |
+
+### 任务管理接口
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/tasks` | 部长 | 创建任务（含分配执行人） |
+| GET | `/api/tasks/mine` | 登录 | 获取我的任务（作为执行人） |
+| GET | `/api/tasks/created` | 部长 | 获取我创建的任务 |
+| GET | `/api/tasks/{id}` | 登录 | 获取任务详情 |
+| POST | `/api/tasks/assignments/{id}/done` | 登录 | 标记任务完成 |
+| POST | `/api/tasks/assignments/{id}/remind` | 部长 | 催促任务（24h冷却） |
+| PUT | `/api/tasks/{id}` | 部长 | 更新任务 |
+| DELETE | `/api/tasks/{id}` | 部长 | 删除任务 |
+| GET | `/api/tasks/candidates` | 部长 | 获取候选人列表 |
 
 ### AI 接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/ai/chat/stream` | AI 流式对话（SSE） |
-| POST | `/api/ai/chat-with-rag` | RAG 增强对话（SSE） |
-| POST | `/api/ai/plan/generate` | 生成活动策划案 |
-| POST | `/api/ai/plan/generate/stream` | 流式生成活动策划案（SSE） |
-| GET | `/api/ai/chat/history` | 获取对话历史 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/ai/chat/stream` | 登录 | AI 流式对话（SSE） |
+| POST | `/api/ai/chat-with-rag` | 登录 | RAG 增强对话（SSE） |
+| POST | `/api/ai/plan/generate` | 登录 | 生成活动策划案 |
+| POST | `/api/ai/plan/generate/stream` | 登录 | 流式生成活动策划案（SSE） |
+| GET | `/api/ai/chat-history` | 登录 | 获取对话历史 |
+| DELETE | `/api/ai/chat-history` | 登录 | 删除对话历史 |
 
 ### RAG 管理接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/rag/initialize` | 初始化/重建知识库 |
-| GET | `/api/rag/stats` | 获取知识库统计 |
-| GET | `/api/rag/test-retrieve` | 测试向量检索 |
-| GET | `/api/rag/debug/list-files` | 列出知识库文件 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/rag/initialize` | 部长 | 初始化/重建知识库 |
+| GET | `/api/rag/stats` | 登录 | 获取知识库统计 |
+| GET | `/api/rag/test-retrieve` | 登录 | 测试向量检索 |
+| GET | `/api/rag/debug/list-files` | 登录 | 列出知识库文件 |
 
 ### 活动管理接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/activities` | 获取活动列表 |
-| GET | `/api/activities/{id}` | 获取活动详情 |
-| POST | `/api/activities` | 创建活动 |
-| PUT | `/api/activities/{id}` | 更新活动 |
-| DELETE | `/api/activities/{id}` | 删除活动 |
-| POST | `/api/activities/{id}/images` | 上传活动图片 |
-| GET | `/api/activities/{id}/images` | 获取活动图片列表 |
-| DELETE | `/api/activities/images/{imageId}` | 删除活动图片 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/activities` | 公开 | 获取活动列表 |
+| GET | `/api/activities/{id}` | 公开 | 获取活动详情 |
+| GET | `/api/activities/{id}/images` | 公开 | 获取活动图片列表 |
+| GET | `/api/activities/images/batch` | 公开 | 批量获取所有活动图片 |
+| POST | `/api/activities` | 部长 | 创建活动 |
+| PUT | `/api/activities/{id}` | 部长 | 更新活动 |
+| DELETE | `/api/activities/{id}` | 部长 | 删除活动 |
+| POST | `/api/activities/{id}/images` | 部长 | 上传活动图片 |
+| DELETE | `/api/activities/images/{imageId}` | 部长 | 删除活动图片 |
 
 ### 资料管理接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/materials` | 获取资料列表 |
-| GET | `/api/materials/{id}` | 获取资料详情 |
-| POST | `/api/materials` | 上传资料 |
-| DELETE | `/api/materials/{id}` | 删除资料 |
-| GET | `/api/materials/categories` | 获取分类列表 |
-| POST | `/api/materials/categories` | 创建分类 |
-| POST | `/api/materials/categories/{id}/subcategories` | 创建子分类 |
-
-### OSS 接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/oss/presigned-url` | 获取通用预签名 URL |
-| POST | `/api/oss/presigned-url/material` | 获取资料上传预签名 URL |
-| POST | `/api/oss/presigned-url/activity-image` | 获取活动图片上传预签名 URL |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/materials` | 登录 | 获取资料列表 |
+| GET | `/api/materials/{id}` | 登录 | 获取资料详情 |
+| GET | `/api/materials/categories` | 登录 | 获取分类列表 |
+| GET | `/api/materials/category/{id}` | 登录 | 按分类获取资料 |
+| GET | `/api/materials/subcategory/{id}` | 登录 | 按子分类获取资料 |
+| GET | `/api/materials/search` | 登录 | 搜索资料 |
+| GET | `/api/materials/category/{id}/subcategories` | 登录 | 获取子分类列表 |
+| POST | `/api/materials` | 部长 | 上传资料 |
+| DELETE | `/api/materials/{id}` | 部长 | 删除资料 |
+| POST | `/api/materials/category` | 部长 | 创建分类 |
+| PUT | `/api/materials/category/{id}` | 部长 | 更新分类 |
+| DELETE | `/api/materials/category/{id}` | 部长 | 删除分类 |
+| POST | `/api/materials/subcategory` | 部长 | 创建子分类 |
+| PUT | `/api/materials/subcategory/{id}` | 部长 | 更新子分类 |
+| DELETE | `/api/materials/subcategory/{id}` | 部长 | 删除子分类 |
 
 ### 每日一图接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/daily-images` | 获取图片列表 |
-| POST | `/api/daily-images` | 上传图片 |
-| DELETE | `/api/daily-images/{id}` | 删除图片 |
-| PUT | `/api/daily-images/{id}/toggle-status` | 切换图片状态 |
-| POST | `/api/daily-images/batch-delete` | 批量删除 |
-
-### 用户管理接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/users/me` | 获取当前用户信息 |
-| PUT | `/api/users/me` | 更新个人资料 |
-| GET | `/api/users/alumni` | 获取往届成员列表 |
-| GET | `/api/users/alumni/{id}` | 获取往届成员详情 |
-| GET | `/api/users/search` | 搜索用户 |
-| GET | `/api/auth/activation-codes` | 获取激活码列表 |
-| POST | `/api/auth/generate-code` | 生成激活码 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/daily-images` | 公开 | 获取启用图片列表 |
+| GET | `/api/daily-images/all` | 部长 | 获取所有图片（含禁用） |
+| GET | `/api/daily-images/{id}` | 部长 | 获取图片详情 |
+| POST | `/api/daily-images` | 部长 | 添加图片 |
+| PUT | `/api/daily-images/{id}` | 部长 | 更新图片信息 |
+| PUT | `/api/daily-images/{id}/status` | 部长 | 更新图片启用状态 |
+| DELETE | `/api/daily-images/{id}` | 部长 | 删除图片 |
 
 ### 往届活动接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/past-activities` | 获取往届活动列表 |
-| GET | `/api/past-activities/{id}` | 获取往届活动详情 |
-| GET | `/api/past-activities/years` | 获取年份统计 |
-| POST | `/api/past-activities` | 创建往届活动 |
-| PUT | `/api/past-activities/{id}` | 更新往届活动 |
-| DELETE | `/api/past-activities/{id}` | 删除往届活动 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/past-activities` | 公开 | 分页查询往届活动 |
+| GET | `/api/past-activities/{id}` | 公开 | 获取往届活动详情 |
+| GET | `/api/past-activities/years` | 公开 | 获取年份列表 |
+| GET | `/api/past-activities/years/{year}/count` | 公开 | 按年份统计数量 |
+| POST | `/api/past-activities` | 部长 | 创建往届活动 |
+| PUT | `/api/past-activities/{id}` | 部长 | 更新往届活动 |
+| DELETE | `/api/past-activities/{id}` | 部长 | 删除往届活动 |
+
+### 用户管理接口
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/users/alumni` | 部长 | 获取往届成员列表 |
+| GET | `/api/users/search/name` | 部长 | 按姓名精确搜索 |
+| GET | `/api/users/search/name/like` | 部长 | 按姓名模糊搜索 |
+| GET | `/api/users/activation-codes` | 部长 | 获取激活码列表 |
+| PUT | `/api/users/activation-codes/refresh-expired` | 部长 | 刷新过期激活码状态 |
+| POST | `/api/users/cleanup-memory` | 部长 | 清理 Redis 内存 |
+
+### OSS 接口
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/api/oss/presigned-url` | 登录 | 获取通用预签名 URL |
+| GET | `/api/oss/presigned-url/material/{id}` | 登录 | 按资料 ID 获取预签名 URL |
+| POST | `/api/oss/presigned-url/activity-image` | 部长 | 获取活动图片上传预签名 URL |
+
+### MQ 监控接口
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/mq/health` | 公开 | RabbitMQ 健康检查 |
 
 ### 性能监控接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/performance/report` | 获取综合性能报告 |
-| POST | `/api/performance/reset` | 重置监控数据 |
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/api/performance/report` | 部长 | 获取综合性能报告 |
+| POST | `/api/performance/reset` | 部长 | 重置监控数据 |
+
+---
+
+## 📨 消息通知架构
+
+系统通过 RabbitMQ 实现异步消息通知，保证最终一致性：
+
+```mermaid
+flowchart LR
+    A[业务触发] --> B[NotifyProducer]
+    B --> C{RabbitMQ Exchange}
+    C --> D[EmailConsumer]
+    C --> E[InAppMsgConsumer]
+    C --> F[TaskRemindConsumer]
+    D --> G[SMTP 邮件发送]
+    E --> H[message 表写入]
+    F --> I[task_remind_log 记录]
+```
+
+**通知类型（NotifyType）：**
+
+| 类型 | 触发场景 | 通知渠道 |
+|------|---------|---------|
+| TASK_ASSIGNED | 任务分配 | 站内信 + 邮件 |
+| TASK_REMINDED | 任务催促 | 站内信 + 邮件 |
+| TASK_COMPLETED | 任务完成 | 站内信 |
+| ROLE_CHANGED | 角色变更 | 站内信 |
+
+> **降级策略**：RabbitMQ 不可用时，消息通知降级为同步处理，不影响核心业务流程。
 
 ---
 
@@ -534,6 +665,17 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
 
   ai:
     openai:
@@ -589,6 +731,7 @@ ai:
 - **激活码注册** - 新用户注册需要激活码，防止恶意注册
 - **请求日志** - RequestLoggingFilter 记录请求信息
 - **内存保护** - Redis 内存清理任务，防止内存溢出
+- **数据隔离** - 用户只能访问自己的消息/任务，防止越权
 
 > ⚠️ **注意**：`jwt.secret` 有默认值仅供开发使用，生产环境**必须**通过 `JWT_SECRET` 环境变量覆盖。
 
@@ -664,7 +807,7 @@ docker-compose up -d
 docker-compose logs -f backend
 ```
 
-**首次运行自动初始化：** MySQL 容器首次启动时，会自动执行 `init/init.sql` 创建数据库、表结构和测试数据。
+**首次运行自动初始化：** MySQL 容器首次启动时，会自动执行 `init/init.sql` 创建数据库、表结构和测试数据。后续 Flyway 迁移在应用启动时自动执行。
 
 #### 5. 构建并部署前端
 
@@ -700,10 +843,11 @@ sudo systemctl reload nginx
 |------|------|------|
 | MySQL | 仅容器内部 | 业务数据库（首次启动自动建表+测试数据） |
 | Redis Stack | 仅容器内部 | 缓存 + 向量存储 |
+| RabbitMQ | 仅容器内部 | 消息队列（管理面板 15672） |
 | Backend | 127.0.0.1:8080 | Spring Boot 后端服务（仅 Nginx 可访问） |
 | Nginx | 80 | 前端静态文件 + API 反向代理（宿主机） |
 
-> **安全说明**：MySQL 和 Redis 不暴露端口到宿主机，Backend 仅绑定 `127.0.0.1`，所有外部流量通过 Nginx 代理。
+> **安全说明**：MySQL、Redis 和 RabbitMQ 不暴露端口到宿主机，Backend 仅绑定 `127.0.0.1`，所有外部流量通过 Nginx 代理。
 
 ### Nginx 配置说明
 
@@ -837,6 +981,7 @@ npm run build
 - [Element Plus](https://element-plus.org/)
 - [ECNU AI](https://chat.ecnu.edu.cn/)
 - [Redis](https://redis.io/)
+- [RabbitMQ](https://www.rabbitmq.com/)
 
 ---
 

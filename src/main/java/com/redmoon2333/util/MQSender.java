@@ -25,9 +25,10 @@ public class MQSender {
      * @param message 消息体
      */
     public void send(String exchange, String routingKey, Object message) {
-        log.info("发送 MQ 消息：exchange={}, routingKey={}, message={}", exchange, routingKey, message);
+        log.info(">>> [MQ Sender] 发送 MQ 消息：exchange={}, routingKey={}, message={}", exchange, routingKey, message);
         CorrelationData correlationData = new CorrelationData();
         rabbitTemplate.convertAndSend(exchange, routingKey, message, correlationData);
+        log.info(">>> [MQ Sender] MQ 消息已投递：exchange={}, routingKey={}", exchange, routingKey);
     }
 
     /**

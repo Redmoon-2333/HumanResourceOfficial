@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useMessageStore } from '@/stores/message'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   OfficeBuilding,
@@ -10,12 +11,14 @@ import {
   Menu,
   ArrowDown,
   User,
-  SwitchButton
+  SwitchButton,
+  Bell
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const messageStore = useMessageStore()
 
 const isCollapsed = ref(false)
 const isMobile = ref(false)
@@ -72,13 +75,16 @@ const publicMenuItems = [
 const memberMenuItems = [
   { path: '/materials', title: '资料管理', icon: 'FolderOpened', description: '内部资料共享' },
   { path: '/ai-chat', title: 'AI对话', icon: 'ChatDotRound', description: '智能助手' },
-  { path: '/plan-generator', title: '策划案生成', icon: 'DocumentAdd', description: 'AI辅助策划' }
+  { path: '/plan-generator', title: '策划案生成', icon: 'DocumentAdd', description: 'AI辅助策划' },
+  { path: '/tasks', title: '我的任务', icon: 'List', description: '查看被分配的任务' }
 ]
 
 // 管理菜单（仅部长/副部长可见）
 const adminMenuItems = [
   { path: '/activation-code-manager', title: '激活码管理', icon: 'Key', description: '成员账号管理' },
-  { path: '/rag-management', title: '知识库管理', icon: 'Collection', description: 'AI知识库维护' }
+  { path: '/rag-management', title: '知识库管理', icon: 'Collection', description: 'AI知识库维护' },
+  { path: '/task-management', title: '任务管理', icon: 'List', description: '分配与催促任务' },
+  { path: '/people-management', title: '人员管理', icon: 'Avatar', description: '身份编辑与任命' }
 ]
 
 // 根据角色动态计算显示的菜单
@@ -88,6 +94,11 @@ const menuItems = computed(() => {
   // 部员或部长可以看到部员专属菜单
   if (isMember.value) {
     items = [...items, ...memberMenuItems]
+  }
+
+  // 部长/副部长可以看到管理菜单
+  if (isMinisterOrViceMinister.value) {
+    items = [...items, ...adminMenuItems]
   }
 
   return items
@@ -265,6 +276,13 @@ const toggleMobileMenu = () => {
         </div>
 
         <div class="header-right">
+          <!-- 铃铛通知 -->
+          <router-link v-if="userStore.isLoggedIn" to="/messages" class="bell-link">
+            <el-badge :value="messageStore.unreadCount" :hidden="messageStore.unreadCount === 0" :max="99">
+              <el-icon :size="22" class="bell-icon"><Bell /></el-icon>
+            </el-badge>
+          </router-link>
+
           <!-- 未登录状态 -->
           <div v-if="!userStore.isLoggedIn" class="auth-actions">
             <router-link to="/login" class="btn btn-ghost">
@@ -291,6 +309,14 @@ const toggleMobileMenu = () => {
                 <el-dropdown-item @click="router.push('/profile')">
                   <el-icon><User /></el-icon>
                   <span>个人中心</span>
+                </el-dropdown-item>
+                <el-dropdown-item @click="router.push('/tasks')">
+                  <el-icon><Bell /></el-icon>
+                  <span>我的任务</span>
+                </el-dropdown-item>
+                <el-dropdown-item @click="router.push('/messages')">
+                  <el-icon><Bell /></el-icon>
+                  <span>站内信</span>
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
                   <el-icon><SwitchButton /></el-icon>
@@ -741,6 +767,31 @@ const toggleMobileMenu = () => {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+
+.bell-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background var(--transition-fast);
+  text-decoration: none;
+}
+
+.bell-link:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.bell-icon {
+  color: #606266;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.bell-link:hover .bell-icon {
+  color: #409eff;
 }
 
 .auth-actions {

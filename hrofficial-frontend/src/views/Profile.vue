@@ -91,6 +91,14 @@ const getAvatarColor = (name: string) => {
   return colors[Math.abs(hash) % colors.length]
 }
 
+// 检查是否具有部长或副部长身份
+const hasMinisterRole = (roleHistory: string | null | undefined) => {
+  if (!roleHistory) return false
+  const roles = roleHistory.split('&').map(r => r.trim())
+  // 先匹配副部长，再匹配部长（避免"副部长"被误判）
+  return roles.some(r => r.includes('副部长') || r.endsWith('部长'))
+}
+
 // 快捷操作
 const quickActions = [
   { icon: Document, label: '我的资料', color: '#FF6B4A' },
@@ -155,7 +163,7 @@ const achievements = [
             
             <div class="user-titles">
               <h1 class="user-name">{{ user?.name || user?.username }}</h1>
-              <p class="user-role">{{ user?.roleHistory?.includes('部长') ? '管理员' : '普通成员' }}</p>
+              <p class="user-role">{{ hasMinisterRole(user?.roleHistory) ? '管理员' : '普通成员' }}</p>
               <div class="user-badges">
                 <span class="badge verified">
                   <el-icon :size="12"><Lock /></el-icon>
