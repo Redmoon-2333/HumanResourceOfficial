@@ -23,7 +23,10 @@ public class User {
     private String name;
     
     private String roleHistory;
-    
+
+    @Size(min = 11, max = 20, message = "学号长度必须在11-20之间")
+    private String studentId;
+
     // 无参构造函数
     public User() {
     }
@@ -81,7 +84,15 @@ public class User {
     public void setRoleHistory(String roleHistory) {
         this.roleHistory = roleHistory;
     }
-    
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
+    }
+
     @Override
     public String toString() {
         return "User{" +

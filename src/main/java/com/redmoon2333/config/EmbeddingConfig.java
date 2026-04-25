@@ -4,6 +4,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.ai.document.MetadataMode;
+import reactor.netty.resources.ConnectionProvider;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
@@ -57,7 +58,16 @@ public class EmbeddingConfig {
     }
 
     private WebClient.Builder createWebClientBuilder() {
-        HttpClient httpClient = HttpClient.create()
+        // 配置连接池：防止高并发时连接泄漏
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("ai-pool")
+                .maxConnections(50)                    // 最大连接数
+                .maxIdleTime(Duration.ofMinutes(5))    // 空闲连接最大存活时间
+                .maxLifeTime(Duration.ofMinutes(30))   // 连接最大生命周期
+                .pendingAcquireTimeout(Duration.ofSeconds(60)) // 等待可用连接超时
+                .evictInBackground(Duration.ofMinutes(1)) // 后台清理闲置连接间隔
+                .build();
+
+        HttpClient httpClient = HttpClient.create(connectionProvider)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) connectTimeout.toMillis())
                 .doOnConnected(conn -> conn
                         .addHandlerLast(new ReadTimeoutHandler(readTimeout.toMillis(), TimeUnit.MILLISECONDS))

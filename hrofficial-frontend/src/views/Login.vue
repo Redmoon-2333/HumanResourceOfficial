@@ -533,12 +533,17 @@ const goToRegister = () => {
 .form-title {
   font-size: var(--text-2xl);
   font-weight: var(--font-bold);
-  color: var(--text-primary);
+  color: var(--coral-500);
   margin: 0 0 var(--space-2) 0;
-  background: linear-gradient(135deg, #FF6B4A, #E35532);
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .form-title {
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 .form-subtitle {

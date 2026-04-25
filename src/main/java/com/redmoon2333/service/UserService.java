@@ -38,6 +38,9 @@ public class UserService {
     @Autowired
     private com.redmoon2333.mapper.ActivationCodeMapper activationCodeMapper;
     
+    @Autowired
+    private com.redmoon2333.mapper.MessageMapper messageMapper;
+    
     /**
      * 获取往届部员信息
      * 从所有用户的roleHistory中提取出任职经历，然后把同一年的人放到一起
@@ -162,12 +165,11 @@ public class UserService {
     
     /**
      * 解析角色历史字符串
+     * 读取时兼容旧格式，输出时统一为无空格格式
      * 支持格式：
-     * 1. JSON数组: ["2024级部员&2025级部长"]
-     * 2. JSON数组: ["2024级部员", "2025级部长"]
-     * 3. 普通字符串: 2024级部员&2025级部长
-     * 4. 普通字符串: 2024级部员,2025级部长
-     * 
+     * - 新格式: 2024级部员&2025级部长
+     * - 旧格式: ["2024级部员"]、2024 级部长、["2024 级部长"]
+     *
      * @param roleHistory 角色历史字符串
      * @return 解析后的角色条目列表
      */
@@ -208,12 +210,12 @@ public class UserService {
                 
                 // 处理每个JSON元素，移除引号并按 & 分割
                 for (String element : jsonElements) {
-                    element = element.replace("\"", "").replace("'", "").trim();
+                    element = element.replace("\"", "").replace("'", "").replace(" ", "").trim();
                     if (element.contains("&")) {
                         // 格式: 2024级部员&2025级部长
                         String[] parts = element.split("&");
                         for (String part : parts) {
-                            part = part.trim();
+                            part = part.trim().replace(" ", "");
                             if (!part.isEmpty()) {
                                 result.add(part);
                             }
@@ -230,12 +232,12 @@ public class UserService {
         }
         
         // 普通格式处理
-        cleaned = cleaned.replace("[", "").replace("]", "").replace("\"", "").replace("'", "").trim();
-        
+        cleaned = cleaned.replace("[", "").replace("]", "").replace("\"", "").replace("'", "").replace(" ", "").trim();
+
         // 按 & 或 , 分割
         String[] parts = cleaned.split("[&,]");
         for (String part : parts) {
-            part = part.trim();
+            part = part.trim().replace(" ", "");
             if (!part.isEmpty()) {
                 result.add(part);
             }
@@ -464,6 +466,43 @@ public class UserService {
         } catch (Exception e) {
             logger.error("删除激活码时发生异常", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除激活码失败", e);
+        }
+    }
+
+    /**
+     * 刷新过期激活码状态
+     * 将所有 status=未使用 且 expireTime < now() 的激活码标记为已过期
+     *
+     * @param token JWT令牌
+     * @return 被更新的激活码数量
+     */
+    public int refreshExpiredActivationCodes(String token) {
+        try {
+            logger.debug("开始刷新过期激活码状态");
+
+            User user = authService.getUserFromToken(token);
+            if (user == null) {
+                throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+            }
+
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            com.redmoon2333.entity.ActivationCode code = new com.redmoon2333.entity.ActivationCode();
+            code.setStatus(com.redmoon2333.enums.ActivationStatus.已过期);
+
+            int updatedCount = activationCodeMapper.updateExpiredCodes(
+                com.redmoon2333.enums.ActivationStatus.未使用,
+                com.redmoon2333.enums.ActivationStatus.已过期,
+                now
+            );
+
+            logger.info("成功刷新 {} 个过期激活码", updatedCount);
+            return updatedCount;
+        } catch (BusinessException e) {
+            logger.warn("刷新过期激活码失败: {}", e.getErrorCode().getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            logger.error("刷新过期激活码时发生异常", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "刷新过期激活码失败", e);
         }
     }
     

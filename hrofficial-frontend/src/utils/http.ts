@@ -1,7 +1,6 @@
 import type { ApiResponse } from '@/types'
 import { useUserStore } from '@/stores/user'
 
-// 开发环境使用代理，生产环境使用实际地址
 const API_BASE_URL = import.meta.env.PROD
   ? (import.meta.env.VITE_API_BASE_URL || '')
   : '' // 开发环境使用相对路径，通过Vite代理转发
@@ -72,6 +71,18 @@ class HttpClient {
       }
 
       const data = await response.json()
+
+      if (data.code !== 200) {
+        const userStore = useUserStore()
+        if (data.code >= 2001 && data.code <= 2999) {
+          userStore.logout()
+          if (userStore.isLoggedIn) {
+            window.location.href = '/login?expired=1'
+          }
+        }
+        throw new Error(data.message || `请求失败，错误码：${data.code}`)
+      }
+
       return data
     } catch (error: any) {
       if (error.name === 'AbortError') {

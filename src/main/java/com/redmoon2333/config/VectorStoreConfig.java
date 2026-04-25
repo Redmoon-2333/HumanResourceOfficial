@@ -8,10 +8,15 @@ import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.exceptions.JedisDataException;
+import java.util.Collections;
+import java.util.Map;
 
 @Configuration
 public class VectorStoreConfig {
@@ -33,6 +38,8 @@ public class VectorStoreConfig {
     @Value("${spring.data.redis.password:}")
     private String redisPassword;
 
+    private JedisPooled jedisPooledInstance;
+
     @Bean
     public JedisPooled jedisPooled() {
         // 如果有密码则使用密码，否则不使用
@@ -40,9 +47,11 @@ public class VectorStoreConfig {
             JedisClientConfig config = DefaultJedisClientConfig.builder()
                 .password(redisPassword)
                 .build();
-            return new JedisPooled(new HostAndPort(redisHost, redisPort), config);
+            jedisPooledInstance = new JedisPooled(new HostAndPort(redisHost, redisPort), config);
+        } else {
+            jedisPooledInstance = new JedisPooled(new HostAndPort(redisHost, redisPort));
         }
-        return new JedisPooled(new HostAndPort(redisHost, redisPort));
+        return jedisPooledInstance;
     }
 
     @Bean
@@ -61,6 +70,58 @@ public class VectorStoreConfig {
                 .prefix(prefix)
                 .initializeSchema(true)
                 .build();
+    }
+
+    /**
+     * 应用启动后检查并重建向量索引
+     * 原因: FLUSHALL 会删除索引但保留数据，需要启动时检测并重建
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void ensureIndexExists() {
+        if (jedisPooledInstance == null) {
+            logger.warn("JedisPooled 未初始化，跳过索引检查");
+            return;
+        }
+
+        try {
+            // 检查索引是否存在
+            jedisPooledInstance.ftInfo(indexName);
+            logger.info("向量索引 {} 已存在，无需重建", indexName);
+        } catch (JedisDataException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Unknown index name")) {
+                logger.warn("向量索引 {} 不存在，尝试重建...", indexName);
+                try {
+                    // 删除可能损坏的旧索引
+                    try {
+                        jedisPooledInstance.ftDropIndex(indexName);
+                        logger.info("已删除旧索引 {}", indexName);
+                    } catch (Exception ignored) {}
+
+                    // 重建索引
+                    jedisPooledInstance.ftCreate(
+                        indexName,
+                        redis.clients.jedis.search.FTCreateParams.createParams()
+                            .prefix(prefix),
+                        redis.clients.jedis.search.schemafields.TextField.of("content"),
+                        new redis.clients.jedis.search.schemafields.VectorField("embedding",
+                            redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm.HNSW,
+                            Map.of(
+                                "TYPE", "FLOAT32",
+                                "DIM", "1024",
+                                "DISTANCE_METRIC", "COSINE",
+                                "M", "16",
+                                "EF_CONSTRUCTION", "200",
+                                "EF_RUNTIME", "10"
+                            ))
+                    );
+                    logger.info("向量索引 {} 重建成功", indexName);
+                } catch (Exception ex) {
+                    logger.error("向量索引 {} 重建失败: {}", indexName, ex.getMessage(), ex);
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("检查向量索引状态失败: {}", e.getMessage());
+        }
     }
 
     public String getIndexName() {

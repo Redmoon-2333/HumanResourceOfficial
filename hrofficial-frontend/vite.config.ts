@@ -21,7 +21,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        // Why: 流式 SSE 请求需要较长的超时时间，默认代理会截断
+        proxyTimeout: 600000,  // 10分钟代理超时
+        timeout: 600000        // 10分钟请求超时
       }
     }
   },

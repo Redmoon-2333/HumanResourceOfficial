@@ -29,6 +29,7 @@ export interface PageResponse<T> {
 
 export interface User {
   id: number
+  userId?: number
   username: string
   name: string
   phone: string
@@ -68,12 +69,10 @@ export interface LoginResponse {
 export interface RegisterRequest {
   username: string
   password: string
+  confirmPassword: string
   name: string
-  phone: string
-  email: string
   studentId: string
-  grade: string
-  major: string
+  roleHistory: string
   activationCode: string
 }
 
@@ -484,3 +483,130 @@ export type UploadProgressCallback = (percent: number) => void
 
 // 流式响应回调
 export type StreamChunkCallback = (chunk: string) => void
+
+// ============================================
+// 任务相关类型
+// ============================================
+
+export interface TaskDetail {
+  taskId: number
+  title: string
+  description: string | null
+  creatorId: number
+  creatorName: string
+  creatorYear: number
+  targetYear: number
+  dueTime: string | null
+  priority: 0 | 1 | 2
+  status: 'OPEN' | 'CLOSED'
+  remindCooldownMinutes: number
+  assignments: Assignment[]
+  createTime: string
+  updateTime: string
+}
+
+export interface Assignment {
+  assignmentId: number
+  taskId: number
+  taskTitle?: string
+  taskDescription?: string | null
+  taskDueTime?: string | null
+  taskPriority?: 0 | 1 | 2
+  taskStatus?: 'OPEN' | 'CLOSED'
+  creatorName?: string
+  assigneeId: number
+  assigneeName?: string
+  assigneeStudentId?: string
+  status: 'PENDING' | 'DONE'
+  doneTime: string | null
+  doneRemark: string | null
+  lastRemindTime: string | null
+  remindCount: number
+  createTime?: string
+}
+
+export interface Candidate {
+  userId: number
+  name: string
+  username: string
+  studentId: string
+  currentRole: string
+}
+
+export interface TaskCreateRequest {
+  title: string
+  description?: string
+  dueTime?: string
+  priority?: 0 | 1 | 2
+  assigneeIds: number[]
+  // remindCooldownMinutes 已由后端固定为24小时，前端不再传入
+}
+
+export interface TaskUpdateRequest {
+  title?: string
+  description?: string
+  dueTime?: string
+  priority?: 0 | 1 | 2
+  // remindCooldownMinutes 已由后端固定为24小时，前端不再传入
+}
+
+// ============================================
+// 站内信相关类型
+// ============================================
+
+export interface Message {
+  messageId: number
+  senderId: number | null
+  senderName: string
+  type: string
+  title: string
+  content: string
+  refType: string | null
+  refId: number | null
+  isRead: boolean
+  readTime: string | null
+  createTime: string
+}
+
+export interface UnreadCount {
+  unreadCount: number
+  [key: string]: number
+}
+
+// ============================================
+// 角色管理相关类型
+// ============================================
+
+export interface UserRole {
+  userId: number
+  username: string
+  name: string
+  studentId: string | null
+  email: string | null
+  currentRole: string
+  currentYear: number
+  roleHistoryList: RoleHistoryEntry[]
+}
+
+export interface RoleHistoryEntry {
+  year: number
+  role: string
+}
+
+export interface RoleUpdateRequest {
+  year: number
+  newRole: string
+  reason?: string
+}
+
+// ============================================
+// MP 分页响应
+// ============================================
+
+export interface MPPageResponse<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}

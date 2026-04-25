@@ -39,7 +39,7 @@ public class JwtUtil {
      * 为用户生成JWT令牌
      * @param userId 用户ID
      * @param username 用户名
-     * @param roleHistory 身份历史（格式：2024级部长&2023级部员）
+     * @param roleHistory 身份历史（格式：2024级部长&2023级部员，无空格）
      * @return JWT令牌
      */
     public String generateToken(Integer userId, String username, String roleHistory) {
@@ -81,7 +81,7 @@ public class JwtUtil {
 
     /**
      * 从身份历史中获取当前身份（最新的身份）
-     * @param roleHistory 身份历史（格式：2024级部长&2023级部员）
+     * @param roleHistory 身份历史（格式：2024级部长&2023级部员，无空格）
      * @return 当前身份
      */
     private String getCurrentRole(String roleHistory) {

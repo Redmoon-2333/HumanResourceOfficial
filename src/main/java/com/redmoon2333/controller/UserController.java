@@ -173,7 +173,35 @@ public class UserController {
             return ApiResponse.error("系统内部错误", 500);
         }
     }
-    
+
+    /**
+     * 刷新过期激活码状态
+     * 将所有已过期的激活码标记为已过期状态
+     *
+     * @param authHeader 授权令牌
+     * @return 被更新的激活码数量
+     */
+    @RequireMinisterRole("刷新激活码")
+    @PutMapping("/activation-codes/refresh-expired")
+    public ApiResponse<Map<String, Object>> refreshExpiredActivationCodes(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            logger.info("收到刷新过期激活码的请求");
+            String token = authHeader.replace("Bearer ", "");
+            int updatedCount = userService.refreshExpiredActivationCodes(token);
+            logger.info("成功刷新 {} 个过期激活码", updatedCount);
+            Map<String, Object> result = new HashMap<>();
+            result.put("updatedCount", updatedCount);
+            return ApiResponse.success("刷新成功", result);
+        } catch (BusinessException e) {
+            logger.warn("刷新过期激活码失败: {}", e.getErrorCode().getMessage(), e);
+            return ApiResponse.error(e.getErrorCode().getMessage(), e.getErrorCode().getCode());
+        } catch (Exception e) {
+            logger.error("刷新过期激活码时发生异常", e);
+            return ApiResponse.error("系统内部错误", 500);
+        }
+    }
+
     /**
      * 手动清理Redis内存中的过期对话
      * 仅部长可访问

@@ -707,17 +707,29 @@
 
 /* 文本渐变 */
 .text-gradient {
+  color: var(--coral-500); /* 降级颜色 - 所有浏览器可见 */
   background: var(--gradient-text-primary);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .text-gradient {
+    -webkit-text-fill-color: transparent;
+  }
+}
+
 .text-gradient-warm {
+  color: var(--amber-600); /* 降级颜色 */
   background: var(--gradient-text-warm);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .text-gradient-warm {
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 /* 背景渐变 */
@@ -2583,4 +2595,104 @@ summary {
 .btn-sm {
   min-height: var(--touch-target-min);
   padding: var(--space-3);
+}
+
+/* ============================================================
+   26. 颜色系统统一映射 / Unified Color System Mapping
+   ============================================================
+   
+   将页面特定颜色变量映射到主设计系统，消除颜色跳变
+   确保所有页面使用统一的颜色来源
+   ============================================================ */
+
+:root {
+  /* 页面主题色统一映射 */
+  --page-color-home: var(--coral-500);
+  --page-color-login: var(--coral-500);
+  --page-color-register: var(--coral-500);
+  --page-color-activities: var(--rose-500);
+  --page-color-past-activities: var(--amber-500);
+  --page-color-alumni: var(--amber-400);
+  --page-color-materials: var(--emerald-500);
+  --page-color-ai-chat: var(--sky-500);
+  --page-color-plan-generator: var(--rose-500);
+  --page-color-activation-code: var(--rose-600);
+  --page-color-rag-management: var(--rose-700);
+  --page-color-profile: var(--emerald-500);
+  --page-color-task-management: var(--coral-500);
+  --page-color-message-center: var(--coral-500);
+  --page-color-home-page: var(--coral-500);
+  
+  /* 统一文字颜色 - 消除跳变 */
+  --page-title-color: var(--text-primary);
+  --page-subtitle-color: var(--text-secondary);
+  --page-accent-color: var(--coral-500);
+}
+
+/* ============================================================
+   27. 浏览器兼容性增强 / Browser Compatibility Enhancement
+   ============================================================
+   
+   确保颜色在所有主流浏览器中一致显示
+   ============================================================ */
+
+/* Firefox 兼容性 - background-clip: text */
+@-moz-document url-prefix() {
+  .text-gradient,
+  .text-gradient-warm,
+  .form-title {
+    color: var(--coral-500);
+  }
+}
+
+/* Safari 兼容性 - 确保渐变文本正常显示 */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .text-gradient,
+  .text-gradient-warm,
+  .form-title {
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/* 高对比度模式适配 */
+@media (prefers-contrast: more) {
+  .text-gradient {
+    color: var(--coral-600);
+  }
+  .text-gradient-warm {
+    color: var(--amber-700);
+  }
+}
+
+/* ============================================================
+   28. 硬编码颜色回退机制 / Hardcoded Color Fallback
+   ============================================================
+   
+   为所有使用渐变文本的元素添加颜色回退
+   ============================================================ */
+
+.hero h1,
+.hero-title,
+.page-title,
+.section-title {
+  color: var(--text-primary);
+}
+
+/* 表单标题统一样式 */
+.form-title,
+.auth-title,
+.page-header h1 {
+  color: var(--coral-500);
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .form-title,
+  .auth-title,
+  .page-header h1 {
+    -webkit-text-fill-color: transparent;
+  }
 }

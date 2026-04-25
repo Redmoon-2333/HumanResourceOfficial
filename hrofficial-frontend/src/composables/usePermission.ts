@@ -13,7 +13,9 @@ export function usePermission() {
   const isMinister = computed(() => {
     if (!userStore.userInfo) return false
     const roleHistory = userStore.userInfo.roleHistory || ''
-    return roleHistory.includes('部长') || roleHistory.includes('副部长')
+    const roles = roleHistory.split('&').map(r => r.trim())
+    // 先匹配副部长，再匹配部长（避免"副部长"被误判为"部长"）
+    return roles.some(r => r.includes('副部长') || r.endsWith('部长'))
   })
 
   const isMember = computed(() => {

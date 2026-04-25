@@ -647,13 +647,19 @@ const goToImageManagement = () => {
 }
 
 .name-highlight {
-  background: linear-gradient(135deg, #E85A3C 0%, #FF6B4A 50%, #E85A3C 100%);
+  color: var(--coral-500);
+  background: linear-gradient(135deg, var(--coral-500) 0%, var(--coral-400) 50%, var(--coral-500) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: gradientShift 4s ease infinite;
   display: inline-block;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .name-highlight {
+    -webkit-text-fill-color: transparent;
+  }
 }
 
 @keyframes gradientShift {

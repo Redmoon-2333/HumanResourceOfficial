@@ -86,6 +86,7 @@ public class AuthController {
             data.put("username", user.getUsername());
             data.put("roleHistory", user.getRoleHistory());
             data.put("name", user.getName());
+            data.put("studentId", user.getStudentId());
             data.put("message", "注册成功，请登录");
             
             return ApiResponse.success("注册成功", data);
@@ -117,6 +118,7 @@ public class AuthController {
             data.put("username", user.getUsername());
             data.put("name", user.getName());
             data.put("roleHistory", user.getRoleHistory());
+            data.put("studentId", user.getStudentId());
             
             return ApiResponse.success(data);
             

@@ -73,6 +73,7 @@ public class PermissionUtil {
     
     /**
      * 检查身份历史中是否包含部长或副部长身份
+     * 读取时兼容旧格式，自动去除空格
      * @param roleHistory 身份历史
      * @return 是否具有部长权限
      */
@@ -80,19 +81,27 @@ public class PermissionUtil {
         if (roleHistory == null || roleHistory.trim().isEmpty()) {
             return false;
         }
-        
-        String[] roles = roleHistory.split("&");
+
+        String cleaned = roleHistory.trim();
+        if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1);
+        }
+        cleaned = cleaned.replace("\"", "").replace("'", "").replace(" ", "").trim();
+
+        String[] roles = cleaned.split("[&,]");
         for (String role : roles) {
             role = role.trim();
-            if (role.contains("部长") || role.contains("副部长")) {
+            if (role.isEmpty()) continue;
+            if (role.contains("副部长") || role.endsWith("部长")) {
                 return true;
             }
         }
         return false;
     }
-    
+
     /**
      * 检查身份历史中是否包含部员及以上身份
+     * 读取时兼容旧格式，自动去除空格
      * @param roleHistory 身份历史
      * @return 是否具有部员权限
      */
@@ -100,11 +109,18 @@ public class PermissionUtil {
         if (roleHistory == null || roleHistory.trim().isEmpty()) {
             return false;
         }
-        
-        String[] roles = roleHistory.split("&");
+
+        String cleaned = roleHistory.trim();
+        if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1);
+        }
+        cleaned = cleaned.replace("\"", "").replace("'", "").replace(" ", "").trim();
+
+        String[] roles = cleaned.split("[&,]");
         for (String role : roles) {
             role = role.trim();
-            if (role.contains("部员") || role.contains("副部长") || role.contains("部长")) {
+            if (role.isEmpty()) continue;
+            if (role.endsWith("部员") || role.contains("副部长") || role.endsWith("部长")) {
                 return true;
             }
         }
