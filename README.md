@@ -81,61 +81,14 @@
 ### 系统架构图
 
 ```mermaid
-graph TB
-    subgraph 前端层["前端层 Vue3 + TypeScript"]
-        A[Web 应用]
-    end
-
-    subgraph 网关层["网关层"]
-        B[Nginx 反向代理]
-    end
-
-    subgraph 服务层["服务层 Spring Boot"]
-        C[Controller 接口层 14个]
-        D[Service 业务层 16个]
-        E[AI 服务层]
-        F[文件服务层]
-        G[消息队列层]
-        H[性能监控层]
-    end
-
-    subgraph 数据层["数据层"]
-        I[(MySQL 业务数据)]
-        J[(Redis 缓存/向量)]
-        K[本地文件 / 阿里云 OSS]
-    end
-
-    subgraph MQ层["消息队列 RabbitMQ"]
-        L[NotifyProducer]
-        M[EmailConsumer]
-        N[InAppMsgConsumer]
-        O[TaskRemindConsumer]
-    end
-
-    subgraph AI 层["AI 层 Spring AI"]
-        P[ECNU AI ecnu-plus/ecnu-max]
-        Q[ecnu-embedding-small]
-        R[Vector Store 检索]
-    end
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    D --> F
-    D --> G
-    D --> H
-    D --> I
-    D --> J
-    F --> K
-    G --> L
-    L --> M
-    L --> N
-    L --> O
-    E --> P
-    E --> Q
-    Q --> R
-    R --> J
+graph LR
+    A[Web 应用<br/>Vue3 + TypeScript] --> B[Nginx 反向代理]
+    B --> C[Spring Boot 后端服务]
+    C --> D[(MySQL 业务数据)]
+    C --> E[(Redis 缓存/向量)]
+    C --> F[RabbitMQ 消息队列]
+    C --> G[阿里云 OSS]
+    C --> H[ECNU AI<br/>ecnu-plus/max]
 ```
 
 ### 技术栈版本
@@ -320,7 +273,7 @@ cp deploy/.env.example .env
 | `RABBITMQ_PORT` | `5672` | RabbitMQ 端口 |
 | `RABBITMQ_USERNAME` | `guest` | RabbitMQ 用户名 |
 | `RABBITMQ_PASSWORD` | `guest` | RabbitMQ 密码 |
-| `MAIL_HOST` | `smtp.qq.com` | 邮件 SMTP 主机 |
+| `MAIL_HOST` | `smtp.163.com` | 邮件 SMTP 主机 |
 | `MAIL_USERNAME` | (空) | 邮件发送账号 |
 | `MAIL_PASSWORD` | (空) | 邮件授权码 |
 | `ALIYUN_OSS_ENDPOINT` | `oss-cn-beijing.aliyuncs.com` | OSS Endpoint |
@@ -673,7 +626,7 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
 
   mail:
-    host: ${MAIL_HOST:smtp.qq.com}
+    host: ${MAIL_HOST:smtp.163.com}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
 
