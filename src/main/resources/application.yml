@@ -43,7 +43,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:REDACTED_REDIS_PASS}
+      password: ${REDIS_PASSWORD:RedMoon}
       database: 0
       timeout: 10000ms
       lettuce:

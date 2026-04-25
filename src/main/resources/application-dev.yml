@@ -7,8 +7,8 @@ spring:
   mail:
     host: smtp.163.com
     port: 465
-    username: REDACTED_EMAIL
-    password: REDACTED_MAIL_PASS
+    username: 13136397281@163.com
+    password: RMnuLHrnM9KXQvKt
     properties:
       mail:
         smtp:
@@ -22,7 +22,7 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: REDACTED_REDIS_PASS
+      password: RedMoon
 
   jpa:
     show-sql: true

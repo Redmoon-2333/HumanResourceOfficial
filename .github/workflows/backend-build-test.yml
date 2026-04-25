@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - develop
-      - REDACTED_REDIS_PASS
+      - RedMoon
   pull_request:
     branches:
       - main
